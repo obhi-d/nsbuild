@@ -1,0 +1,29 @@
+---
+Language: Cpp
+PenaltyReturnTypeOnItsOwnLine: '10000'
+TabWidth: '2'
+UseTab: Never
+PointerAlignment: Left
+AlignConsecutiveAssignments: true
+AlignConsecutiveDeclarations: true
+AlignConsecutiveMacros: true
+AlignEscapedNewlines: Right
+AlwaysBreakTemplateDeclarations: true
+IncludeBlocks: Regroup
+BreakBeforeBraces: Custom
+BraceWrapping:
+  AfterCaseLabel: true
+  AfterClass: true
+  AfterControlStatement: true
+  AfterEnum: true
+  AfterFunction: true
+  AfterNamespace: true
+  AfterStruct: true
+  AfterUnion: true
+  AfterExternBlock: true
+  BeforeCatch: true
+  BeforeElse: true
+  BeforeLambdaBody: true
+  SplitEmptyFunction: false
+
+...

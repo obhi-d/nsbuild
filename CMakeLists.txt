@@ -26,7 +26,7 @@ ExternalProject_Add(neoscript
 ## Basic tests
 add_executable(nsbuild
   "src/main.cpp"
-)
+ "src/nshelp.cpp" "src/nsbuild.cpp" "src/nscommon.cpp" "src/nsmodule.cpp" "src/nsbuild_registry.cpp")
 
 target_include_directories(nsbuild PRIVATE 
 	"${CMAKE_SOURCE_DIR}/include"
@@ -34,3 +34,5 @@ target_include_directories(nsbuild PRIVATE
 )
 add_dependencies(nsbuild neoscript-install)
 target_compile_features(nsbuild PRIVATE cxx_std_20)
+add_compile_options(nsbuild PRIVATE "/Zc:preprocessor")
+

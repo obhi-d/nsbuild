@@ -1,0 +1,95 @@
+config_filter (about = "list of [debug, release, windows, linux, osx, clang, msvc, gcc, asan]");
+
+install_dir    = (about = "Package install directory");
+build_dir      = (about = "Build directory");
+frameworks_dir = (about = "Frameworks directory");
+output_dir     = (about = "Output directory for debugging/testing");
+compiler (about = "Compiler flags",
+          params = ["list of @config_filter, more configs will be added as seen fit"])
+{
+  compiler_flags (about = "Compile flags");
+  linker_flags (about = "Compile flags");
+}
+
+framework(about = "Framework level declaration, can exclude modules",
+          variables = ["$framework.dir : Current framework source path", "$framework.name : Current framework name"])
+{
+  excludes (about = "List of modules to exclude from build in this framework");
+}
+
+module (about = "Defines a module, the top level description of a module starts with module",
+        variables = ["$module.dir : Absolute path to the Module folder in source/Frameworks/Framework directory", "$module.name : Current module name"])
+
+{
+  var (about = "Declares configuration variables that are only defined if configuration definition is satisfied",
+       params = ["list of @config_filter, more configs will be added as seen fit"])
+  {
+    any (about = "Key value pairs, the value can be a string or a list, keys can be fetched by $var.key. Lists are expanded by default. To avoid expansion, use [$var.key]",
+         params = ["Value can be any string/list/any valid neoscript param value"]);
+  }
+
+  prebuild (about = "Prebuild steps for this module")
+  {
+    artifacts (about = "List of files produced as artifacts to this build. If element names dont start with $ (followed by a var name) it is assumed the paths are relative to gen directory");
+    dependencies (about = "List of files that this step depends on. If element names dont start with $ (followed by a var name) it is assumed the paths are relative to gen directory");
+    steps (about = "Commands to build the artifacts. see @fetch.build");
+  }
+
+  postbuild (about = "Postbuild steps for this module, see @prebuild");
+  
+  fetch (about = "Starts a fetch operation. This will fetch code from repository and add checkout modules and sumboudles given a commit, from build instructions it will add build targets to the module"
+         variables = [
+           "$fetch.src : Source directory where repository was fetched",
+           "$fetch.install : Directory where built repository is installed, this is not the same as interface.install unless specified"
+         ])
+  {
+    license (about = "License file of the external module, this will be added to the generated external license file", params = ["License file"]);
+    commit (about = "The commit tag to checkout", params = ["Commit tag"]);
+    args (about = "CMake args to pass to cmake build, should be a string list", 
+          params = ["Filter with list of filter params, see @config_filter"]);
+    config (about = "Config commands to execute to configure the external project",
+            params = "Filter with list of filter params, see @config_filter")
+    {
+      print (about = "Will print a string message during cmake configure");
+      trace (about = "Will print a string message during cmake build");
+      cmake (about = "Commands to execute using CMAKE_COMMAND");
+      copy (about = "Copy file. Same as cmake -E copy", params = ["source", "destination"]);
+      copy_dir (about = "Copy directory. Same as cmake -E copy_directory", params = ["source", "destination"]);
+      any (about = "Command to execute. Parameters will be passed to the command as declared");
+    }
+    build (about = "Build commands to execute to build the external project, see @config for structure");
+    install (about = "Install commands to execute to install the external project, see @config for structure."
+             note = "Install will be executed as a build dependency for the current module, the module install command can then copy the installed files if needed by its interface"
+             );
+  }
+
+  interface (about =  "Defines the export interface for the module, everything here will be used as public/interface property of this target", 
+             params = "Filter with list of filter params, see @config_filter")
+  {
+    dependencies (about = "List of module targets of the form Framework.moduleName, that this module depends on");
+    binaries (about = "Binaries to be copied in install directory",
+              params = (path = "Location from you want to copy the binaries", 
+                        "List of files will be copied, if none is provided every binary file will be copied"));
+                            
+    includes (about = "Include directories to be a part of this module interface, they will be copied during install, if this is not an extern module",
+             note = "Include is optional and only meant for extern modules");
+
+
+    libraries (about = "Libs to be part of this module interface, which will be automatically linked to by modules depending on this module",
+               params = (path = "Location from you want to copy the libs", 
+                         type = "Can be static/shared/system, by default is shared",
+                         "List or a single link target, list will be expanded"));
+
+    definitions (about = "List of strings to be added as preprocessor definitions");
+
+  }
+
+  private (about = "Same as interface, but properties will not be transitive, only direct linking recieve the properties");
+  exports (about = "Cache variables to be exported by this module")
+  {
+    any (about = "Key value pairs",
+         params = ["Value should be a string"]);
+  }
+  install (about = "Custom install script only meant for external modules, see @fetch.install");
+
+}

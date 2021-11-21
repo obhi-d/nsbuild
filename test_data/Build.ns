@@ -1,0 +1,55 @@
+
+build_dir      = "../build";
+install_dir    = "../install";
+output_dir     = "../output";
+frameworks_dir = "Frameworks";
+
+compiler [msvc, release]
+{
+  compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
+}
+
+compiler [msvc, debug]
+{
+  compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
+  linker_flags: [ "/debug", "-incremental:no" ];
+}
+
+compiler [msvc, debug, asan]
+{
+  compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8", "/fsanitize=address"  ];
+  linker_flags: [ "/debug", "-incremental:no", "/wholearchive:clang_rt.asan_dbg_dynamic-x86_64.lib", "/wholearchive:clang_rt.asan_dbg_dynamic_runtime_thunk-x86_64.lib" ];
+}
+
+compiler [gcc, release]
+{
+  compiler_flags  : [
+      "-fcoroutines",
+      "-fno-exceptions",
+      "-mavx",
+      "-std=c++2a"
+    ];
+}
+
+compiler [gcc, debug]
+{
+  compiler_flags  : [
+      "-fcoroutines",
+      "-fno-exceptions",
+      "-mavx",
+      "-std=c++2a"
+    ];
+}
+
+compiler [gcc, debug, asan]
+{
+  compiler_flags  : [
+      "-fcoroutines",
+      "-fno-exceptions",
+      "-fsanitize=address",
+      "-fsanitize=leak",
+      "-mavx",
+      "-std=c++2a"
+    ];
+  linker_flags: [ "-fsanitize=address", "-fsanitize=leak" ];
+}
