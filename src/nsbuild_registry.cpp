@@ -1,9 +1,9 @@
 #include "nscmdcommon.h"
 
 // -------------------------------------------------------------------------------------------------------------
-ns_cmd_handler(install_dir, build, state, cmd)
+ns_cmd_handler(sdk_dir, build, state, cmd)
 {
-  build.install_dir = get_idx_param(cmd, 0);
+  build.sdk_dir = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -19,9 +19,9 @@ ns_cmd_handler(frameworks_dir, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(output_dir, build, state, cmd)
+ns_cmd_handler(runtime_dir, build, state, cmd)
 {
-  build.output_dir = get_idx_param(cmd, 0);
+  build.runtime_dir = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -48,29 +48,32 @@ ns_cmd_handler(linker_flags, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(framework, build, state, cmd)
-{
-  build.frameworks.emplace_back();
-  build.frameworks.back().name = build.pwd.parent_path().filename().string();
-  return neo::retcode::e_success;
-}
-
 ns_cmd_handler(excludes, build, state, cmd)
 {
   build.frameworks.back().excludes = get_first_set(cmd);
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(module, build, state, cmd)
+ns_cmd_handler(type, build, state, cmd)
 {
-  auto& m = build.frameworks.back().modules;
-  m.emplace_back();
-  build.s_nsmodule       = &m.back();
-  build.s_nsmodule->name = build.pwd.parent_path().filename().string();
+  auto& t       = build.s_nsmodule->type;
+  auto type = get_idx_param(cmd, 0);
+  if (type == "plugin")
+    t = modtype::plugin;
+  else if (type == "ref")
+    t = modtype::ref;
+  else if (type == "data")
+    t = modtype::data;
+  else if (type == "extern")
+    t = modtype::external;
+  else if (type == "exe")
+    t = modtype::exe;
+  else if (type == "lib")
+    t = modtype::lib;
+  if (build.stop_after_modtype)
+    return neo::retcode::e_success_stop;
   return neo::retcode::e_success;
 }
-
-ns_cmdend_handler(module, build, state, name) { build.s_nsmodule = nullptr; }
 
 ns_cmd_handler(var, build, state, cmd)
 {
@@ -210,14 +213,14 @@ ns_cmd_handler(install, build, state, cmd)
 ns_cmd_handler(interface, build, state, cmd)
 {
   if (build.s_nsmodule)
-    build.s_nsinterface = cmd_insert_with_filter(build.s_nsmodule->intf, cmd);
+    build.s_nsinterface = cmd_insert_with_filter(build.s_nsmodule->intf[nsmodule::pub_intf], cmd);
   return neo::retcode::e_success;
 }
 
 ns_cmd_handler(private, build, state, cmd)
 {
   if (build.s_nsmodule)
-    build.s_nsinterface = cmd_insert_with_filter(build.s_nsmodule->priv, cmd);
+    build.s_nsinterface = cmd_insert_with_filter(build.s_nsmodule->intf[nsmodule::priv_intf], cmd);
   return neo::retcode::e_success;
 }
 
@@ -258,21 +261,28 @@ ns_cmd_handler(definitions, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmdend_handler(fetch, build, state, name) { build.s_nsfetch = nullptr; }
+ns_cmdend_handler(fetch, build, state, name)
+{
+  build.s_nsfetch = nullptr;
+  return neo::retcode::e_success;
+}
 
 ns_cmdend_handler(clear_buildstep, build, state, cmd)
 {
   build.s_nsbuildstep = nullptr;
+  return neo::retcode::e_success;
 }
 
 ns_cmdend_handler(clear_buildcmds, build, state, cmd)
 {
   build.s_nsbuildcmds = nullptr;
+  return neo::retcode::e_success;
 }
 
 ns_cmdend_handler(clear_interface, build, state, cmd)
 {
   build.s_nsinterface = nullptr;
+  return neo::retcode::e_success;
 }
 
 ns_registry(nsbuild)
@@ -282,66 +292,64 @@ ns_registry(nsbuild)
   neo::command_id intf;
   neo::command_id var;
 
-  ns_cmd(install_dir);
+  ns_cmd(sdk_dir);
   ns_cmd(build_dir);
   ns_cmd(frameworks_dir);
-  ns_cmd(output_dir);
+  ns_cmd(runtime_dir);
   ns_scope_def(compiler)
   {
     ns_cmd(compiler_flags);
     ns_cmd(linker_flags);
   }
-  ns_scope_def(framework) { ns_cmd(excludes); }
-  ns_scope_auto(module)
+  ns_cmd(excludes);
+  ns_scope_def(var)
   {
-    ns_scope_def(var)
-    {
-      ns_save_scope(var);
-      ns_star(var);
-    }
-
-    ns_scope_cust(prebuild, clear_buildstep)
-    {
-      ns_save_scope(prebuild);
-      ns_cmd(artifacts);
-      ns_cmd(dependencies);
-
-      ns_scope_cust(build, clear_buildcmds)
-      {
-        ns_save_scope(build);
-        ns_cmd(print);
-        ns_cmd(trace);
-        ns_cmd(cmake);
-        ns_cmd(copy);
-        ns_cmd(copy_dir);
-        ns_star(any);
-      }
-    }
-
-    ns_subalias_cust(postbuild, clear_buildstep, prebuild);
-
-    ns_scope_auto(fetch)
-    {
-      ns_cmd(license);
-      ns_cmd(commit);
-      ns_cmd(args);
-      ns_subalias_cust(config, clear_buildstep, build);
-      ns_subalias_cust(build, clear_buildstep, build);
-      ns_subalias_cust(install, clear_buildstep, build);
-    }
-
-    ns_scope_cust(interface, clear_interface)
-    {
-      ns_save_scope(intf);
-      ns_cmd(dependencies);
-      ns_cmd(binaries);
-      ns_cmd(includes);
-      ns_cmd(libraries);
-      ns_cmd(definitions);
-    }
-
-    ns_subalias_cust(private, clear_interface, intf);
-    ns_subalias_def(exports, var);
-    ns_subalias_cust(install, clear_buildcmds, build);
+    ns_save_scope(var);
+    ns_star(var);
   }
+
+  ns_scope_cust(prebuild, clear_buildstep)
+  {
+    ns_save_scope(prebuild);
+    ns_cmd(artifacts);
+    ns_cmd(dependencies);
+
+    ns_scope_cust(build, clear_buildcmds)
+    {
+      ns_save_scope(build);
+      ns_cmd(print);
+      ns_cmd(trace);
+      ns_cmd(cmake);
+      ns_cmd(copy);
+      ns_cmd(copy_dir);
+      ns_star(any);
+    }
+  }
+
+  ns_subalias_cust(postbuild, clear_buildstep, prebuild);
+
+  ns_scope_auto(fetch)
+  {
+    ns_cmd(license);
+    ns_cmd(commit);
+    ns_cmd(args);
+    ns_subalias_cust(config, clear_buildstep, build);
+    ns_subalias_cust(build, clear_buildstep, build);
+    ns_subalias_cust(install, clear_buildstep, build);
+  }
+
+  ns_scope_cust(interface, clear_interface)
+  {
+    ns_save_scope(intf);
+    ns_cmd(dependencies);
+    ns_cmd(binaries);
+    ns_cmd(includes);
+    ns_cmd(libraries);
+    ns_cmd(definitions);
+  }
+
+  ns_subalias_cust(private, clear_interface, intf);
+  ns_subalias_def(exports, var);
+  ns_subalias_cust(install, clear_buildcmds, build);
+  
 }

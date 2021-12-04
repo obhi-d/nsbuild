@@ -1,9 +1,29 @@
+// Note on variables
+// $name will be substituted by substitution text
+// $$name will however print $name as output
+
+// Variables:
+// Global
+// config_scan_dir Scan Directory
+// config_build_dir
+// config_sdk_dir
+// config_frameworks_dir
+// config_runtime_dir
+// config_download_dir
+
+// Under Module
+// framework_dir
+// framework_name
+// module_dir
+// module_name
+
 config_filter (about = "list of [debug, release, windows, linux, osx, clang, msvc, gcc, asan]");
 
-install_dir    = (about = "Package install directory");
+sdk_dir        = (about = "Package install directory");
 build_dir      = (about = "Build directory");
 frameworks_dir = (about = "Frameworks directory");
-output_dir     = (about = "Output directory for debugging/testing");
+runtime_dir    = (about = "Output directory for debugging/testing");
+download_dir   = (about = "Directory to download sources");
 compiler (about = "Compiler flags",
           params = ["list of @config_filter, more configs will be added as seen fit"])
 {
@@ -17,10 +37,12 @@ framework(about = "Framework level declaration, can exclude modules",
   excludes (about = "List of modules to exclude from build in this framework");
 }
 
-module (about = "Defines a module, the top level description of a module starts with module",
-        variables = ["$module.dir : Absolute path to the Module folder in source/Frameworks/Framework directory", "$module.name : Current module name"])
+// module (about = "Defines a module, the top level description of a module starts with module",
+        //variables = ["$module.dir : Absolute path to the Module folder in source/Frameworks/Framework directory", "$module.name : Current module name"])
 
-{
+
+//{
+  type (about = "Module types", params = "Any of plugin|lib|ref|exe|extern|data");
   var (about = "Declares configuration variables that are only defined if configuration definition is satisfied",
        params = ["list of @config_filter, more configs will be added as seen fit"])
   {
@@ -44,7 +66,7 @@ module (about = "Defines a module, the top level description of a module starts 
          ])
   {
     license (about = "License file of the external module, this will be added to the generated external license file", params = ["License file"]);
-    commit (about = "The commit tag to checkout", params = ["Commit tag"]);
+    commit (about = "The commit hash to checkout", params = ["Commit sha256"]);
     args (about = "CMake args to pass to cmake build, should be a string list", 
           params = ["Filter with list of filter params, see @config_filter"]);
     config (about = "Config commands to execute to configure the external project",
@@ -92,4 +114,4 @@ module (about = "Defines a module, the top level description of a module starts 
   }
   install (about = "Custom install script only meant for external modules, see @fetch.install");
 
-}
+//}

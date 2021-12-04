@@ -88,7 +88,7 @@ class Enum:
         self.skip_last_element = False
         self.auto_default = True
         self.suffix_match = False;
-        self.prefix_match = False;
+        self.prefix_match = False
         if options:
             for opt in options:
                 if opt == "no-strings" or opt == "nostrings":

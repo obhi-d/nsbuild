@@ -32,6 +32,15 @@ struct nsvars
 {
   nsfilters filters;
   std::vector<nsnamed_params> params;
+
+  void print(std::ostream& os, output_fmt = output_fmt::cmake_def) const;
 };
 
 nspath_type get_nspath_type(std::string_view);
+
+
+namespace cmake
+{
+std::string get_filter(nsfilters);
+std::string value(nsparams const&);
+}

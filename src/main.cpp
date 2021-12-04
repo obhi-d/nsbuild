@@ -15,16 +15,13 @@ enum class runas
 int main(int argc, char const* argv[])
 {
   std::string working_dir = ".";
+  std::string target = ".";
   runas       ras                 = runas::generate;
   for (int i = 1; i < argc; ++i)
   {
     std::string_view arg = argv[i];
 
-    if (arg == "--report-changes" || arg == "-r")
-    {
-      ras = runas::report_changes;
-    }
-    else if (arg == "--source" || arg == "-s")
+    if (arg == "--source" || arg == "-s")
     {
       if (i + 1 < argc)
         working_dir = argv[i + 1];
@@ -33,6 +30,8 @@ int main(int argc, char const* argv[])
     else if (arg == "--gen-enum" || arg == "-e")
     {
       ras = runas::generate_enum;
+      if (i + 1 < argc)
+        target = argv[i + 1];
     }
   }
   
@@ -46,17 +45,16 @@ int main(int argc, char const* argv[])
     switch (ras)
     {
     case runas::generate_enum:
-
-    case runas::report_changes:
-      return build.do_timestamp_checks();
+      build.generate_enum(target);
+      break;
     case runas::generate:
-      build.generate();
+      build.generate_cl();
+      break;
     }
   }
   catch (std::exception ex)
   {
     std::cerr << ex.what() << std::endl;
-    build.generate();
     return -1;
   }
 

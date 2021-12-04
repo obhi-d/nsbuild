@@ -6,6 +6,17 @@
 #include <unordered_set>
 #include <filesystem>
 #include <bitset>
+#include <cstdint>
+#include <fmt/format.h>
+#include <fmt/printf.h>
+#include <fmt/color.h>
+
+enum class output_fmt
+{
+  cmake_def,
+  pipe_list_sep,
+  set_cache,
+};
 
 enum class nsfilter
 {
@@ -88,3 +99,57 @@ inline std::unordered_set<std::string_view> get_first_set(neo::command const& cm
   }
   return ret;
 }
+
+namespace cmake
+{
+void print(std::ostream& ostr, std::string_view content);
+}
+
+template <typename Lambda>
+void foreach_variable(std::ostream& ostr, std::string_view content, Lambda&& l)
+{
+  std::size_t r   = 0;
+  std::size_t off = 0;
+  while (r < content.length())
+  {
+    auto pos = content.find_first_of('$', off);
+    if (pos != content.npos)
+    {
+      if (pos == content.length() - 1 || content[pos + 1] == '$')
+      {
+        off = pos + 1;
+        continue;
+      }
+      else
+      {
+        ostr << content.substr(r, pos - r);
+        pos++;
+        if (content[pos] == '(')
+          pos++;
+
+        auto len = content.find_first_of(" \n\t)", pos);
+        if (len == content.npos)
+        {
+          r   = content.npos;
+          off = r;
+          l(ostr, content.substr(pos));
+        }
+        else
+        {
+          l(ostr, content.substr(pos, len - pos));
+          if (content[len] == ')')
+            len++;
+          r   = len;
+          off = r;
+        }
+      }
+    }
+    else
+    {
+      ostr << content.substr(r);
+    }
+  }
+}
+
+// framework name/module name
+using modid = std::tuple<std::string_view, std::string_view>;

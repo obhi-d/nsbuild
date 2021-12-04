@@ -1,7 +1,8 @@
 
-build_dir      = "../build";
-install_dir    = "../install";
-output_dir     = "../output";
+build_dir      = "../out/bld";
+sdk_dir        = "../out/sdk";
+runtime_dir    = "../out/rt";
+download_dir   = "../out/dl";
 frameworks_dir = "Frameworks";
 
 compiler [msvc, release]
