@@ -44,11 +44,10 @@ target_compile_features(nsbuild PUBLIC cxx_std_20)
 
 
 target_compile_options(nsbuild PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>")
+target_compile_options(nsbuild PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>")
 
-target_link_libraries(nsbuild PRIVATE ${CMAKE_SOURCE_DIR}/out/external/install/lib/$<$<PLATFORM_ID:Linux>:lib>fmt$<$<CONFIG:DEBUG>:d>$<$<PLATFORM_ID:Linux>:a>$<$<PLATFORM_ID:Windows>:.lib>)
+#target_link_libraries(nsbuild PRIVATE ${CMAKE_SOURCE_DIR}/out/external/install/lib/$<$<PLATFORM_ID:Linux>:lib>fmt$<$<CONFIG:DEBUG>:d>$<$<PLATFORM_ID:Linux>:a>$<$<PLATFORM_ID:Windows>:.lib>)
 target_link_libraries(nsbuild PRIVATE ${Python3_LIBRARIES})
 add_dependencies(nsbuild neoscript-install)
 add_dependencies(nsbuild fmt-install)
 target_compile_features(nsbuild PRIVATE cxx_std_20)
-add_compile_options(nsbuild PRIVATE "/Zc:preprocessor")
-

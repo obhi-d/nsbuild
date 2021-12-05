@@ -3,9 +3,9 @@
 #include <nsbuildcmds.h>
 #include <nscommon.h>
 #include <nsfetch.h>
+#include <nsglob.h>
 #include <nsinterface.h>
 #include <nsmacros.h>
-#include <nsglob.h>
 
 struct nstarget;
 struct nsbuild;
@@ -21,6 +21,9 @@ enum class modtype
 };
 
 std::string_view to_string(modtype);
+bool             has_data(modtype);
+bool             has_sources(modtype);
+
 struct nsmodule
 {
   enum
@@ -37,6 +40,8 @@ struct nsmodule
   nsbuildcmdlist      install;
   nsglob              glob_sources;
   nsglob              glob_media;
+
+  std::vector<std::string_view> references;
 
   std::array<nsinterface_list, 2> intf;
 
@@ -65,9 +70,16 @@ struct nsmodule
       }
     }
   }
+  template <typename Lambda>
+  void foreach_references(Lambda&& l) const
+  {
+    for (auto const& sv : references)
+    {
+      l(sv);
+    }
+  }
 
   void update_macros(nsbuild const& bc, nstarget& targ);
-  
 
   /// @brief Called in a thread to generate CMakeLists.txt
   /// @param bc Config

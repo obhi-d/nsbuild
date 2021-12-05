@@ -5,7 +5,6 @@ struct nsinterface
 {
   nsfilters                     filters;
   std::vector<std::string_view> dependencies;
-  std::vector<std::string_view> references;
   nspath_list                   libraries;
   nspath_list                   binaries;
   nspath_list                   includes;

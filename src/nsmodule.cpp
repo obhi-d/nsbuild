@@ -1,8 +1,37 @@
 #include <exception>
+#include <fstream>
 #include <nsbuild.h>
 #include <nsmodule.h>
 #include <nstarget.h>
-#include <fstream>
+
+bool has_data(modtype t)
+{
+  switch (t)
+  {
+  case modtype::data:
+  case modtype::exe:
+  case modtype::external:
+  case modtype::lib:
+  case modtype::plugin:
+  case modtype::ref:
+    return true;
+  default:
+    return false;
+  }
+}
+
+bool has_sources(modtype t)
+{
+  switch (t)
+  {
+  case modtype::exe:
+  case modtype::lib:
+  case modtype::plugin:
+    return true;
+  default:
+    return false;
+  }
+}
 
 void nsmodule::update_macros(nsbuild const& bc, nstarget& targ)
 {
@@ -16,11 +45,11 @@ void nsmodule::update_macros(nsbuild const& bc, nstarget& targ)
   macros["module_name"]    = fw.name;
   for (auto& v : vars)
   {
-    if(!v.filters.any())
+    if (!v.filters.any())
     {
       for (auto& p : v.params)
       {
-        std::string        name    = "var_";
+        std::string name = "var_";
         name += p.name;
         macros[name] = cmake::value(p.params);
       }
@@ -33,11 +62,14 @@ void nsmodule::update_macros(nsbuild const& bc, nstarget& targ)
 void nsmodule::process(nsbuild const& bc, std::string const& targ_name,
                        nstarget& targ)
 {
+  if (type == modtype::exe || type ==)
+    glob_sources = nsglob{};
+
   update_macros(bc, targ);
   auto pwd = std::filesystem::current_path();
   auto cml = pwd / bc.scan_path / bc.build_dir / targ_name;
 
-  auto cmlf = cml / "CMakeLists.txt";
+  auto          cmlf = cml / "CMakeLists.txt";
   std::ofstream ofs{cmlf};
   if (ofs)
   {

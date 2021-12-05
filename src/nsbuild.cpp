@@ -3,14 +3,14 @@
 #include "picosha2.h"
 
 #include <exception>
-#include <fstream>
-#include <iomanip>
-#include <iterator>
-#include <stdexcept>
-#include <future>
-#include <mutex>
 #include <fmt/format.h>
 #include <fmt/printf.h>
+#include <fstream>
+#include <future>
+#include <iomanip>
+#include <iterator>
+#include <mutex>
+#include <stdexcept>
 
 void nsbuild::scan_main(std::string_view sp)
 {
@@ -60,12 +60,12 @@ int nsbuild::generate_cl()
       {
         if (scan_file())
         {
-          auto fwname   = pwd.parent_path().filename().string();
+          auto fwname = pwd.parent_path().filename().string();
           add_framework(fwname);
           for_each_module(
               [this, &fwname]()
               {
-                auto mod_name = pwd.parent_path().filename().string();
+                auto mod_name  = pwd.parent_path().filename().string();
                 auto targ_name = fwname + "/" + mod_name;
                 add_module(mod_name);
                 if (!frameworks.back().excludes.contains(targ_name))
@@ -75,7 +75,7 @@ int nsbuild::generate_cl()
                   {
                     throw std::runtime_error(targ_name + " did not open");
                   }
-                  
+
                   {
 
                     std::string f1_str((std::istreambuf_iterator<char>(iff)),
@@ -86,7 +86,7 @@ int nsbuild::generate_cl()
 
                   std::string hash_hex_str;
                   picosha2::hash256_hex_string(contents.back(), hash_hex_str);
-                  
+
                   // Check if timestamp has changed
                   auto meta = timestamps.find(targ_name);
                   if (meta == timestamps.end() || meta->second != hash_hex_str)
@@ -190,7 +190,6 @@ void nsbuild::for_each_module(L&& l)
   pwd = pwds;
 }
 
-
 void nsbuild::process_targets()
 {
   for (auto& targ : targets)
@@ -201,21 +200,29 @@ void nsbuild::process_targets()
     f.wait();
 }
 
-void nsbuild::process_target(std::string const& name, nstarget& targ) 
-{ 
+void nsbuild::process_target(std::string const& name, nstarget& targ)
+{
   if (targ.processed)
     return;
   auto& mod = frameworks[targ.fw_idx].modules[targ.mod_idx];
-  mod.foreach_dependency([this](auto dep)
+  mod.foreach_references(
+      [this](auto dep)
       {
         std::string name{dep};
         process_target(name, targets[name]);
       });
-    
+  mod.foreach_dependency(
+      [this](auto dep)
+      {
+        std::string name{dep};
+        process_target(name, targets[name]);
+      });
+
   sorted_targets.push_back(name);
   if (mod.regenerate)
-    process.emplace_back(std::move(std::async(std::launch::async, &nsmodule::process, &mod,
-                      std::cref(*this), std::cref(name), std::ref(targ))));
+    process.emplace_back(std::move(
+        std::async(std::launch::async, &nsmodule::process, &mod,
+                   std::cref(*this), std::cref(name), std::ref(targ))));
 }
 
 void nsbuild::generate_enum(std::string target)
@@ -238,38 +245,39 @@ void nsbuild::generate_enum(std::string target)
 
   auto gen_path = spwd / build_dir / target / "Generated";
   if (!std::filesystem::create_directories(gen_path))
-    throw std::runtime_error(fmt::format("Failed to create directory: {}", gen_path.generic_string()));  
+    throw std::runtime_error(fmt::format("Failed to create directory: {}",
+                                         gen_path.generic_string()));
   python.enumspy(mod, to_string(s_nsmodule->type), path.generic_string(),
                  gen_path.generic_string());
 }
 
-modid nsbuild::get_modid(std::string_view path) 
-{ 
+modid nsbuild::get_modid(std::string_view path)
+{
   auto it = path.find(frameworks_dir);
   if (it == path.npos)
     throw std::runtime_error("Not a framework path");
-  
+
   auto start = it + frameworks_dir.length() + 1;
-  auto fw = path.find_first_of("/\\", start);
+  auto fw    = path.find_first_of("/\\", start);
   if (fw == path.npos)
     throw std::runtime_error("Not a framework path");
   auto fwname = path.substr(start, fw - start);
-  auto last = path.find_first_of("/\\", fw + 1);
+  auto last   = path.find_first_of("/\\", fw + 1);
   auto modname =
       path.substr(fw + 1, (last == path.npos) ? last : last - fw - 1);
   return modid{fwname, modname};
 }
 
-void nsbuild::update_macros() 
-{ 
+void nsbuild::update_macros()
+{
   pwd       = std::filesystem::current_path();
   auto spwd = pwd / scan_path;
 
-  macros["config_scan_dir"]      = spwd.generic_string();
-  macros["config_build_dir"] = (spwd / build_dir).generic_string();
-  macros["config_sdk_dir"] = (spwd / sdk_dir).generic_string();
+  macros["config_scan_dir"]       = spwd.generic_string();
+  macros["config_build_dir"]      = (spwd / build_dir).generic_string();
+  macros["config_sdk_dir"]        = (spwd / sdk_dir).generic_string();
   macros["config_frameworks_dir"] = (spwd / frameworks_dir).generic_string();
   macros["config_runtime_dir"]    = (spwd / runtime_dir).generic_string();
   macros["config_download_dir"]   = (spwd / download_dir).generic_string();
-  macros["config_build_type"]     = "$<IF:$<CONFIG:Debug>,Debug,RelWithDebInfo>";
+  macros["config_build_type"] = "$<IF:$<CONFIG:Debug>,Debug,RelWithDebInfo>";
 }

@@ -56,8 +56,8 @@ ns_cmd_handler(excludes, build, state, cmd)
 
 ns_cmd_handler(type, build, state, cmd)
 {
-  auto& t       = build.s_nsmodule->type;
-  auto type = get_idx_param(cmd, 0);
+  auto& t    = build.s_nsmodule->type;
+  auto  type = get_idx_param(cmd, 0);
   if (type == "plugin")
     t = modtype::plugin;
   else if (type == "ref")
@@ -213,14 +213,16 @@ ns_cmd_handler(install, build, state, cmd)
 ns_cmd_handler(interface, build, state, cmd)
 {
   if (build.s_nsmodule)
-    build.s_nsinterface = cmd_insert_with_filter(build.s_nsmodule->intf[nsmodule::pub_intf], cmd);
+    build.s_nsinterface =
+        cmd_insert_with_filter(build.s_nsmodule->intf[nsmodule::pub_intf], cmd);
   return neo::retcode::e_success;
 }
 
 ns_cmd_handler(private, build, state, cmd)
 {
   if (build.s_nsmodule)
-    build.s_nsinterface = cmd_insert_with_filter(build.s_nsmodule->intf[nsmodule::priv_intf], cmd);
+    build.s_nsinterface = cmd_insert_with_filter(
+        build.s_nsmodule->intf[nsmodule::priv_intf], cmd);
   return neo::retcode::e_success;
 }
 
@@ -231,6 +233,14 @@ ns_cmd_handler(dependencies, build, state, cmd)
     build.s_nsbuildstep->dependencies = std::move(l);
   else if (build.s_nsinterface)
     build.s_nsinterface->dependencies = std::move(l);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(references, build, state, cmd)
+{
+  auto l = get_first_list(cmd);
+  if (build.s_nsmodule)
+    build.s_nsmodule->references = std::move(l);
   return neo::retcode::e_success;
 }
 
@@ -308,6 +318,8 @@ ns_registry(nsbuild)
     ns_star(var);
   }
 
+  ns_cmd(references);
+
   ns_scope_cust(prebuild, clear_buildstep)
   {
     ns_save_scope(prebuild);
@@ -351,5 +363,4 @@ ns_registry(nsbuild)
   ns_subalias_cust(private, clear_interface, intf);
   ns_subalias_def(exports, var);
   ns_subalias_cust(install, clear_buildcmds, build);
-  
 }
