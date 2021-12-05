@@ -18,7 +18,6 @@ struct nsbuild : public neo::command_handler
   std::string_view download_dir   = "../out/dl";
   std::string_view scan_path      = ".";
   std::string_view frameworks_dir = "Frameworks";
-  std::string_view targ_os;
 
   nsconfig config;
 
@@ -71,7 +70,8 @@ struct nsbuild : public neo::command_handler
   void  process_targets();
   void  process_target(std::string const&, nstarget&);
   void  process_main();
-  
+
+
   /// @brief Generates enum files
   /// @param target Should be FwName/ModName or full path to module directory
   void  generate_enum(std::string target);
