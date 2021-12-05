@@ -24,7 +24,7 @@ enum class nsfilter
   release,
   windows,
   linux,
-  osx,
+  macOS,
   clang,
   msvc,
   gcc,
@@ -153,3 +153,7 @@ void foreach_variable(std::ostream& ostr, std::string_view content, Lambda&& l)
 
 // framework name/module name
 using modid = std::tuple<std::string_view, std::string_view>;
+
+static inline constexpr char k_gen_folder[] = "gen";
+
+

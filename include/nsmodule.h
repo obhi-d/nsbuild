@@ -50,6 +50,14 @@ struct nsmodule
   std::string name;
   modtype     type = modtype::none;
 
+  // deferred properties
+  std::string_view framework_name;
+  std::string_view framework_path;
+  std::string_view target_name;
+  std::string      source_path;
+  std::string      build_path;
+  std::string      gen_path;
+
   bool regenerate = false;
 
   nsmodule()                    = default;
@@ -79,6 +87,8 @@ struct nsmodule
     }
   }
 
+  void update_properties(nsbuild const& bc, std::string const& name,
+                         nstarget& targ);
   void update_macros(nsbuild const& bc, nstarget& targ);
 
   /// @brief Called in a thread to generate CMakeLists.txt
