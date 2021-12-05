@@ -12,4 +12,5 @@ struct nsconfig
   }
 
   std::vector<std::string> accepted;
+  std::string              target_platform;
 };

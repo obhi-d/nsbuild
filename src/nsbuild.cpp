@@ -204,7 +204,15 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
 {
   if (targ.processed)
     return;
-  auto& mod = frameworks[targ.fw_idx].modules[targ.mod_idx];
+  targ.processed = true;
+
+  auto& fw  = frameworks[targ.fw_idx];
+  if (!fw.processed)
+  {
+    fw.processed = true;
+    fw.process(*this);
+  }
+  auto& mod = fw.modules[targ.mod_idx];
   mod.foreach_references(
       [this](auto dep)
       {
@@ -243,7 +251,7 @@ void nsbuild::generate_enum(std::string target)
   sm.parse(pwd.filename().string(), contents.back());
   handle_error(sm);
 
-  auto gen_path = spwd / build_dir / target / "Generated";
+  auto gen_path = spwd / build_dir / target / k_gen_folder;
   if (!std::filesystem::create_directories(gen_path))
     throw std::runtime_error(fmt::format("Failed to create directory: {}",
                                          gen_path.generic_string()));
@@ -279,5 +287,6 @@ void nsbuild::update_macros()
   macros["config_frameworks_dir"] = (spwd / frameworks_dir).generic_string();
   macros["config_runtime_dir"]    = (spwd / runtime_dir).generic_string();
   macros["config_download_dir"]   = (spwd / download_dir).generic_string();
-  macros["config_build_type"] = "$<IF:$<CONFIG:Debug>,Debug,RelWithDebInfo>";
+  macros["config_build_type"]     = "$<IF:$<CONFIG:Debug>,Debug,RelWithDebInfo>";
+  macros["config_platform"]       = config.target_platform;
 }

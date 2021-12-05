@@ -41,6 +41,7 @@ nspath_type get_nspath_type(std::string_view);
 
 namespace cmake
 {
-std::string get_filter(nsfilters);
-std::string value(nsparams const&);
+std::string      get_filter(nsfilters);
+std::string_view get_filter(nsfilter);
+std::string      value(nsparams const&);
 }

@@ -211,7 +211,7 @@ def host():
     elif sys.platform.startswith('linux'):
         return 'linux'
     elif sys.platform.startswith('darwin'):
-        return 'osx'
+        return 'macOS'
     return 'unknown'
 
 
