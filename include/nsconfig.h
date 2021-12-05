@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <nscommon.h>
 
@@ -7,10 +7,12 @@ struct nsconfig
   bool is_accepted(std::string_view v)
   {
     for (auto const& e : accepted)
-      if(e == v) return true;
+      if (e == v)
+        return true;
     return false;
   }
 
   std::vector<std::string> accepted;
   std::string              target_platform;
+  bool                     static_libs = false;
 };

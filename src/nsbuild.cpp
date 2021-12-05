@@ -66,7 +66,7 @@ int nsbuild::generate_cl()
               [this, &fwname]()
               {
                 auto mod_name  = pwd.parent_path().filename().string();
-                auto targ_name = fwname + "/" + mod_name;
+                auto targ_name = target_name(fwname, mod_name);
                 add_module(mod_name);
                 if (!frameworks.back().excludes.contains(targ_name))
                 {
@@ -198,6 +198,20 @@ void nsbuild::process_targets()
   }
   for (auto& f : process)
     f.wait();
+  process.clear();
+
+  foreach_module(
+      [this](nsmodule const& m)
+      {
+        if (m.regenerate)
+        {
+          process.emplace_back(std::move(std::async(
+              std::launch::async, &nsmodule::write, &m, std::cref(*this))))
+        }
+      });
+
+  for (auto& f : process)
+    f.wait();
 }
 
 void nsbuild::process_target(std::string const& name, nstarget& targ)
@@ -206,7 +220,7 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
     return;
   targ.processed = true;
 
-  auto& fw  = frameworks[targ.fw_idx];
+  auto& fw = frameworks[targ.fw_idx];
   if (!fw.processed)
   {
     fw.processed = true;
@@ -287,6 +301,6 @@ void nsbuild::update_macros()
   macros["config_frameworks_dir"] = (spwd / frameworks_dir).generic_string();
   macros["config_runtime_dir"]    = (spwd / runtime_dir).generic_string();
   macros["config_download_dir"]   = (spwd / download_dir).generic_string();
-  macros["config_build_type"]     = "$<IF:$<CONFIG:Debug>,Debug,RelWithDebInfo>";
-  macros["config_platform"]       = config.target_platform;
+  macros["config_build_type"] = "$<IF:$<CONFIG:Debug>,Debug,RelWithDebInfo>";
+  macros["config_platform"]   = config.target_platform;
 }

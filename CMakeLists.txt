@@ -33,7 +33,7 @@ find_package(Python3 REQUIRED)
 ## Basic tests
 add_executable(nsbuild
   "src/main.cpp"
- "src/nshelp.cpp" "src/nsbuild.cpp" "src/nscommon.cpp" "src/nsmodule.cpp" "src/nsbuild_registry.cpp" "include/nspython.h" "src/nspython.cpp" "include/nsmacros.h" "src/nsmacros.cpp" "src/nsparams.cpp" "src/nsglob.cpp" "src/nsframework.cpp")
+ "src/nshelp.cpp" "src/nsbuild.cpp" "src/nscommon.cpp" "src/nsmodule.cpp" "src/nsbuild_registry.cpp" "include/nspython.h" "src/nspython.cpp" "include/nsmacros.h" "src/nsmacros.cpp" "src/nsparams.cpp" "src/nsglob.cpp" "src/nsframework.cpp" "include/nscmake.h")
 
 target_include_directories(nsbuild PRIVATE 
 	"${CMAKE_SOURCE_DIR}/include"

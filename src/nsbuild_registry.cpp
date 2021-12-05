@@ -118,6 +118,12 @@ ns_cmd_handler(artifacts, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(check_deps, build, state, cmd)
+{
+  build.s_nsbuildstep->check_deps = get_idx_param(cmd, 0, "false") == "true";
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(print, build, state, cmd)
 {
   cmd_print(*build.s_nsbuildcmds, cmd);

@@ -61,18 +61,18 @@ nspath_type get_nspath_type(std::string_view name)
 namespace cmake
 {
 
-void append(std::string& o, std::string_view v)
+void append(std::string& o, std::string_view v, char sep)
 {
   if (o.empty())
     o = v;
   else
   {
-    o += ";";
+    o += sep;
     o += v;
   }
 }
 
-std::string value(nsparams const& params)
+std::string value(nsparams const& params, char sep)
 {
   std::string                           result;
   auto const&                           vv = params.value();
@@ -86,7 +86,7 @@ std::string value(nsparams const& params)
     {
       if (p.index() == neo::command::k_param_single)
       {
-        append(result, neo::command::as_string(p));
+        append(result, neo::command::as_string(p), sep);
       }
       else if (p.index() == neo::command::k_param_list)
       {

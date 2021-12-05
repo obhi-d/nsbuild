@@ -54,10 +54,11 @@ framework(about = "Framework level declaration, can exclude modules",
   {
     artifacts (about = "List of files produced as artifacts to this build. If element names dont start with $ (followed by a var name) it is assumed the paths are relative to gen directory");
     dependencies (about = "List of files that this step depends on. If element names dont start with $ (followed by a var name) it is assumed the paths are relative to gen directory");
+    check_deps (about = "Boolean. Skip if dependencies are not present");
     steps (about = "Commands to build the artifacts. see @fetch.build");
   }
 
-  postbuild (about = "Postbuild steps for this module, see @prebuild");
+  postbuild (about = "Postbuild steps for this module, see @prebuild. Postbuild does not support dependencies.");
   
   fetch (about = "Starts a fetch operation. This will fetch code from repository and add checkout modules and sumboudles given a commit, from build instructions it will add build targets to the module"
          variables = [

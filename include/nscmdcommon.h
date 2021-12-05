@@ -71,51 +71,35 @@ nspath cmd_parse_nspath(nspath_type default_type, neo::command const& cmd)
   return p;
 }
 
-void cmd_append(nsbuildcmds& list, nsparams& params, neo::command const& cmd)
-{
-  for (auto const& e : cmd.params().value())
-    params.append(neo::command::param_t{e});
-  list.params.emplace_back(std::move(params));
-}
-
 void cmd_print(nsbuildcmds& list, neo::command const& cmd)
 {
-  list.msgs.emplace_back(get_first_concat(cmd));
+  list.msgs.emplace_back(cmake::value(cmd.params(), ' '));
 }
 
 void cmd_trace(nsbuildcmds& list, neo::command const& cmd)
 {
-  list.msgs.emplace_back(get_first_concat(cmd));
+  list.msgs.emplace_back(cmake::value(cmd.params(), ' '));
 }
 
 void cmd_cmake(nsbuildcmds& list, neo::command const& cmd)
 {
-  nsparams params;
-  params.value() = cmd.params().value();
-  params.append_expanded(neo::single{"${CMAKE_COMMAND} -E echo"});
-  cmd_append(list, params, cmd);
+  list.params = "${CMAKE_COMMAND} -E echo ";
+  list.params += cmake::value(cmd.params(), ' ');
 }
 
 void cmd_copy(nsbuildcmds& list, neo::command const& cmd)
 {
-  nsparams params;
-  params.value() = cmd.params().value();
-  params.append_expanded(neo::single{"${CMAKE_COMMAND} -E copy"});
-  cmd_append(list, params, cmd);
+  list.params = "${CMAKE_COMMAND} -E copy ";
+  list.params += cmake::value(cmd.params(), ' ');
 }
 
 void cmd_copy_dir(nsbuildcmds& list, neo::command const& cmd)
 {
-  nsparams params;
-  params.value() = cmd.params().value();
-  params.append_expanded(neo::single{"${CMAKE_COMMAND} -E copy_directory"});
-  cmd_append(list, params, cmd);
+  list.params = "${CMAKE_COMMAND} -E copy_directory ";
+  list.params += cmake::value(cmd.params(), ' ');
 }
 
 void cmd_any(nsbuildcmds& list, neo::command const& cmd)
 {
-  nsparams params;
-  params.value() = cmd.params().value();
-  params.append_expanded(neo::single{cmd.name()});
-  cmd_append(list, params, cmd);
+  list.params = cmake::value(cmd.params(), ' ');
 }

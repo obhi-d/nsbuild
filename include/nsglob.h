@@ -4,8 +4,8 @@
 
 struct nsglob
 {
-  std::string_view name;
+  std::string_view              name;
   std::vector<std::string_view> sub_paths;
 
-  void print(std::ostream&);
+  void print(std::ostream&) const;
 };

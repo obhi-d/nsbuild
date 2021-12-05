@@ -24,6 +24,9 @@ std::string_view to_string(modtype);
 bool             has_data(modtype);
 bool             has_sources(modtype);
 
+/// @brief These targets are defined by every module
+/// target.prebuild : Optional. Executed before target build
+/// target : Actual build target, depends on target.prebuild, and its artifacts
 struct nsmodule
 {
   enum
@@ -40,8 +43,9 @@ struct nsmodule
   nsbuildcmdlist      install;
   nsglob              glob_sources;
   nsglob              glob_media;
+  std::uint32_t       framework;
 
-  std::vector<std::string_view> references;
+  std::vector<std::string> references;
 
   std::array<nsinterface_list, 2> intf;
 
@@ -53,7 +57,7 @@ struct nsmodule
   // deferred properties
   std::string_view framework_name;
   std::string_view framework_path;
-  std::string_view target_name;
+  std::string      target_name;
   std::string      source_path;
   std::string      build_path;
   std::string      gen_path;
@@ -87,14 +91,24 @@ struct nsmodule
     }
   }
 
-  void update_properties(nsbuild const& bc, std::string const& name,
+  void update_properties(nsbuild const& bc, std::string const& targ_name,
                          nstarget& targ);
-  void update_macros(nsbuild const& bc, nstarget& targ);
+  void update_macros(nsbuild const& bc, std::string const& targ_name,
+                     nstarget& targ);
 
   /// @brief Called in a thread to generate CMakeLists.txt
   /// @param bc Config
   /// @param name Name of this target
   /// @param targ Target object for reference
   void process(nsbuild const& bc, std::string const& name, nstarget& targ);
-  void write_variables(std::ofstream&, nsbuild const& bc);
+  void write(nsbuild const& bc) const;
+  void write_prebuild_steps(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_variables(std::ofstream&, nsbuild const& bc) const;
+  void write_target(std::ofstream&, nsbuild const& bc,
+                    std::string const& name) const;
+  void write_postbuild_steps(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_includes(std::ofstream&, nsbuild const& bc) const;
+  void write_include(std::ofstream& ofs, std::string_view path,
+                     std::string_view subpath, cmake::inheritance) const;
+  void write_refs_includes(std::ofstream& ofs, nsbuild const& bc) const;
 };

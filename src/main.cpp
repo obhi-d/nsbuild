@@ -1,22 +1,23 @@
 #define NEO_HEADER_ONLY_IMPL
+#include <iostream>
 #include <neo_script.hpp>
 #include <nsbuild.h>
-#include <iostream>
 
 ns_registry(nsbuild);
 
 enum class runas
 {
   generate,
-  report_changes,
-  generate_enum
+  generate_enum,
+  copy_media,
 };
 
 int main(int argc, char const* argv[])
 {
   std::string working_dir = ".";
-  std::string target = ".";
-  runas       ras                 = runas::generate;
+  std::string target_os   = ".";
+  std::string target      = "";
+  runas       ras         = runas::generate;
   for (int i = 1; i < argc; ++i)
   {
     std::string_view arg = argv[i];
@@ -27,14 +28,20 @@ int main(int argc, char const* argv[])
         working_dir = argv[i + 1];
       i++;
     }
-    else if (arg == "--gen-enum" || arg == "-e")
+    else if (arg == "--gen-enum")
     {
       ras = runas::generate_enum;
       if (i + 1 < argc)
         target = argv[i + 1];
     }
+    else if (arg == "--copy-media" || arg == "-e")
+    {
+      ras = runas::copy_media;
+      if (i + 1 < argc)
+        target = argv[i + 1];
+    }
   }
-  
+
   nsbuild build;
   neo_register(nsbuild, build.reg);
 
