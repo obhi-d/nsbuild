@@ -63,6 +63,8 @@ struct nsmodule
   std::string      gen_path;
 
   bool regenerate = false;
+  bool force_rebuild = false;
+  bool build_fetch              = false;
 
   nsmodule()                    = default;
   nsmodule(nsmodule&&) noexcept = default;
@@ -91,16 +93,21 @@ struct nsmodule
     }
   }
 
-  void update_properties(nsbuild const& bc, std::string const& targ_name,
-                         nstarget& targ);
-  void update_macros(nsbuild const& bc, std::string const& targ_name,
-                     nstarget& targ);
-
+  
   /// @brief Called in a thread to generate CMakeLists.txt
   /// @param bc Config
   /// @param name Name of this target
   /// @param targ Target object for reference
   void process(nsbuild const& bc, std::string const& name, nstarget& targ);
+  void update_properties(nsbuild const& bc, std::string const& targ_name,
+                         nstarget& targ);
+  void update_macros(nsbuild const& bc, std::string const& targ_name,
+                     nstarget& targ);
+  void update_fetch(nsbuild const& bc);
+  void fetch_content(nsbuild const& bc);
+
+  /// @brief Called to write the cmake file
+  /// @param bc config
   void write(nsbuild const& bc) const;
   void write_prebuild_steps(std::ofstream& ofs, nsbuild const& bc) const;
   void write_variables(std::ofstream&, nsbuild const& bc) const;
@@ -109,6 +116,10 @@ struct nsmodule
   void write_postbuild_steps(std::ofstream& ofs, nsbuild const& bc) const;
   void write_includes(std::ofstream&, nsbuild const& bc) const;
   void write_include(std::ofstream& ofs, std::string_view path,
-                     std::string_view subpath, cmake::inheritance) const;
-  void write_refs_includes(std::ofstream& ofs, nsbuild const& bc) const;
+                     std::string_view subpath, cmake::inheritance,
+                     cmake::exposition = cmake::exposition::build) const;
+  void write_refs_includes(std::ofstream& ofs, nsbuild const& bc,
+                           nsmodule const& target) const;
+  void write_fetch_content(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_fetch_content_cmake(std::ofstream& ofs, nsbuild const& bc) const;
 };

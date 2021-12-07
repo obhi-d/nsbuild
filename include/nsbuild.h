@@ -12,12 +12,12 @@
 
 struct nsbuild : public neo::command_handler
 {
-  std::string_view build_dir      = "../out/bld";
-  std::string_view sdk_dir        = "../out/sdk";
-  std::string_view runtime_dir    = "../out/rt";
-  std::string_view download_dir   = "../out/dl";
-  std::string_view scan_path      = ".";
-  std::string_view frameworks_dir = "Frameworks";
+  std::string build_dir      = "../out/bld";
+  std::string sdk_dir        = "../out/sdk";
+  std::string runtime_dir    = "../out/rt";
+  std::string download_dir   = "../out/dl";
+  std::string scan_path      = ".";
+  std::string frameworks_dir = "Frameworks";
 
   nsconfig config;
 

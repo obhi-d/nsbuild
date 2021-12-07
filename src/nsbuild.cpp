@@ -20,6 +20,10 @@ void nsbuild::scan_main(std::string_view sp)
   pwd       = spwd / "Build.ns";
   scan_file();
 
+  // make sure build_dir is pointing to build_dir/cmake_config
+  build_dir += "/";
+  build_dir += config.cmake_config;
+
   pwd = spwd; // move to Build.ns parent path
 }
 
@@ -206,7 +210,7 @@ void nsbuild::process_targets()
         if (m.regenerate)
         {
           process.emplace_back(std::move(std::async(
-              std::launch::async, &nsmodule::write, &m, std::cref(*this))))
+              std::launch::async, &nsmodule::write, &m, std::cref(*this))));
         }
       });
 
@@ -265,7 +269,7 @@ void nsbuild::generate_enum(std::string target)
   sm.parse(pwd.filename().string(), contents.back());
   handle_error(sm);
 
-  auto gen_path = spwd / build_dir / target / k_gen_folder;
+  auto gen_path = spwd / build_dir / target / k_gen_dir;
   if (!std::filesystem::create_directories(gen_path))
     throw std::runtime_error(fmt::format("Failed to create directory: {}",
                                          gen_path.generic_string()));

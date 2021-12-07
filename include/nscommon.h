@@ -12,6 +12,14 @@
 #include <unordered_map>
 #include <unordered_set>
 
+/// @brief Directory names
+static inline constexpr char k_gen_dir[]   = "gen";
+static inline constexpr char k_ts_dir[]    = "ts";
+static inline constexpr char k_build_dir[] = "bld";
+static inline constexpr char k_sdk_dir[]   = "sdk";
+static inline constexpr char k_src_dir[]   = "src";
+
+
 enum class output_fmt
 {
   cmake_def,
@@ -66,7 +74,7 @@ inline std::string get_first_concat(neo::command const& cmd,
   return def;
 }
 
-inline std::vector<std::string_view> get_first_list(neo::command const& cmd)
+inline std::vector<std::string> get_first_list(neo::command const& cmd)
 {
   auto const& params = cmd.params();
   auto        size   = params.value().size();
@@ -74,16 +82,16 @@ inline std::vector<std::string_view> get_first_list(neo::command const& cmd)
     return {};
   auto const& l = params.value();
   if (size == 1)
-    return {std::string_view{cmd.as_string(l[0], "")}};
-  std::vector<std::string_view> ret;
+    return {std::string{cmd.as_string(l[0], "")}};
+  std::vector<std::string> ret;
   for (std::size_t i = 0; i < size; ++i)
   {
-    ret.emplace_back(std::move(cmd.as_string(l[i], "")));
+    ret.emplace_back(cmd.as_string(l[i], ""));
   }
   return ret;
 }
 
-inline std::unordered_set<std::string_view> get_first_set(
+inline std::unordered_set<std::string> get_first_set(
     neo::command const& cmd)
 {
   auto const& params = cmd.params();
@@ -92,11 +100,11 @@ inline std::unordered_set<std::string_view> get_first_set(
     return {};
   auto const& l = params.value();
   if (size == 1)
-    return {std::string_view{cmd.as_string(l[0], "")}};
-  std::unordered_set<std::string_view> ret;
+    return {std::string{cmd.as_string(l[0], "")}};
+  std::unordered_set<std::string> ret;
   for (std::size_t i = 0; i < size; ++i)
   {
-    ret.emplace(std::move(cmd.as_string(l[i], "")));
+    ret.emplace(cmd.as_string(l[i], ""));
   }
   return ret;
 }
@@ -111,7 +119,15 @@ enum class inheritance
   intf
 };
 
-void print(std::ostream& ostr, std::string_view content);
+enum class exposition
+{
+  install,
+  build
+};
+
+std::string_view to_string(inheritance);
+std::string_view to_string(exposition);
+void             print(std::ostream& ostr, std::string_view content);
 } // namespace cmake
 
 template <typename Lambda>
@@ -163,8 +179,6 @@ void foreach_variable(std::ostream& ostr, std::string_view content, Lambda&& l)
 
 // framework name/module name
 using modid = std::tuple<std::string_view, std::string_view>;
-
-static inline constexpr char k_gen_folder[] = "gen";
 
 inline std::string target_name(std::string_view fw, std::string_view mod)
 {

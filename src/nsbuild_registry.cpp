@@ -164,6 +164,7 @@ ns_cmd_handler(fetch, build, state, cmd)
 {
   build.s_nsmodule->fetch = std::make_unique<nsfetch>();
   build.s_nsfetch         = build.s_nsmodule->fetch.get();
+  build.s_nsfetch->repo   = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 

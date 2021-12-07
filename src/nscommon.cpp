@@ -98,6 +98,32 @@ std::string value(nsparams const& params, char sep)
   return result;
 }
 
+std::string_view to_string(inheritance inh) 
+{ 
+  switch (inh)
+  {
+  case inheritance::intf:
+    return "INTERFACE";
+  case inheritance::priv:
+    return "PRIVATE";
+  case inheritance::pub:
+    return "PUBLIC";
+  }
+  return "";
+}
+
+std::string_view to_string(exposition ex)
+{
+  switch (ex)
+  {
+  case exposition::build:
+    return "BUILD_INTERFACE";
+  case exposition::install:
+    return "INSTALL_INTERFACE";
+  }
+  return "";
+}
+
 void print(std::ostream& ostr, std::string_view content)
 {
   foreach_variable(ostr, content,

@@ -60,10 +60,11 @@ framework(about = "Framework level declaration, can exclude modules",
 
   postbuild (about = "Postbuild steps for this module, see @prebuild. Postbuild does not support dependencies.");
   
-  fetch (about = "Starts a fetch operation. This will fetch code from repository and add checkout modules and sumboudles given a commit, from build instructions it will add build targets to the module"
+  fetch (about = "Starts a fetch operation. This will fetch code from repository and add checkout modules and sumboudles given a commit, from build instructions it will add build targets to the module",
+         params = "First parameter should be repository",
          variables = [
-           "$fetch.src : Source directory where repository was fetched",
-           "$fetch.install : Directory where built repository is installed, this is not the same as interface.install unless specified"
+           "$fetch_src : Source directory where repository was fetched",
+           "$fetch_install : Directory where built repository is installed, this is not the same as interface.install unless specified"
          ])
   {
     license (about = "License file of the external module, this will be added to the generated external license file", params = ["License file"]);
