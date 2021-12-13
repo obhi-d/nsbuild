@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <nsbuildcmds.h>
+#include <nscmake.h>
 #include <nscommon.h>
 #include <nsfetch.h>
 #include <nsglob.h>
@@ -62,9 +63,8 @@ struct nsmodule
   std::string      build_path;
   std::string      gen_path;
 
-  bool regenerate = false;
+  bool regenerate    = false;
   bool force_rebuild = false;
-  bool build_fetch              = false;
 
   nsmodule()                    = default;
   nsmodule(nsmodule&&) noexcept = default;
@@ -93,7 +93,6 @@ struct nsmodule
     }
   }
 
-  
   /// @brief Called in a thread to generate CMakeLists.txt
   /// @param bc Config
   /// @param name Name of this target
@@ -104,15 +103,17 @@ struct nsmodule
   void update_macros(nsbuild const& bc, std::string const& targ_name,
                      nstarget& targ);
   void update_fetch(nsbuild const& bc);
+  void write_fetch_build(nsbuild const& bc) const;
   void fetch_content(nsbuild const& bc);
 
   /// @brief Called to write the cmake file
   /// @param bc config
-  void write(nsbuild const& bc) const;
-  void write_prebuild_steps(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_main_build(nsbuild const& bc) const;
   void write_variables(std::ofstream&, nsbuild const& bc) const;
   void write_target(std::ofstream&, nsbuild const& bc,
                     std::string const& name) const;
+
+  void write_prebuild_steps(std::ofstream& ofs, nsbuild const& bc) const;
   void write_postbuild_steps(std::ofstream& ofs, nsbuild const& bc) const;
   void write_includes(std::ofstream&, nsbuild const& bc) const;
   void write_include(std::ofstream& ofs, std::string_view path,
@@ -120,6 +121,9 @@ struct nsmodule
                      cmake::exposition = cmake::exposition::build) const;
   void write_refs_includes(std::ofstream& ofs, nsbuild const& bc,
                            nsmodule const& target) const;
-  void write_fetch_content(std::ofstream& ofs, nsbuild const& bc) const;
-  void write_fetch_content_cmake(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_find_package(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_dependencies(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_refs_dependencies(std::ofstream& ofs, nsbuild const& bc,
+                               nsmodule const& target) const;
+  void build_fetched_content(nsbuild const& bc) const;
 };

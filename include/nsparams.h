@@ -30,17 +30,12 @@ using nspath_list = std::vector<nspath>;
 
 struct nsvars
 {
+  std::string_view            prefix;
   nsfilters                   filters;
   std::vector<nsnamed_params> params;
 
+  nsvars(std::string_view pfx) : prefix(pfx) {}
   void print(std::ostream& os, output_fmt = output_fmt::cmake_def) const;
 };
 
 nspath_type get_nspath_type(std::string_view);
-
-namespace cmake
-{
-std::string      get_filter(nsfilters);
-std::string_view get_filter(nsfilter);
-std::string      value(nsparams const&, char seperator = ';');
-} // namespace cmake

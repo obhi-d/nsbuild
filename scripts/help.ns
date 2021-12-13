@@ -1,3 +1,5 @@
+
+
 // Note on variables
 // $name will be substituted by substitution text
 // $$name will however print $name as output
@@ -71,20 +73,7 @@ framework(about = "Framework level declaration, can exclude modules",
     commit (about = "The commit hash to checkout", params = ["Commit sha256"]);
     args (about = "CMake args to pass to cmake build, should be a string list", 
           params = ["Filter with list of filter params, see @config_filter"]);
-    config (about = "Config commands to execute to configure the external project",
-            params = "Filter with list of filter params, see @config_filter")
-    {
-      print (about = "Will print a string message during cmake configure");
-      trace (about = "Will print a string message during cmake build");
-      cmake (about = "Commands to execute using CMAKE_COMMAND");
-      copy (about = "Copy file. Same as cmake -E copy", params = ["source", "destination"]);
-      copy_dir (about = "Copy directory. Same as cmake -E copy_directory", params = ["source", "destination"]);
-      any (about = "Command to execute. Parameters will be passed to the command as declared");
-    }
-    build (about = "Build commands to execute to build the external project, see @config for structure");
-    install (about = "Install commands to execute to install the external project, see @config for structure."
-             note = "Install will be executed as a build dependency for the current module, the module install command can then copy the installed files if needed by its interface"
-             );
+    packages (about = "List of packages to find", params = [components = "List of components to find"]);
   }
 
   interface (about =  "Defines the export interface for the module, everything here will be used as public/interface property of this target", 

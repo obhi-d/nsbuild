@@ -12,12 +12,14 @@
 
 struct nsbuild : public neo::command_handler
 {
-  std::string build_dir      = "../out/bld";
-  std::string sdk_dir        = "../out/sdk";
-  std::string runtime_dir    = "../out/rt";
+  std::string out_dir        = "../out";
+  std::string build_dir      = "../out/${config_build_type}";
+  std::string sdk_dir        = "${config_build_dir}/sdk";
+  std::string runtime_dir    = "${config_build_dir}/rt";
   std::string download_dir   = "../out/dl";
   std::string scan_path      = ".";
   std::string frameworks_dir = "Frameworks";
+  std::string type           = "";
 
   nsconfig config;
 
@@ -35,6 +37,7 @@ struct nsbuild : public neo::command_handler
   std::vector<std::string>                     sorted_targets;
   std::vector<std::future<void>>               process;
   nspython                                     python;
+  std::filesystem::path                        wd;
 
   //--------------------------------------
   // State
@@ -68,11 +71,15 @@ struct nsbuild : public neo::command_handler
   void update_macros();
   void process_targets();
   void process_target(std::string const&, nstarget&);
-  void process_main();
-
+  /// @brief This initiates the main build: check mode
+  /// - Checks current build directory, if it does not exist creates it
+  /// - If not present, writes basic config info in build dir
+  /// - Generates external build and builds and installs exteranl libs
+  void before_all(std::string_view build_dir, std::string_view src_dir);
   /// @brief Generates enum files
   /// @param target Should be FwName/ModName or full path to module directory
-  void  generate_enum(std::string target);
+  void generate_enum(std::string target);
+
   modid get_modid(std::string_view from);
 
   void add_framework(std::string_view name)

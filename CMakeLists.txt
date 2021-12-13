@@ -8,6 +8,7 @@ include(FetchContent)
 set(NEOSCRIPT_BUILD_TESTS OFF)
 set(NEOSCRIPT_HEADER_ONLY ON)
 set(FETCHCONTENT_BASE_DIR ${PROJECT_SOURCE_DIR}/external)
+set(REPROC++ ON)
 
 FetchContent_Declare(neoscript
   GIT_REPOSITORY https://github.com/obhi-d/neoscript.git
@@ -41,7 +42,10 @@ add_executable(nsbuild
  "src/nsmacros.cpp" 
  "src/nsparams.cpp" 
  "src/nsglob.cpp" 
- "src/nsframework.cpp")
+ "src/nsframework.cpp" 
+ "src/nsprocess.cpp"
+ "src/nscmake.cpp" 
+ "src/nsbuildcmds.cpp")
 
 target_include_directories(nsbuild PRIVATE 
 	"${CMAKE_SOURCE_DIR}/include"
@@ -54,7 +58,7 @@ target_compile_options(nsbuild PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus
 target_compile_options(nsbuild PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>")
 
 target_link_libraries(nsbuild fmt)
-target_link_libraries(nsbuild reproc)
+target_link_libraries(nsbuild reproc++)
 target_link_libraries(nsbuild neoscript)
 
 target_link_libraries(nsbuild PRIVATE ${Python3_LIBRARIES})

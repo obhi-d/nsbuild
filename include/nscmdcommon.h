@@ -83,23 +83,27 @@ void cmd_trace(nsbuildcmds& list, neo::command const& cmd)
 
 void cmd_cmake(nsbuildcmds& list, neo::command const& cmd)
 {
-  list.params = "${CMAKE_COMMAND} -E echo ";
-  list.params += cmake::value(cmd.params(), ' ');
+  list.command = "${CMAKE_COMMAND}";
+  list.params  = "-E;echo;";
+  list.params += cmake::value(cmd.params(), ';');
 }
 
 void cmd_copy(nsbuildcmds& list, neo::command const& cmd)
 {
-  list.params = "${CMAKE_COMMAND} -E copy ";
-  list.params += cmake::value(cmd.params(), ' ');
+  list.command = "${CMAKE_COMMAND}";
+  list.params  = "-E;copy;";
+  list.params += cmake::value(cmd.params(), ';');
 }
 
 void cmd_copy_dir(nsbuildcmds& list, neo::command const& cmd)
 {
-  list.params = "${CMAKE_COMMAND} -E copy_directory ";
-  list.params += cmake::value(cmd.params(), ' ');
+  list.command = "${CMAKE_COMMAND}";
+  list.params  = "-E;copy_directory;";
+  list.params += cmake::value(cmd.params(), ';');
 }
 
 void cmd_any(nsbuildcmds& list, neo::command const& cmd)
 {
-  list.params = cmake::value(cmd.params(), ' ');
+  list.command = cmd.name();
+  list.params  = cmake::value(cmd.params(), ';');
 }

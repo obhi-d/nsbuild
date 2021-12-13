@@ -6,8 +6,8 @@ struct nsmodule;
 struct nsbuild;
 struct nsbuildcmds
 {
-  nsfilters                filters;
   std::vector<std::string> msgs;
+  std::string              command;
   std::string              params;
 };
 
@@ -20,7 +20,8 @@ struct nsbuildstep
   std::vector<std::string> injected_config;
 
   nsbuildcmdlist steps;
-  bool           check_deps = false;
+  std::string    check;
+  std::string    wd;
 
   void print(std::ostream&, nsbuild const&, nsmodule const&) const;
 };

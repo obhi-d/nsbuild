@@ -10,19 +10,19 @@
 #include <iomanip>
 #include <iterator>
 #include <mutex>
+#include <nslog.h>
 #include <stdexcept>
 
 void nsbuild::scan_main(std::string_view sp)
 {
   scan_path = sp;
-  pwd       = std::filesystem::current_path();
+  wd        = std::filesystem::current_path();
+  pwd       = wd;
   auto spwd = pwd / scan_path;
   pwd       = spwd / "Build.ns";
   scan_file();
 
   // make sure build_dir is pointing to build_dir/cmake_config
-  build_dir += "/";
-  build_dir += config.cmake_config;
 
   pwd = spwd; // move to Build.ns parent path
 }
@@ -95,7 +95,8 @@ int nsbuild::generate_cl()
                   auto meta = timestamps.find(targ_name);
                   if (meta == timestamps.end() || meta->second != hash_hex_str)
                   {
-                    fmt::print("{} has changed. Regenerating!", targ_name);
+                    nslog::warn(fmt::format("{} has changed. Regenerating!",
+                                            targ_name));
                     s_nsmodule->regenerate = true;
                     regenerate_main        = true;
                     timestamps[targ_name]  = hash_hex_str;
@@ -146,7 +147,7 @@ void nsbuild::read_timestamps()
   std::ifstream iff(pwd);
   if (!iff.is_open())
   {
-    fmt::print("Timestamp/SHA file was missing!");
+    nslog::print("Timestamp/SHA file was missing!");
     return;
   }
   std::string name, sha;
@@ -249,6 +250,19 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
     process.emplace_back(std::move(
         std::async(std::launch::async, &nsmodule::process, &mod,
                    std::cref(*this), std::cref(name), std::ref(targ))));
+}
+
+void nsbuild::before_all(std::string_view build_dir, std::string_view src_dir)
+{
+  std::filesystem::path p    = build_dir;
+  std::string           type = p.filename().generic_string();
+  if (type.empty())
+    type = p.parent_path().filename().generic_string();
+  if (type.empty())
+  {
+    throw std::runtime_error("Build config type could not be determined.");
+  }
+  scan_main(src_dir);
 }
 
 void nsbuild::generate_enum(std::string target)

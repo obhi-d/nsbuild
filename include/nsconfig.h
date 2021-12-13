@@ -14,6 +14,7 @@ struct nsconfig
 
   std::vector<std::string> accepted;
   std::string              target_platform;
+  std::string              build_type; // ${config_build_type}
   std::string              cmake_bin;
   std::string              cmake_toolchain;
   std::string              cmake_config;
@@ -21,6 +22,6 @@ struct nsconfig
   std::string              cmake_generator_platform;
   std::string              cmake_generator_toolset;
   std::string              cmake_generator_instance;
-  bool                     static_libs = false;
+  bool                     static_libs  = false;
   bool                     is_multi_cfg = false;
 };

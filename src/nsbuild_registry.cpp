@@ -120,7 +120,7 @@ ns_cmd_handler(artifacts, build, state, cmd)
 
 ns_cmd_handler(check_deps, build, state, cmd)
 {
-  build.s_nsbuildstep->check_deps = get_idx_param(cmd, 0, "false") == "true";
+  build.s_nsbuildstep->check = get_idx_param(cmd, 0, "");
   return neo::retcode::e_success;
 }
 

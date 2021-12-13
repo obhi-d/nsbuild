@@ -13,12 +13,13 @@
 #include <unordered_set>
 
 /// @brief Directory names
-static inline constexpr char k_gen_dir[]   = "gen";
-static inline constexpr char k_ts_dir[]    = "ts";
-static inline constexpr char k_build_dir[] = "bld";
-static inline constexpr char k_sdk_dir[]   = "sdk";
-static inline constexpr char k_src_dir[]   = "src";
-
+static inline constexpr char k_gen_dir[]      = "gen";
+static inline constexpr char k_ts_dir[]       = "ts";
+static inline constexpr char k_build_dir[]    = "bld";
+static inline constexpr char k_subbuild_dir[] = "sbld";
+static inline constexpr char k_sdk_dir[]      = "sdk";
+static inline constexpr char k_src_dir[]      = "src";
+static inline constexpr char k_cmake_dir[]    = "cmk";
 
 enum class output_fmt
 {
@@ -91,8 +92,7 @@ inline std::vector<std::string> get_first_list(neo::command const& cmd)
   return ret;
 }
 
-inline std::unordered_set<std::string> get_first_set(
-    neo::command const& cmd)
+inline std::unordered_set<std::string> get_first_set(neo::command const& cmd)
 {
   auto const& params = cmd.params();
   auto        size   = params.value().size();
@@ -109,32 +109,12 @@ inline std::unordered_set<std::string> get_first_set(
   return ret;
 }
 
-namespace cmake
-{
-
-enum class inheritance
-{
-  priv,
-  pub,
-  intf
-};
-
-enum class exposition
-{
-  install,
-  build
-};
-
-std::string_view to_string(inheritance);
-std::string_view to_string(exposition);
-void             print(std::ostream& ostr, std::string_view content);
-} // namespace cmake
-
 template <typename Lambda>
 void foreach_variable(std::ostream& ostr, std::string_view content, Lambda&& l)
 {
   std::size_t r   = 0;
   std::size_t off = 0;
+  std::string tmp;
   while (r < content.length())
   {
     auto pos = content.find_first_of('$', off);
@@ -158,11 +138,16 @@ void foreach_variable(std::ostream& ostr, std::string_view content, Lambda&& l)
         {
           r   = content.npos;
           off = r;
-          l(ostr, content.substr(pos));
+
+          tmp = content.substr(pos);
+          std::replace(tmp.begin(), tmp.end(), '.', '_');
+          l(ostr, tmp);
         }
         else
         {
-          l(ostr, content.substr(pos, len - pos));
+          tmp = content.substr(pos, len - pos);
+          std::replace(tmp.begin(), tmp.end(), '.', '_');
+          l(ostr, tmp);
           if (content[len] == ')')
             len++;
           r   = len;
@@ -184,3 +169,10 @@ inline std::string target_name(std::string_view fw, std::string_view mod)
 {
   return fmt::format("{}.{}", fw, mod);
 }
+
+struct nsfilecopy
+{
+  std::vector<std::string> files;
+  std::string              dest;
+  bool                     is_dir_copy = false;
+};

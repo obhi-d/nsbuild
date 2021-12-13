@@ -2,6 +2,7 @@
 #include <fstream>
 #include <nsbuild.h>
 #include <nscmake.h>
+#include <nslog.h>
 #include <nsmodule.h>
 #include <nsprocess.h>
 #include <nstarget.h>
@@ -49,16 +50,17 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name,
   if (fetch)
   {
     std::filesystem::path tmp = build_path;
-    /// - dl/module/src contains sources
+    /// - dl/module contains sources
     /// - bld/module/ts Timestamp directory
     /// - bld/module/bld  Build directory
     /// - bld/module/sdk Install directory
-    macros["fetch_bulid_dir"] = (tmp / k_build_dir).generic_string();
-    macros["fetch_ts_dir"]    = (tmp / k_ts_dir).generic_string();
-    macros["fetch_sdk_dir"]   = (tmp / k_sdk_dir).generic_string();
+    macros["fetch_bulid_dir"]    = (tmp / k_build_dir).generic_string();
+    macros["fetch_subbulid_dir"] = (tmp / k_subbuild_dir).generic_string();
+    macros["fetch_ts_dir"]       = (tmp / k_ts_dir).generic_string();
+    macros["fetch_sdk_dir"]      = (tmp / k_sdk_dir).generic_string();
 
     tmp                     = bc.download_dir;
-    macros["fetch_src_dir"] = (tmp / name / k_src_dir).generic_string();
+    macros["fetch_src_dir"] = (tmp / name).generic_string();
   }
 
   for (auto& v : vars)
@@ -110,15 +112,18 @@ void nsmodule::update_properties(nsbuild const&     bc,
     nsbuildstep step;
     nsbuildcmds cmd;
     step.artifacts.push_back("${data_group_output}");
-    step.check_deps = true;
+    step.check = "data_group";
     step.dependencies.push_back("${data_group}");
     step.injected_config.push_back("set(data_group_output ${data_group})");
     step.injected_config.push_back(
         "list(TRANSFORM data_group_output REPLACE ${module_dir}/media "
         "${config_runtime_dir}/Media)");
+
     cmd.msgs.push_back(fmt::format("Building data files for {}", name));
     cmd.params = "${nsbuild} --copy-media ${module_target}";
+
     step.steps.push_back(cmd);
+    step.wd = bc.wd.generic_string();
     prebuild.push_back(step);
   }
 }
@@ -149,6 +154,47 @@ void nsmodule::write_target(std::ofstream& os, nsbuild const& bc,
     os << fmt::format("\nadd_library({} MODULE ${{source_group}})", name);
   default:
     break;
+  }
+}
+
+void nsmodule::write_prebuild_steps(std::ofstream& ofs, const nsbuild& bc) const
+{
+  if (!prebuild.empty())
+  {
+    for (auto const& step : prebuild)
+      step.print(ofs, bc, *this);
+
+    ofs << "\n# Prebuild target"
+        << fmt::format("\nadd_custom_target({}.prebuild \n\tDEPENDS",
+                       target_name);
+    for (auto const& step : prebuild)
+    {
+      for (auto const& d : step.artifacts)
+        ofs << d << " ";
+    }
+    ofs << fmt::format(
+        "\n\tCOMMAND ${{CMAKE_COMMAND}} -E echo Prebuilt step for {}\n)",
+        target_name);
+    ofs << std::format("\nadd_dependency({0} {0}.prebuild)", target_name);
+  }
+}
+
+void nsmodule::write_postbuild_steps(std::ofstream& ofs,
+                                     nsbuild const& bc) const
+{
+  if (!postbuild.empty())
+  {
+    ofs << fmt::format("\nadd_custom_command(TARGET {} POST_BUILD ");
+    for (auto const& step : prebuild)
+    {
+      for (auto const& s : step.steps)
+      {
+        ofs << "\n\tCOMMAND " << s.command << " " << s.params;
+        for (auto const& m : s.msgs)
+          ofs << "\n\tCOMMAND ${CMAKE_COMMAND} -E echo \"" << m << "\"";
+      }
+    }
+    ofs << "\n\t)";
   }
 }
 
@@ -217,6 +263,15 @@ void nsmodule::write_refs_includes(std::ofstream& os, nsbuild const& bc,
   }
 }
 
+void nsmodule::write_find_package(std::ofstream& ofs, nsbuild const& bc) const
+{
+  if (!fetch)
+    return;
+
+  if (fetch->components.empty())
+  ofs << std::format("\nfind_package({} {} REQUIRED PATHS ${{fetch_sdk_dir}} NO_DEFAULT_PATH)", fetch->package, fetch->version,
+}
+
 void nsmodule::process(nsbuild const& bc, std::string const& targ_name,
                        nstarget& targ)
 {
@@ -242,24 +297,21 @@ void nsmodule::update_fetch(nsbuild const& bc)
   std::filesystem::path bld = build_path;
   std::error_code       ec;
 
-  fetch_content(bc);
   if (force_rebuild)
   {
     // remove bld/module directory
-
     std::filesystem::remove_all(bld / k_build_dir, ec);
     std::filesystem::remove_all(bld / k_ts_dir, ec);
     std::filesystem::remove_all(bld / k_sdk_dir, ec);
   }
-  if (build_fetch)
-    std::filesystem::remove(bld / ".built", ec);
+
+  fetch_content(bc);
 }
 
 void nsmodule::fetch_content(nsbuild const& bc)
 {
   std::filesystem::path dl      = bc.download_dir;
   auto                  dlm     = dl / name;
-  bool                  clone   = false;
   bool                  refetch = false;
   auto                  dlts    = dlm / ".last_fetch";
   auto                  src     = dlm / k_src_dir;
@@ -272,9 +324,7 @@ void nsmodule::fetch_content(nsbuild const& bc)
 
     if (repo != fetch->repo)
     {
-      clone       = true;
-      refetch     = true;
-      build_fetch = true;
+      refetch = true;
       // delete dl/module, without throwing error
       std::error_code ec;
       std::filesystem::remove_all(src, ec);
@@ -285,30 +335,21 @@ void nsmodule::fetch_content(nsbuild const& bc)
   else
   {
     // Forced full clone and  fetch
-    clone       = true;
-    refetch     = true;
-    build_fetch = true;
+    refetch = true;
     // delete dl/module, without throwing error
-    std::error_code ec;
-    std::filesystem::remove_all(src, ec);
   }
 
-  if (clone)
-  {
-    nsprocess::git({"clone", "--no-checkout", "--recursive", "-v",
-                    std::string{fetch->repo}, "./"},
-                   src);
-  }
   if (refetch)
-  {
-    nsprocess::git({"fetch origin"}, src);
-    nsprocess::git({"checkout", std::string{fetch->commit}, "-f"}, src);
-    nsprocess::git(
-        {"submodule", "update", "--recursive", "--checkout", "--force"}, src);
-  }
+    write_fetch_build(bc);
+
+  if (refetch || force_rebuild)
+    build_fetched_content(bc);
+
+  std::ofstream ts{dlts};
+  ts << fetch->repo << " " << fetch->commit;
 }
 
-void nsmodule::write(nsbuild const& bc) const
+void nsmodule::write_main_build(nsbuild const& bc) const
 {
   if (type == modtype::ref)
     return;
@@ -319,8 +360,7 @@ void nsmodule::write(nsbuild const& bc) const
   std::ofstream ofs{cmlf};
   if (!ofs)
   {
-    fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::red),
-               "Failed to write to : {}", cmlf.generic_string());
+    nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
     throw std::runtime_error("Could not create CMakeLists.txt");
   }
   write_variables(ofs, bc);
@@ -331,31 +371,13 @@ void nsmodule::write(nsbuild const& bc) const
   if (has_sources(type))
     glob_sources.print(ofs);
 
-  write_prebuild_steps(ofs, bc);
   write_target(ofs, bc, target_name);
-  write_postbuild_steps(ofs, bc);
   write_includes(ofs, bc);
-}
 
-void nsmodule::write_prebuild_steps(std::ofstream& ofs, const nsbuild& bc) const
-{
-  if (!prebuild.empty())
-  {
-    for (auto const& step : prebuild)
-      step.print(ofs, bc, *this);
-
-    ofs << "\n# Prebuild target"
-        << fmt::format("\nadd_custom_target({}.prebuild \n\tDEPENDS",
-                       target_name);
-    for (auto const& step : prebuild)
-    {
-      for (auto const& d : step.dependencies)
-        ofs << d << " ";
-    }
-    ofs << fmt::format(
-        "\n\tCOMMAND ${{CMAKE_COMMAND}} -E echo Prebuilt step for {}\n)",
-        target_name);
-  }
+  write_prebuild_steps(ofs, bc);
+  write_postbuild_steps(ofs, bc);
+  write_find_package(ofs, bc);
+  write_dependencies(ofs, bc);
 }
 
 void nsmodule::write_variables(std::ofstream& ofs, nsbuild const& bc) const
@@ -371,50 +393,45 @@ void nsmodule::write_variables(std::ofstream& ofs, nsbuild const& bc) const
   }
 }
 
-void nsmodule::write_fetch_content_cmake(std::ofstream& ofs,
-                                         nsbuild const& bc) const
+void nsmodule::write_fetch_build(nsbuild const& bc) const
 {
-  std::filesystem::path bld     = bc.build_dir;
-  auto                  bld_dir = bld / name / k_build_dir;
+  std::filesystem::path cml = build_path;
 
-  ofs << "\nif(EXISTS ${fetch_bulid_dir}/.built)"
-         "\n\texecute_process("
-         "\n\t\tCOMMAND "
-         "\n\t\t\t${CMAKE_COMMAND} ";
-      
+  auto          cmlf = cml / k_cmake_dir / "CMakeLists.txt";
+  std::ofstream ofs{cmlf};
+  if (!ofs)
+  {
+    nslog::error(std::format("Failed to write to : {}", cmlf.generic_string()));
+    throw std::runtime_error("Could not create CMakeLists.txt");
+  }
+  write_variables(ofs, bc);
 
-  /// @brief CMAKE_COMMAND
-  /// @param ofs 
-  /// @param bc 
-  ofs << "-G ${CMAKE_GENERATOR} ";
-
-  if (!bc.config.cmake_config.empty() && !bc.config.is_multi_cfg)
-    ofs << "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} ";
+  std::filesystem::path src     = source_path;
+  auto                  srccmk  = src / k_cmake_dir / "CMakeLists.txt";
+  auto                  src_var = std::format("{}_SOURCE_DIR", fetch->name);
+  if (std::filesystem::exists(srccmk))
+  {
+    ofs << fmt::format("\nset(module_cmk_src \"{}\")", srccmk.generic_string());
+    src_var = "module_cmk_src";
+  }
 
   for (auto const& a : fetch->args)
-    ofs << "-D" << a;
-
-  if (!bc.config.cmake_toolchain.empty())
-    ofs << "-DCMAKE_TOOLCHAIN_FILE=\"${CMAKE_TOOLCHAIN_FILE}\" ";
-
-  ofs << "-DCMAKE_GENERATOR_PLATFORM=\"${CMAKE_GENERATOR_PLATFORM}\" ";
-  ofs << "-DCMAKE_GENERATOR_TOOLSET=\"${CMAKE_GENERATOR_TOOLSET}\" ";
-  ofs << "-DCMAKE_GENERATOR_INSTANCE=\"${CMAKE_GENERATOR_INSTANCE}\" ";
-
   {
-    auto        sdk_dir = bld / name / k_sdk_dir;
-    ofs << fmt::format("-DCMAKE_INSTALL_PREFIX=\"{}\"", sdk_dir.generic_string());
+    a.print(ofs);
   }
 
-  // Build stamp
-  ofs << "\n\t\tCOMMAND write_stamp "
+  ofs << fmt::format(cmake::k_fetch_content, fetch->name, fetch->repo,
+                     fetch->commit, src_var);
+}
 
-  // Build and Install
-  args = {"--build", ".", "--target", "install"};
-  if (bc.config.is_multi_cfg)
-  {
-    args.emplace_back("--config");
-    args.emplace_back(bc.config.cmake_config);
-  }
-  nsprocess::cmake(args, bld_dir);
+void nsmodule::build_fetched_content(nsbuild const& bc) const
+{
+  std::filesystem::path cml  = build_path;
+  auto                  dcmk = cml / k_cmake_dir;
+  auto                  dbld = cml / k_build_dir;
+  auto                  dsdk = cml / k_sdk_dir;
+
+  nsprocess::cmake_config(bc, {}, dcmk.generic_string(), dbld);
+  nsprocess::cmake_build(bc, "", dbld);
+  nsprocess::cmake_install(bc, dsdk.generic_string(), dbld);
 }
