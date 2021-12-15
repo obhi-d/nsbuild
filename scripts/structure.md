@@ -1,20 +1,25 @@
 
 # Structure
 
+.
 - sources
    |--CMakeLists.txt [generated in first run]
    |--Frameworks
       |--externM
          |--cmk/CMakeLists.txt
 - out
-  |-- `build` [x64-debug, arm-release]
-  |-- persistent 
-      |--CMakeLists.txt
-      |--module1/CMakeLists.txt
-      |--moduleN/CMakeLists.txt
-      |--externM/CMakeLists.txt
-      |--externM/cmk/CMakeLists.txt
-      |--externM/bld
+  |-- dl
+  |--build [x64-debug, arm-release]
+     |--CMakeLists.txt [generic file with all module includes]
+     |--bld
+     |  |--externM
+     |     |--CMakeLists.txt [has find_package]
+     |     |--ext/CMakeLists.txt [has add_subdir]
+     |     |--bld [is build directory for externM]
+     |     |--sdk [is install dir]
+     |--sdk
+     |--rt    [runtime output directory]
+     |--cache
 
 ## build
 Main build directory
