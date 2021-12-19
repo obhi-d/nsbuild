@@ -39,6 +39,16 @@ std::string value(nsparams const& params, char sep)
   return result;
 }
 
+std::string path(std::filesystem::path const& path) 
+{ 
+  auto ret = path.generic_string(); 
+  #if defined(WIN32) || defined(_WIN32) ||                                       \
+    defined(__WIN32) && !defined(__CYGWIN__)
+  std::replace(ret.begin(), ret.end(), '\\', '/');
+  #endif
+  return ret;
+}
+
 std::string_view to_string(inheritance inh)
 {
   switch (inh)
@@ -74,6 +84,8 @@ void print(std::ostream& ostr, std::string_view content)
 
 std::string get_filter(nsfilters filter)
 {
+  if (!filter.any())
+    return "";
   bool needsor = true;
   bool first   = true;
 

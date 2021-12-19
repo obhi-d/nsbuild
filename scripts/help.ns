@@ -57,7 +57,14 @@ framework(about = "Framework level declaration, can exclude modules",
     artifacts (about = "List of files produced as artifacts to this build. If element names dont start with $ (followed by a var name) it is assumed the paths are relative to gen directory");
     dependencies (about = "List of files that this step depends on. If element names dont start with $ (followed by a var name) it is assumed the paths are relative to gen directory");
     check_deps (about = "Boolean. Skip if dependencies are not present");
-    steps (about = "Commands to build the artifacts. see @fetch.build");
+    steps (about = "Commands to build the artifacts. see @fetch.build")
+    {
+      cmake;
+      trace;
+      print;
+      copy;
+      copy_dir;
+    }
   }
 
   postbuild (about = "Postbuild steps for this module, see @prebuild. Postbuild does not support dependencies.");
@@ -73,7 +80,8 @@ framework(about = "Framework level declaration, can exclude modules",
     commit (about = "The commit hash to checkout", params = ["Commit sha256"]);
     args (about = "CMake args to pass to cmake build, should be a string list", 
           params = ["Filter with list of filter params, see @config_filter"]);
-    packages (about = "List of packages to find", params = [components = "List of components to find"]);
+    package (about = "A package to find");
+    components (about= "List of components to find");
   }
 
   interface (about =  "Defines the export interface for the module, everything here will be used as public/interface property of this target", 
@@ -95,6 +103,18 @@ framework(about = "Framework level declaration, can exclude modules",
 
     definitions (about = "List of strings to be added as preprocessor definitions");
 
+  }
+
+  plugin (about = "Plugin meta info")
+  {
+    description (about = "description");
+    company (about = "Company.");
+    author (about = "Author of plugin");
+    type_id (about ="none|any string that classifies the plugin");
+    compatibility (about = "Max compatible version");
+    context (about = "(base|engine|project)");
+    optional (about = "Boolean");
+    service (params = "First parameter is service name, second should be impl");
   }
 
   private (about = "Same as interface, but properties will not be transitive, only direct linking recieve the properties");

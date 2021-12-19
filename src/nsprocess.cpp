@@ -12,7 +12,7 @@
 namespace nsprocess
 {
 
-static void cmake_config(nsbuild const& bc, std::vector<std::string> args,
+void cmake_config(nsbuild const& bc, std::vector<std::string> args,
                          std::string src, std::filesystem::path wd)
 {
 
@@ -43,7 +43,7 @@ static void cmake_config(nsbuild const& bc, std::vector<std::string> args,
   cmake(bc, std::move(args), wd);
 }
 
-static void cmake_build(nsbuild const& bc, std::string_view target,
+void cmake_build(nsbuild const& bc, std::string_view target,
                         std::filesystem::path wd)
 {
   std::vector<std::string> args;
@@ -52,7 +52,7 @@ static void cmake_build(nsbuild const& bc, std::string_view target,
   if (bc.config.is_multi_cfg)
   {
     args.emplace_back("--config");
-    args.emplace_back(bc.config.build_type.c_str());
+    args.emplace_back(bc.config.cmake_config.c_str());
   }
   if (!target.empty())
   {
@@ -63,7 +63,7 @@ static void cmake_build(nsbuild const& bc, std::string_view target,
   cmake(bc, std::move(args), wd);
 }
 
-static void cmake_install(nsbuild const& bc, std::string_view prefix,
+void cmake_install(nsbuild const& bc, std::string_view prefix,
                           std::filesystem::path wd)
 {
   std::vector<std::string> args;
@@ -78,7 +78,7 @@ static void cmake_install(nsbuild const& bc, std::string_view prefix,
   cmake(bc, std::move(args), wd);
 }
 
-static void cmake(nsbuild const& bc, std::vector<std::string> args,
+void cmake(nsbuild const& bc, std::vector<std::string> args,
                   std::filesystem::path wd)
 {
   std::vector<char const*> sargs;
@@ -90,9 +90,9 @@ static void cmake(nsbuild const& bc, std::vector<std::string> args,
   auto save = std::filesystem::current_path();
   std::filesystem::current_path(wd);
 
-  reproc::arguments args{sargs};
+  reproc::arguments pargs{sargs.data()};
   reproc::process   proc;
-  auto              rc = proc.start(args);
+  auto              rc = proc.start(pargs);
 
   std::filesystem::current_path(save);
   if (rc)

@@ -16,10 +16,13 @@
 static inline constexpr char k_gen_dir[]      = "gen";
 static inline constexpr char k_ts_dir[]       = "ts";
 static inline constexpr char k_build_dir[]    = "bld";
-static inline constexpr char k_subbuild_dir[] = "sbld";
+static inline constexpr char k_subbuild_dir[] = "sbd";
 static inline constexpr char k_sdk_dir[]      = "sdk";
 static inline constexpr char k_src_dir[]      = "src";
-static inline constexpr char k_cmake_dir[]    = "cmk";
+static inline constexpr char k_cmake_dir[]    = "cmake";
+static inline constexpr char k_ext_dir[]      = "ext";
+static inline constexpr char k_xpb_dir[]      = "xpb";
+static inline constexpr char k_json_val[]      = "  \n\"{}\": \"{}\"";
 
 enum class output_fmt
 {
@@ -176,3 +179,42 @@ struct nsfilecopy
   std::string              dest;
   bool                     is_dir_copy = false;
 };
+
+struct nsplugin_manifest
+{
+  std::string_view desc;
+  std::string_view company;
+  std::string_view author;
+  std::string_view type;
+  std::string_view compatibility;
+  std::string_view context;
+  std::string_view optional;
+  std::vector<std::pair<std::string_view, std::string_view>> services;
+};
+
+using string_map  = std::unordered_map<std::string, std::string>;
+using stringv_map = std::unordered_map<std::string_view, std::string_view>;
+
+struct nsmetainfo
+{
+  std::string compiler_name;
+  std::string compiler_version;
+  string_map  timestamps;
+};
+
+struct nsmetastate
+{
+  bool full_regenerate    = false;
+  bool delete_timestamps  = false;
+  bool delete_cmake_cache = false;
+  bool meta_missing       = false;
+  bool is_dirty           = false;
+  bool stop_after_modtype = false;
+};
+
+std::string to_upper(std::string s);
+std::string to_lower(std::string s);
+std::string to_lower_camel_case(std::string const& s);
+std::string to_upper_camel_case(std::string const& s);
+std::string to_camel_case(std::string const& s);
+std::string to_snake_case(std::string const& s);

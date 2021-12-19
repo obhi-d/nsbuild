@@ -1,5 +1,6 @@
 
 #include <nsparams.h>
+#include <nscmake.h>
 
 void nsvars::print(std::ostream& os, output_fmt f) const
 {
@@ -13,7 +14,7 @@ void nsvars::print(std::ostream& os, output_fmt f) const
 
     os << "\nset(" << prefix << v.name << " $<IF:" << sf << ", ";
     cmake::print(os, cmake::value(v.params));
-    os << ", ${var_" << v.name << "}";
+    os << ", ${" << prefix << v.name << "}";
     if (f == output_fmt::set_cache)
       os << " CACHE INTERNAL \"\"";
     os << ")";

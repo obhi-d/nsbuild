@@ -1,6 +1,7 @@
 
 #include <fmt/format.h>
 #include <nsmacros.h>
+#include <nscmake.h>
 
 void nsmacros::im_print(std::ostream& ostr, std::string_view content,
                         output_fmt) const

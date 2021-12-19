@@ -10,7 +10,7 @@
 
 struct nstarget;
 struct nsbuild;
-enum class modtype
+enum class nsmodule_type
 {
   none,
   data,
@@ -18,12 +18,13 @@ enum class modtype
   lib,
   exe,
   external,
-  ref
+  ref,
+  test
 };
 
-std::string_view to_string(modtype);
-bool             has_data(modtype);
-bool             has_sources(modtype);
+std::string_view to_string(nsmodule_type);
+bool             has_data(nsmodule_type);
+bool             has_sources(nsmodule_type);
 
 /// @brief These targets are defined by every module
 /// target.prebuild : Optional. Executed before target build
@@ -53,18 +54,19 @@ struct nsmodule
   std::unique_ptr<nsfetch> fetch;
 
   std::string name;
-  modtype     type = modtype::none;
+  nsmodule_type     type = nsmodule_type::none;
 
   // deferred properties
   std::string_view framework_name;
   std::string_view framework_path;
   std::string      target_name;
   std::string      source_path;
-  std::string      build_path;
-  std::string      gen_path;
+
+  nsplugin_manifest manifest;
 
   bool regenerate    = false;
   bool force_rebuild = false;
+  bool has_confixx   = false;
 
   nsmodule()                    = default;
   nsmodule(nsmodule&&) noexcept = default;
@@ -103,6 +105,8 @@ struct nsmodule
   void update_macros(nsbuild const& bc, std::string const& targ_name,
                      nstarget& targ);
   void update_fetch(nsbuild const& bc);
+  void generate_plugin_manifest(nsbuild const& bc);
+
   void write_fetch_build(nsbuild const& bc) const;
   void fetch_content(nsbuild const& bc);
 
@@ -122,8 +126,50 @@ struct nsmodule
   void write_refs_includes(std::ofstream& ofs, nsbuild const& bc,
                            nsmodule const& target) const;
   void write_find_package(std::ofstream& ofs, nsbuild const& bc) const;
+
+  void write_definitions(std::ofstream&, nsbuild const& bc) const;
+  void write_definitions_mod(std::ofstream&, nsbuild const& bc) const;
+  void write_definitions(std::ofstream&, nsbuild const& bc,
+                         std::uint32_t type) const;
+  void write_definitions(std::ofstream& ,
+                     std::string_view def, cmake::inheritance, std::string_view filter) const;
+  void write_refs_definitions(std::ofstream& ofs, nsbuild const& bc,
+                           nsmodule const& target) const;
+
   void write_dependencies(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_dependencies_begin(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_dependencies_mod(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_dependencies_end(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_dependencies(std::ofstream& ofs, nsbuild const& bc,
+                          std::uint32_t intf) const;
+  void write_dependency(std::ofstream& ofs, std::string_view target,
+                        cmake::inheritance, std::string_view filter) const;
   void write_refs_dependencies(std::ofstream& ofs, nsbuild const& bc,
                                nsmodule const& target) const;
+
+  void write_linklibs(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_linklibs_begin(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_linklibs_mod(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_linklibs_end(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_linklibs(std::ofstream& ofs, nsbuild const& bc,
+                          std::uint32_t intf) const;
+  void write_linklibs(std::ofstream& ofs, std::string_view target,
+                        cmake::inheritance, std::string_view filter) const;
+  void write_refs_linklibs(std::ofstream& ofs, nsbuild const& bc,
+                               nsmodule const& target) const;
+
+  void write_install_command(std::ofstream&, nsbuild const& bc) const;
+  void write_final_config(std::ofstream&, nsbuild const& bc) const;
+  void write_runtime_settings(std::ofstream&, nsbuild const& bc) const;
+
   void build_fetched_content(nsbuild const& bc) const;
+
+  std::filesystem::path get_full_bld_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_xpb_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_sbld_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_sdk_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_dl_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_ts_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_ext_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_gen_dir(nsbuild const& bc) const;
 };

@@ -59,18 +59,18 @@ ns_cmd_handler(type, build, state, cmd)
   auto& t    = build.s_nsmodule->type;
   auto  type = get_idx_param(cmd, 0);
   if (type == "plugin")
-    t = modtype::plugin;
+    t = nsmodule_type::plugin;
   else if (type == "ref")
-    t = modtype::ref;
+    t = nsmodule_type::ref;
   else if (type == "data")
-    t = modtype::data;
+    t = nsmodule_type::data;
   else if (type == "extern")
-    t = modtype::external;
+    t = nsmodule_type::external;
   else if (type == "exe")
-    t = modtype::exe;
+    t = nsmodule_type::exe;
   else if (type == "lib")
-    t = modtype::lib;
-  if (build.stop_after_modtype)
+    t = nsmodule_type::lib;
+  if (build.state.stop_after_modtype)
     return neo::retcode::e_success_stop;
   return neo::retcode::e_success;
 }
@@ -79,6 +79,7 @@ ns_cmd_handler(var, build, state, cmd)
 {
   auto& m       = build.s_nsmodule->vars;
   build.s_nsvar = cmd_insert_with_filter(m, cmd);
+  build.s_nsvar->prefix = "var";
   return neo::retcode::e_success;
 }
 
@@ -86,6 +87,7 @@ ns_cmd_handler(exports, build, state, cmd)
 {
   auto& m       = build.s_nsmodule->exports;
   build.s_nsvar = cmd_insert_with_filter(m, cmd);
+  build.s_nsvar->prefix = "glob";
   return neo::retcode::e_success;
 }
 
@@ -182,38 +184,31 @@ ns_cmd_handler(commit, build, state, cmd)
 
 ns_cmd_handler(args, build, state, cmd)
 {
-  build.s_nsfetch->args = get_first_list(cmd);
+  auto& m               = build.s_nsfetch->args;
+  build.s_nsvar         = cmd_insert_with_filter(m, cmd);
+  
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(config, build, state, cmd)
+ns_cmd_handler(package, build, state, cmd)
 {
-  if (build.s_nsfetch)
-    build.s_nsbuildcmds = cmd_insert_with_filter(build.s_nsfetch->config, cmd);
+  auto& m       = build.s_nsfetch->package;
+  m       = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(build, build, state, cmd)
+ns_cmd_handler(components, build, state, cmd)
 {
-  if (build.s_nsfetch)
-    build.s_nsbuildcmds = cmd_insert_with_filter(build.s_nsfetch->build, cmd);
+  auto& m = build.s_nsfetch->components;
+  m       = get_first_list(cmd);
   return neo::retcode::e_success;
 }
+
 ns_cmd_handler(steps, build, state, cmd)
 {
   if (build.s_nsbuildstep)
     build.s_nsbuildcmds =
-        cmd_insert_with_filter(build.s_nsbuildstep->steps, cmd);
-  return neo::retcode::e_success;
-}
-
-ns_cmd_handler(install, build, state, cmd)
-{
-  if (build.s_nsfetch)
-    build.s_nsbuildcmds = cmd_insert_with_filter(build.s_nsfetch->install, cmd);
-  else if (build.s_nsmodule)
-    build.s_nsbuildcmds =
-        cmd_insert_with_filter(build.s_nsmodule->install, cmd);
+        cmd_insert(build.s_nsbuildstep->steps, cmd);
   return neo::retcode::e_success;
 }
 
@@ -253,28 +248,64 @@ ns_cmd_handler(references, build, state, cmd)
 
 ns_cmd_handler(libraries, build, state, cmd)
 {
-  build.s_nsinterface->libraries.emplace_back(
-      cmd_parse_nspath(nspath_type::shared_lib, cmd));
-  return neo::retcode::e_success;
-}
-
-ns_cmd_handler(binaries, build, state, cmd)
-{
-  build.s_nsinterface->binaries.emplace_back(
-      cmd_parse_nspath(nspath_type::binary_list, cmd));
-  return neo::retcode::e_success;
-}
-
-ns_cmd_handler(includes, build, state, cmd)
-{
-  build.s_nsinterface->includes.emplace_back(
-      cmd_parse_nspath(nspath_type::include_list, cmd));
+  build.s_nsinterface->sys_libraries = get_first_list(cmd);
   return neo::retcode::e_success;
 }
 
 ns_cmd_handler(definitions, build, state, cmd)
 {
   build.s_nsinterface->definitions = get_first_list(cmd);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(plugin, build, state, cmd) 
+{ return neo::retcode::e_success; }
+
+ns_cmd_handler(description, build, state, cmd) 
+{
+  build.s_nsmodule->manifest.desc = get_idx_param(cmd, 0);
+  return neo::retcode::e_success; 
+}
+
+ns_cmd_handler(company, build, state, cmd)
+{
+  build.s_nsmodule->manifest.company = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(author, build, state, cmd)
+{
+  build.s_nsmodule->manifest.author = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(type_id, build, state, cmd)
+{
+  build.s_nsmodule->manifest.type = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(compatibility, build, state, cmd)
+{
+  build.s_nsmodule->manifest.compatibility = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(context, build, state, cmd)
+{
+  build.s_nsmodule->manifest.context = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(optional, build, state, cmd)
+{
+  build.s_nsmodule->manifest.optional = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(service, build, state, cmd)
+{
+  build.s_nsmodule->manifest.services.emplace_back(get_idx_param(cmd, 0), get_idx_param(cmd, 1));
   return neo::retcode::e_success;
 }
 
@@ -305,7 +336,6 @@ ns_cmdend_handler(clear_interface, build, state, cmd)
 ns_registry(nsbuild)
 {
   neo::command_id prebuild;
-  neo::command_id build;
   neo::command_id intf;
   neo::command_id var;
 
@@ -333,9 +363,8 @@ ns_registry(nsbuild)
     ns_cmd(artifacts);
     ns_cmd(dependencies);
 
-    ns_scope_cust(build, clear_buildcmds)
+    ns_scope_cust(steps, clear_buildcmds)
     {
-      ns_save_scope(build);
       ns_cmd(print);
       ns_cmd(trace);
       ns_cmd(cmake);
@@ -351,23 +380,36 @@ ns_registry(nsbuild)
   {
     ns_cmd(license);
     ns_cmd(commit);
-    ns_cmd(args);
-    ns_subalias_cust(config, clear_buildstep, build);
-    ns_subalias_cust(build, clear_buildstep, build);
-    ns_subalias_cust(install, clear_buildstep, build);
+    ns_scope_def(args) 
+    { 
+      ns_star(var); 
+    }
+    ns_cmd(package);
+    ns_cmd(components);
   }
 
   ns_scope_cust(interface, clear_interface)
   {
     ns_save_scope(intf);
     ns_cmd(dependencies);
-    ns_cmd(binaries);
-    ns_cmd(includes);
     ns_cmd(libraries);
     ns_cmd(definitions);
   }
 
+  ns_scope_def(plugin) 
+  { 
+    ns_cmd(description);
+    ns_cmd(company);
+    ns_cmd(author);
+    ns_cmd(type_id);
+    ns_cmd(compatibility);
+    ns_cmd(context);
+    ns_cmd(optional);
+    ns_cmd(service);
+  }
+
   ns_subalias_cust(private, clear_interface, intf);
   ns_subalias_def(exports, var);
-  ns_subalias_cust(install, clear_buildcmds, build);
+
 }
+

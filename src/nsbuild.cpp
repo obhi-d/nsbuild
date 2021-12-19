@@ -1,5 +1,6 @@
 #include "nsbuild.h"
 
+#include "nsenums.h"
 #include "picosha2.h"
 
 #include <exception>
@@ -13,23 +14,27 @@
 #include <nslog.h>
 #include <stdexcept>
 
-void nsbuild::scan_main(std::string_view sp)
-{
-  scan_path = sp;
-  wd        = std::filesystem::current_path();
-  pwd       = wd;
-  auto spwd = pwd / scan_path;
-  pwd       = spwd / "Build.ns";
-  scan_file();
+void nsbuild::main_project(std::string proj) 
+{ 
+  
+  auto cml = get_full_scan_dir() / "CMakeLists.txt";
+  
+  {
+    std::ofstream ff{cml};
+    ff << fmt::format(cmake::k_main_preamble, proj, out_dir);
+  }
 
-  // make sure build_dir is pointing to build_dir/cmake_config
-
-  pwd = spwd; // move to Build.ns parent path
+  {
+    auto          cml = get_full_out_dir() / "CMakeLists.txt";
+    std::ofstream off{cml};
+    off << "";
+  }
 }
 
-bool nsbuild::scan_file(std::string* sha)
+bool nsbuild::scan_file(std::filesystem::path path, bool store,
+                        std::string* sha)
 {
-  std::ifstream iff(pwd);
+  std::ifstream iff(path);
   if (iff.is_open())
   {
     std::string f1_str((std::istreambuf_iterator<char>(iff)),
@@ -37,94 +42,17 @@ bool nsbuild::scan_file(std::string* sha)
     contents.emplace_back(std::move(f1_str));
 
     neo::state_machine sm{reg, this};
-    sm.parse(pwd.filename().string(), contents.back());
+    sm.parse(path.filename().string(), contents.back());
     handle_error(sm);
     if (sha)
     {
       picosha2::hash256_hex_string(contents.back(), *sha);
     }
-
+    if (!store)
+      contents.pop_back();
     return true;
   }
   return false;
-}
-
-int nsbuild::generate_cl()
-{
-  nsbuild* me = this;
-  {
-    auto spwd = pwd;
-    pwd       = pwd / build_dir / ".modulets";
-    read_timestamps();
-    pwd = spwd;
-  }
-
-  for_each_framework(
-      [this]()
-      {
-        if (scan_file())
-        {
-          auto fwname = pwd.parent_path().filename().string();
-          add_framework(fwname);
-          for_each_module(
-              [this, &fwname]()
-              {
-                auto mod_name  = pwd.parent_path().filename().string();
-                auto targ_name = target_name(fwname, mod_name);
-                add_module(mod_name);
-                if (!frameworks.back().excludes.contains(targ_name))
-                {
-                  std::ifstream iff(pwd);
-                  if (!iff.is_open())
-                  {
-                    throw std::runtime_error(targ_name + " did not open");
-                  }
-
-                  {
-
-                    std::string f1_str((std::istreambuf_iterator<char>(iff)),
-                                       std::istreambuf_iterator<char>(iff));
-
-                    contents.emplace_back(std::move(f1_str));
-                  }
-
-                  std::string hash_hex_str;
-                  picosha2::hash256_hex_string(contents.back(), hash_hex_str);
-
-                  // Check if timestamp has changed
-                  auto meta = timestamps.find(targ_name);
-                  if (meta == timestamps.end() || meta->second != hash_hex_str)
-                  {
-                    nslog::warn(fmt::format("{} has changed. Regenerating!",
-                                            targ_name));
-                    s_nsmodule->regenerate = true;
-                    regenerate_main        = true;
-                    timestamps[targ_name]  = hash_hex_str;
-                  }
-
-                  neo::state_machine sm{reg, this};
-                  sm.parse(pwd.filename().string(), contents.back());
-                  handle_error(sm);
-
-                  // Add a target
-                  auto t = targets.emplace(targ_name, nstarget{});
-                  t.first->second.sha256 = hash_hex_str;
-                  t.first->second.fw_idx =
-                      static_cast<std::uint32_t>(frameworks.size() - 1);
-                  t.first->second.mod_idx = static_cast<std::uint32_t>(
-                      frameworks.back().modules.size() - 1);
-                }
-                s_nsmodule = nullptr;
-              });
-          s_nsframework = nullptr;
-        }
-      });
-
-  update_macros();
-  process_targets();
-  if (regenerate_main)
-    process_main();
-  return 0;
 }
 
 void nsbuild::handle_error(neo::state_machine& err)
@@ -142,57 +70,164 @@ void nsbuild::handle_error(neo::state_machine& err)
   }
 }
 
-void nsbuild::read_timestamps()
+void nsbuild::before_all()
 {
-  std::ifstream iff(pwd);
-  if (!iff.is_open())
+  // At this point we have read config!
+  determine_build_type();
+  scan_main(get_full_scan_dir());
+  read_meta(get_full_cache_dir() / ".meta");
+  foreach_framework([this](std::filesystem::path p) { read_framework(p); });
+  update_macros();
+  process_targets();
+  write_meta(get_full_cache_dir() / ".meta");
+  generate_main_config();
+}
+
+void nsbuild::determine_build_type()
+{
+  auto it = config.cmake_build_dir.find_last_of("/\\");
+  if (it == std::string::npos)
+    throw std::runtime_error("Build config type could not be determined.");
+  config_name = config.cmake_build_dir.substr(it + 1);
+}
+
+void nsbuild::read_meta(std::filesystem::path path)
+{
+  if (!scan_file(path, false))
   {
-    nslog::print("Timestamp/SHA file was missing!");
+    nslog::print("Meta info file was missing! Will regenerate!");
+    state.meta_missing       = true;
+    state.is_dirty           = true;
+    state.full_regenerate    = true;
+    state.delete_cmake_cache = true;
+    state.delete_timestamps  = true;
     return;
   }
-  std::string name, sha;
-  while (iff >> name)
+  if (meta.compiler_version != config.cmake_cppcompiler_version)
   {
-    if (iff >> sha)
+    meta.compiler_version    = config.cmake_cppcompiler_version;
+    state.delete_cmake_cache = true;
+    state.delete_timestamps  = true;
+    state.is_dirty           = true;
+  }
+  if (meta.compiler_name != config.cmake_cppcompiler)
+  {
+    meta.compiler_name       = config.cmake_cppcompiler;
+    state.delete_cmake_cache = true;
+    state.delete_timestamps  = true;
+    state.is_dirty           = true;
+  }
+}
+
+void nsbuild::write_meta(std::filesystem::path path)
+{
+  if (!state.is_dirty)
+    return;
+
+  std::ofstream ofs{path};
+
+  ofs << "meta {";
+  ofs << fmt::format("\n compiler_version \"{}\";", meta.compiler_version)
+      << fmt::format("\n compiler_name \"{}\";", meta.compiler_name)
+      << "\n timestamps {";
+  for (auto& t : meta.timestamps)
+    ofs << fmt::format("\n  {} : \"{}\";", t.first, t.second);
+
+  ofs << "\n }\n}";
+}
+
+void nsbuild::scan_main(std::filesystem::path sp)
+{
+  scan_file(sp / "Build.ns", true);
+}
+
+void nsbuild::read_framework(std::filesystem::path sp)
+{
+  auto fwname = sp.filename().string();
+  add_framework(fwname);
+  scan_file(sp / "Framework.ns", false);
+  foreach_module([this](std::filesystem::path m) { read_module(m); }, sp);
+}
+
+void nsbuild::read_module(std::filesystem::path sp)
+{
+  auto mod_name  = sp.filename().string();
+  auto fwname    = sp.parent_path().string();
+  auto targ_name = target_name(fwname, mod_name);
+  add_module(mod_name);
+  if (!frameworks.back().excludes.contains(targ_name))
+  {
+    std::string hash_hex_str;
+    scan_file(sp / "Module.ns", true, &hash_hex_str);
+
+    // Check if timestamp has changed
+    auto ts = meta.timestamps.find(targ_name);
+    if (ts == meta.timestamps.end() || ts->second != hash_hex_str)
     {
-      timestamps.emplace(name, sha);
+      nslog::warn(fmt::format("{} has changed. Regenerating!", targ_name));
+      s_nsmodule->regenerate     = true;
+      state.is_dirty             = true;
+      meta.timestamps[targ_name] = hash_hex_str;
     }
+    // Add a target
+    auto t                 = targets.emplace(targ_name, nstarget{});
+    t.first->second.sha256 = hash_hex_str;
+    t.first->second.fw_idx = static_cast<std::uint32_t>(frameworks.size() - 1);
+    t.first->second.mod_idx =
+        static_cast<std::uint32_t>(frameworks.back().modules.size() - 1);
+  }
+}
+
+void nsbuild::generate_main_config()
+{
+  // get_full_out_dir() / "CMakeLists.txt";
+  std::string redirect =
+      fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LISTS_DIR}}/{0}  ${{CMAKE_CURRENT_LISTS_DIR}}/{0})",
+                  config_name);
+  bool rewrite = true;
+  auto cml     = get_full_out_dir() / "CMakeLists.txt";
+  if (std::filesystem::exists(cml))
+  {
+    std::ifstream iff{cml};
+    std::string   f1_str((std::istreambuf_iterator<char>(iff)),
+                       std::istreambuf_iterator<char>(iff));
+    if (f1_str == redirect)
+      rewrite = false;
+  }
+  if (rewrite)
+  {
+    std::ofstream off{cml};
+    off << redirect;
   }
 }
 
 template <typename L>
-void nsbuild::for_each_framework(L&& l)
+void nsbuild::foreach_framework(L&& l)
 {
-  auto pwds  = pwd;
-  auto fwdir = pwd / frameworks_dir;
+  auto fwdir = get_full_scan_dir() / frameworks_dir;
   for (auto const& dir_entry : std::filesystem::directory_iterator{fwdir})
   {
     // for each fw
-    pwd = dir_entry.path();
-    pwd = pwd / "Framework.ns";
-    if (std::filesystem::exists(pwd))
+    auto pwd = dir_entry.path();
+    if (std::filesystem::exists(pwd / "Framework.ns"))
     {
-      l();
+      l(pwd);
     }
   }
-  pwd = pwds;
 }
 
 template <typename L>
-void nsbuild::for_each_module(L&& l)
+void nsbuild::foreach_module(L&& l, std::filesystem::path fwpath)
 {
-  auto pwds = pwd;
-  for (auto const& dir_entry : std::filesystem::directory_iterator{pwds})
+  for (auto const& dir_entry : std::filesystem::directory_iterator{fwpath})
   {
     // for each fw
-    pwd = dir_entry.path();
-    pwd = pwd / "Module.ns";
-    if (std::filesystem::exists(pwd))
+    auto pwd = dir_entry.path();
+    if (std::filesystem::exists(pwd / "Module.ns"))
     {
-      l();
+      l(pwd);
     }
   }
-  pwd = pwds;
 }
 
 void nsbuild::process_targets()
@@ -210,8 +245,9 @@ void nsbuild::process_targets()
       {
         if (m.regenerate)
         {
-          process.emplace_back(std::move(std::async(
-              std::launch::async, &nsmodule::write, &m, std::cref(*this))));
+          process.emplace_back(std::move(std::async(std::launch::async,
+                                                    &nsmodule::write_main_build,
+                                                    &m, std::cref(*this))));
         }
       });
 
@@ -252,46 +288,38 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
                    std::cref(*this), std::cref(name), std::ref(targ))));
 }
 
-void nsbuild::before_all(std::string_view build_dir, std::string_view src_dir)
+void nsbuild::generate_enum(std::string from)
 {
-  std::filesystem::path p    = build_dir;
-  std::string           type = p.filename().generic_string();
-  if (type.empty())
-    type = p.parent_path().filename().generic_string();
-  if (type.empty())
-  {
-    throw std::runtime_error("Build config type could not be determined.");
-  }
-  scan_main(src_dir);
-}
-
-void nsbuild::generate_enum(std::string target)
-{
-  pwd       = std::filesystem::current_path();
-  auto spwd = pwd / scan_path;
-
-  std::filesystem::path path = target;
-  if (path.is_relative())
-    path = spwd / frameworks_dir / path;
-
-  auto [fw, mod] = get_modid(target);
+  auto spwd         = get_full_scan_dir();
+  auto [fw, mod]    = get_modid(from);
+  auto mod_src_path = spwd / frameworks_dir / fw / mod;
   add_framework(fw);
   add_module(mod);
+  state.stop_after_modtype = true;
+  scan_file(mod_src_path / "Module.ns", true);
 
-  neo::state_machine sm{reg, this};
-  stop_after_modtype = true;
-  sm.parse(pwd.filename().string(), contents.back());
-  handle_error(sm);
-
-  auto gen_path = spwd / build_dir / target / k_gen_dir;
-  if (!std::filesystem::create_directories(gen_path))
-    throw std::runtime_error(fmt::format("Failed to create directory: {}",
-                                         gen_path.generic_string()));
-  python.enumspy(mod, to_string(s_nsmodule->type), path.generic_string(),
-                 gen_path.generic_string());
+  auto gen_path = s_nsmodule->get_full_gen_dir(*this);
+  nsenum_context::generate(std::string{mod}, s_nsmodule->type, mod_src_path,
+                           gen_path);
 }
 
-modid nsbuild::get_modid(std::string_view path)
+void nsbuild::copy_media(std::filesystem::path from, std::filesystem::path to,
+                         std::string ignore)
+{
+  namespace fs  = std::filesystem;
+  auto       it = std::filesystem::directory_iterator{from};
+  const auto copy_options =
+      fs::copy_options::update_existing | fs::copy_options::recursive;
+  for (auto const& dir_entry : it)
+  {
+    if (dir_entry.is_directory() && dir_entry.path().filename() == ignore)
+      continue;
+    std::filesystem::copy(dir_entry.path(), to / dir_entry.path().filename(),
+                          copy_options);
+  }
+}
+
+modid nsbuild::get_modid(std::string_view path) const
 {
   auto it = path.find(frameworks_dir);
   if (it == path.npos)
@@ -310,15 +338,15 @@ modid nsbuild::get_modid(std::string_view path)
 
 void nsbuild::update_macros()
 {
-  pwd       = std::filesystem::current_path();
-  auto spwd = pwd / scan_path;
+  auto pwd = get_full_scan_dir();
 
-  macros["config_scan_dir"]       = spwd.generic_string();
-  macros["config_build_dir"]      = (spwd / build_dir).generic_string();
-  macros["config_sdk_dir"]        = (spwd / sdk_dir).generic_string();
-  macros["config_frameworks_dir"] = (spwd / frameworks_dir).generic_string();
-  macros["config_runtime_dir"]    = (spwd / runtime_dir).generic_string();
-  macros["config_download_dir"]   = (spwd / download_dir).generic_string();
-  macros["config_build_type"] = "$<IF:$<CONFIG:Debug>,Debug,RelWithDebInfo>";
-  macros["config_platform"]   = config.target_platform;
+  macros["config_build_dir"] = cmake::path(get_full_build_dir());
+  macros["config_sdk_dir"]   = cmake::path(get_full_cfg_dir() / sdk_dir);
+  macros["config_rt_dir"]    = cmake::path(get_full_cfg_dir() / runtime_dir);
+  macros["config_frameworks_dir"] = cmake::path((pwd / frameworks_dir));
+  macros["config_download_dir"]   = cmake::path((pwd / out_dir));
+  macros["config_name"]           = config_name;
+  macros["config_type"]           = config.cmake_config;
+  macros["config_platform"]       = config.target_platform;
+  macros["config_ignored_media"]  = ignore_media_from;
 }

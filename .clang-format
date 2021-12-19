@@ -11,6 +11,7 @@ AlignEscapedNewlines: Right
 AlwaysBreakTemplateDeclarations: true
 IncludeBlocks: Regroup
 BreakBeforeBraces: Custom
+
 BraceWrapping:
   AfterCaseLabel: true
   AfterClass: true

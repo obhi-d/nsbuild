@@ -5,7 +5,7 @@
 void nsframework::process(nsbuild const& bc) 
 {
   auto  pwd   = std::filesystem::current_path();
-  auto  fwpwd = pwd / bc.scan_path / bc.frameworks_dir / name;
+  auto fwpwd  = bc.get_full_scan_dir() / bc.frameworks_dir / name;
   source_path = fwpwd.generic_string();
   
 }

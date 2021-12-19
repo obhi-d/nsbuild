@@ -34,6 +34,7 @@ struct nsvars
   nsfilters                   filters;
   std::vector<nsnamed_params> params;
 
+  nsvars() = default;
   nsvars(std::string_view pfx) : prefix(pfx) {}
   void print(std::ostream& os, output_fmt = output_fmt::cmake_def) const;
 };

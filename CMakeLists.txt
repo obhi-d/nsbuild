@@ -5,10 +5,12 @@ project(nsbuild VERSION 0.0.1 LANGUAGES C CXX)
 
 include(FetchContent)
 
-set(NEOSCRIPT_BUILD_TESTS OFF)
-set(NEOSCRIPT_HEADER_ONLY ON)
-set(FETCHCONTENT_BASE_DIR ${PROJECT_SOURCE_DIR}/external)
-set(REPROC++ ON)
+set(NEOSCRIPT_BUILD_TESTS OFF CACHE INTERNAL "")
+set(NEOSCRIPT_HEADER_ONLY ON CACHE INTERNAL "")
+set(FETCHCONTENT_BASE_DIR ${PROJECT_SOURCE_DIR}/external CACHE INTERNAL "")
+set(REPROC++ ON CACHE INTERNAL "")
+set(FMT_TEST OFF CACHE INTERNAL "")
+set(JSON_BuildTests OFF CACHE INTERNAL "")
 
 FetchContent_Declare(neoscript
   GIT_REPOSITORY https://github.com/obhi-d/neoscript.git
@@ -25,8 +27,12 @@ FetchContent_Declare(reproc
   GIT_TAG 8aea3aef64c37a7ed0db759a7128a80c2540c808
 )
 
-FetchContent_MakeAvailable(neoscript fmt reproc)
-find_package(Python3 REQUIRED)
+FetchContent_Declare(json
+  GIT_REPOSITORY https://github.com/nlohmann/json.git
+  GIT_TAG fec56a1a16c6e1c1b1f4e116a20e79398282626c
+)
+
+FetchContent_MakeAvailable(neoscript fmt reproc json)
 
 ## Basic tests
 add_executable(nsbuild
@@ -45,12 +51,13 @@ add_executable(nsbuild
  "src/nsframework.cpp" 
  "src/nsprocess.cpp"
  "src/nscmake.cpp" 
- "src/nsbuildcmds.cpp")
+ "src/nsbuildcmds.cpp" 
+ "src/nsmedia.cpp" 
+ "src/nsenums.cpp")
 
 target_include_directories(nsbuild PRIVATE 
-	"${CMAKE_SOURCE_DIR}/include"
-  "${Python3_INCLUDE_DIS}"
-)
+	"${CMAKE_SOURCE_DIR}/include")
+ 
 target_compile_features(nsbuild PUBLIC cxx_std_20)
 
 
@@ -60,6 +67,4 @@ target_compile_options(nsbuild PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocesso
 target_link_libraries(nsbuild fmt)
 target_link_libraries(nsbuild reproc++)
 target_link_libraries(nsbuild neoscript)
-
-target_link_libraries(nsbuild PRIVATE ${Python3_LIBRARIES})
-target_compile_features(nsbuild PRIVATE cxx_std_20)
+target_link_libraries(nsbuild nlohmann_json::nlohmann_json)
