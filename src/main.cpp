@@ -5,17 +5,9 @@
 
 ns_registry(nsbuild);
 
-enum class runas
+nscmakeinfo read_config(char const* argv[], int i, int argc) 
 {
-  main,
-  check,
-  generate_enum,
-  copy_media,
-};
-
-nsconfig read_config(char const* argv[], int i, int argc) 
-{
-  nsconfig cfg;
+  nscmakeinfo cfg;
   if (i < argc)
     cfg.cmake_bin = argv[i++];
   if (i < argc)
@@ -45,8 +37,9 @@ int      main(int argc, char const* argv[])
 {
   std::string working_dir = ".";
   std::string target      = "";
-  nsconfig    nscfg;
-  runas       ras         = runas::main;
+  nscmakeinfo nscfg;
+  runas       ras = runas::main;
+  ide_type    ide = ide_type::all;
   std::string project;
   for (int i = 1; i < argc; ++i)
   {
@@ -58,7 +51,13 @@ int      main(int argc, char const* argv[])
         project = argv[i + 1];
       i++;
     }
-    if (arg == "--check" || arg == "-c")
+    else if (arg == "--ide" || arg == "-i")
+    {
+      if (i + 1 < argc)
+        ide = get_ide(argv[i + 1]);
+      i++;
+    }
+    else if (arg == "--check" || arg == "-c")
     {
       ras   = runas::check;
       nscfg = read_config(argv, i + 1, argc);
@@ -93,6 +92,7 @@ int      main(int argc, char const* argv[])
   }
 
   nsbuild build;
+  build.state.ras = ras;
   neo_register(nsbuild, build.reg);
 
   try
@@ -102,13 +102,13 @@ int      main(int argc, char const* argv[])
     switch (ras)
     {
     case runas::main:
-      build.main_project(project);
+      build.main_project(project, ide);
       break;
     case runas::generate_enum:
       build.generate_enum(target);
       break;
     case runas::check:
-      build.config = nscfg;
+      build.cmakeinfo = nscfg;
       build.before_all();
       break;
     }

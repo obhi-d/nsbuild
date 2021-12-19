@@ -36,7 +36,7 @@ set_property(
 )
 
 add_subdirectory({1})
-
+include(CTest)
 
 )_";
 

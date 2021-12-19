@@ -162,8 +162,6 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name,
       }
     }
   }
-
-  macros.fallback = &bc.macros;
 }
 
 void nsmodule::update_fetch(nsbuild const& bc)
@@ -211,6 +209,8 @@ void nsmodule::write_fetch_build(nsbuild const& bc) const
     nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
     throw std::runtime_error("Could not create CMakeLists.txt");
   }
+  macros.print(ofs);
+  bc.macros.print(ofs);
   write_variables(ofs, bc);
 
   std::filesystem::path src     = source_path;
@@ -250,6 +250,7 @@ void nsmodule::write_main_build(nsbuild const& bc) const
     nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
     throw std::runtime_error("Could not create CMakeLists.txt");
   }
+  macros.print(ofs);
   write_variables(ofs, bc);
 
   if (has_data(type))
@@ -305,7 +306,7 @@ void nsmodule::write_target(std::ofstream& ofs, nsbuild const& bc,
     ofs << fmt::format("\nadd_library({} INTERFACE IMPORTED GLOBAL)", name);
     break;
   case nsmodule_type::lib:
-    if (bc.config.static_libs)
+    if (bc.cmakeinfo.static_libs)
       ofs << fmt::format("\nadd_library({} STATIC ${{source_group}})", name);
     else
       ofs << fmt::format("\nadd_library({} SHARED ${{source_group}})", name);

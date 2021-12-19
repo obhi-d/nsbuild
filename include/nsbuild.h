@@ -2,18 +2,16 @@
 #include <future>
 #include <list>
 #include <nscommon.h>
-#include <nscompiler.h>
 #include <nsconfig.h>
+#include <nscmakeinfo.h>
 #include <nsframework.h>
 #include <nsmacros.h>
 #include <nsmodule.h>
 #include <nspython.h>
 #include <nstarget.h>
 
-
 struct nsbuild : public neo::command_handler
-{
-  
+{ 
   // path relative to scan
   std::string out_dir        = "../out";
   // path relative to out/config
@@ -39,13 +37,13 @@ struct nsbuild : public neo::command_handler
 
   std::string test_ref = "";
 
-  nsconfig config;
+  nscmakeinfo cmakeinfo;
 
   nsmacros macros;
 
   std::vector<nsframework> frameworks;
 
-  std::vector<nscompiler> compiler;
+  std::vector<nsconfig> config;
 
   neo::registry          reg;
   std::list<std::string> contents;
@@ -81,7 +79,7 @@ struct nsbuild : public neo::command_handler
   nsbuild(nsbuild const&)       = delete;
   nsbuild& operator=(nsbuild const&) = delete;
 
-  void main_project(std::string);
+  void main_project(std::string_view proj, ide_type ide);
 
   bool scan_file(std::filesystem::path, bool store, std::string* sha = nullptr);
   void handle_error(neo::state_machine&);
@@ -96,12 +94,14 @@ struct nsbuild : public neo::command_handler
   void before_all();
   void determine_build_type();
   void read_meta(std::filesystem::path);
+  void act_meta();
   void write_meta(std::filesystem::path);
   void scan_main(std::filesystem::path);
   void read_framework(std::filesystem::path);
   void read_module(std::filesystem::path);
   void generate_main_config();
-
+  void write_include_modules() const;
+    
   /// @brief Generates enum files
   /// @param target Should be FwName/ModName or full path to module directory
   void generate_enum(std::string target);

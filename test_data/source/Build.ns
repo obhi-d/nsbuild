@@ -1,28 +1,29 @@
 
-build_dir      = "../out/bld";
-sdk_dir        = "../out/sdk";
-runtime_dir    = "../out/rt";
-download_dir   = "../out/dl";
+out_dir        = "../out";
+build_dir      = "bld";
+sdk_dir        = "sdk";
+runtime_dir    = "rt";
+download_dir   = "dl";
 frameworks_dir = "Frameworks";
 
-compiler [msvc, release]
+config x64rel [msvc, release]
 {
   compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
 }
 
-compiler [msvc, debug]
+config x64dbg [msvc, debug]
 {
   compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
   linker_flags: [ "/debug", "-incremental:no" ];
 }
 
-compiler [msvc, debug, asan]
+config x64asan [msvc, debug, asan]
 {
   compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8", "/fsanitize=address"  ];
   linker_flags: [ "/debug", "-incremental:no", "/wholearchive:clang_rt.asan_dbg_dynamic-x86_64.lib", "/wholearchive:clang_rt.asan_dbg_dynamic_runtime_thunk-x86_64.lib" ];
 }
 
-compiler [gcc, release]
+config x64rel [gcc, release]
 {
   compiler_flags  : [
       "-fcoroutines",
@@ -32,7 +33,7 @@ compiler [gcc, release]
     ];
 }
 
-compiler [gcc, debug]
+config x64dbg [gcc, debug]
 {
   compiler_flags  : [
       "-fcoroutines",
@@ -42,7 +43,7 @@ compiler [gcc, debug]
     ];
 }
 
-compiler [gcc, debug, asan]
+config x64asan [gcc, debug, asan]
 {
   compiler_flags  : [
       "-fcoroutines",

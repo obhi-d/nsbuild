@@ -33,4 +33,5 @@ void nsmacros::print(std::ostream& os, output_fmt) const
     cmake::print(os, v.second);
     os << "\")";
   }
+  os << "\n";
 }

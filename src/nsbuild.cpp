@@ -1,6 +1,7 @@
 #include "nsbuild.h"
 
 #include "nsenums.h"
+#include "nside.h"
 #include "picosha2.h"
 
 #include <exception>
@@ -14,7 +15,7 @@
 #include <nslog.h>
 #include <stdexcept>
 
-void nsbuild::main_project(std::string proj) 
+void nsbuild::main_project(std::string_view proj, ide_type ide)
 { 
   
   auto cml = get_full_scan_dir() / "CMakeLists.txt";
@@ -29,6 +30,8 @@ void nsbuild::main_project(std::string proj)
     std::ofstream off{cml};
     off << "";
   }
+
+  nside::write(ide, *this);
 }
 
 bool nsbuild::scan_file(std::filesystem::path path, bool store,
@@ -76,6 +79,7 @@ void nsbuild::before_all()
   determine_build_type();
   scan_main(get_full_scan_dir());
   read_meta(get_full_cache_dir() / ".meta");
+  act_meta();
   foreach_framework([this](std::filesystem::path p) { read_framework(p); });
   update_macros();
   process_targets();
@@ -85,10 +89,10 @@ void nsbuild::before_all()
 
 void nsbuild::determine_build_type()
 {
-  auto it = config.cmake_build_dir.find_last_of("/\\");
+  auto it = cmakeinfo.cmake_build_dir.find_last_of("/\\");
   if (it == std::string::npos)
     throw std::runtime_error("Build config type could not be determined.");
-  config_name = config.cmake_build_dir.substr(it + 1);
+  config_name = cmakeinfo.cmake_build_dir.substr(it + 1);
 }
 
 void nsbuild::read_meta(std::filesystem::path path)
@@ -103,19 +107,32 @@ void nsbuild::read_meta(std::filesystem::path path)
     state.delete_timestamps  = true;
     return;
   }
-  if (meta.compiler_version != config.cmake_cppcompiler_version)
+  if (meta.compiler_version != cmakeinfo.cmake_cppcompiler_version)
   {
-    meta.compiler_version    = config.cmake_cppcompiler_version;
+    meta.compiler_version    = cmakeinfo.cmake_cppcompiler_version;
     state.delete_cmake_cache = true;
     state.delete_timestamps  = true;
     state.is_dirty           = true;
   }
-  if (meta.compiler_name != config.cmake_cppcompiler)
+  if (meta.compiler_name != cmakeinfo.cmake_cppcompiler)
   {
-    meta.compiler_name       = config.cmake_cppcompiler;
+    meta.compiler_name       = cmakeinfo.cmake_cppcompiler;
     state.delete_cmake_cache = true;
     state.delete_timestamps  = true;
     state.is_dirty           = true;
+  }
+}
+
+void nsbuild::act_meta() 
+{ 
+  if (state.delete_cmake_cache)
+  {
+    // TODO find paths to CMakeCache.txt and delete them
+  }
+
+  if (state.delete_timestamps)
+  {
+    // TODO find paths to -stamp and delete them
   }
 }
 
@@ -162,7 +179,7 @@ void nsbuild::read_module(std::filesystem::path sp)
 
     // Check if timestamp has changed
     auto ts = meta.timestamps.find(targ_name);
-    if (ts == meta.timestamps.end() || ts->second != hash_hex_str)
+    if (ts == meta.timestamps.end() || ts->second != hash_hex_str || state.full_regenerate)
     {
       nslog::warn(fmt::format("{} has changed. Regenerating!", targ_name));
       s_nsmodule->regenerate     = true;
@@ -180,6 +197,9 @@ void nsbuild::read_module(std::filesystem::path sp)
 
 void nsbuild::generate_main_config()
 {
+  if (!state.is_dirty)
+    return;
+
   // get_full_out_dir() / "CMakeLists.txt";
   std::string redirect =
       fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LISTS_DIR}}/{0}  ${{CMAKE_CURRENT_LISTS_DIR}}/{0})",
@@ -250,7 +270,7 @@ void nsbuild::process_targets()
                                                     &m, std::cref(*this))));
         }
       });
-
+  write_include_modules();
   for (auto& f : process)
     f.wait();
 }
@@ -295,7 +315,6 @@ void nsbuild::generate_enum(std::string from)
   auto mod_src_path = spwd / frameworks_dir / fw / mod;
   add_framework(fw);
   add_module(mod);
-  state.stop_after_modtype = true;
   scan_file(mod_src_path / "Module.ns", true);
 
   auto gen_path = s_nsmodule->get_full_gen_dir(*this);
@@ -346,7 +365,27 @@ void nsbuild::update_macros()
   macros["config_frameworks_dir"] = cmake::path((pwd / frameworks_dir));
   macros["config_download_dir"]   = cmake::path((pwd / out_dir));
   macros["config_name"]           = config_name;
-  macros["config_type"]           = config.cmake_config;
-  macros["config_platform"]       = config.target_platform;
+  macros["config_type"]           = cmakeinfo.cmake_config;
+  macros["config_platform"]       = cmakeinfo.target_platform;
   macros["config_ignored_media"]  = ignore_media_from;
+}
+
+void nsbuild::write_include_modules() const
+{
+  if (!state.is_dirty)
+    return;
+
+  auto          cmlf = get_full_cfg_dir() / "CMakeLists.txt";
+  std::ofstream ofs{cmlf};
+  if (!ofs)
+  {
+    nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
+    throw std::runtime_error("Could not create CMakeLists.txt");
+  }
+  macros.print(ofs);
+  for (auto const& s : sorted_targets)
+  {
+    auto const& m = get_module(s);
+    ofs << fmt::format("\nadd_subdirectory({0}/{1} {0}/{1})", build_dir, m.name);
+  }
 }

@@ -16,28 +16,28 @@ void cmake_config(nsbuild const& bc, std::vector<std::string> args,
                          std::string src, std::filesystem::path wd)
 {
 
-  if (!bc.config.cmake_config.empty() && !bc.config.is_multi_cfg)
-    args.emplace_back(cmake::dset("CMAKE_BUILD_TYPE", bc.config.cmake_config));
+  if (!bc.cmakeinfo.cmake_config.empty() && !bc.cmakeinfo.is_multi_cfg)
+    args.emplace_back(cmake::dset("CMAKE_BUILD_TYPE", bc.cmakeinfo.cmake_config));
 
-  if (!bc.config.cmake_toolchain.empty())
+  if (!bc.cmakeinfo.cmake_toolchain.empty())
     args.emplace_back(
-        cmake::dset("CMAKE_TOOLCHAIN_FILE", bc.config.cmake_toolchain));
+        cmake::dset("CMAKE_TOOLCHAIN_FILE", bc.cmakeinfo.cmake_toolchain));
 
-  if (!bc.config.cmake_generator.empty())
+  if (!bc.cmakeinfo.cmake_generator.empty())
     args.emplace_back(
-        cmake::dset("CMAKE_GENERATOR", bc.config.cmake_generator));
+        cmake::dset("CMAKE_GENERATOR", bc.cmakeinfo.cmake_generator));
 
-  if (!bc.config.cmake_generator_platform.empty())
+  if (!bc.cmakeinfo.cmake_generator_platform.empty())
     args.emplace_back(cmake::dset("CMAKE_GENERATOR_PLATFORM",
-                                  bc.config.cmake_generator_platform));
+                                  bc.cmakeinfo.cmake_generator_platform));
 
-  if (!bc.config.cmake_generator_instance.empty())
+  if (!bc.cmakeinfo.cmake_generator_instance.empty())
     args.emplace_back(cmake::dset("CMAKE_GENERATOR_INSTANCE",
-                                  bc.config.cmake_generator_instance));
+                                  bc.cmakeinfo.cmake_generator_instance));
 
-  if (!bc.config.cmake_generator_toolset.empty())
+  if (!bc.cmakeinfo.cmake_generator_toolset.empty())
     args.emplace_back(cmake::dset("CMAKE_GENERATOR_TOOLSET",
-                                  bc.config.cmake_generator_toolset));
+                                  bc.cmakeinfo.cmake_generator_toolset));
   args.emplace_back("-S");
   args.emplace_back(std::move(src));
   cmake(bc, std::move(args), wd);
@@ -49,10 +49,10 @@ void cmake_build(nsbuild const& bc, std::string_view target,
   std::vector<std::string> args;
   args.emplace_back("--build");
   args.emplace_back(".");
-  if (bc.config.is_multi_cfg)
+  if (bc.cmakeinfo.is_multi_cfg)
   {
     args.emplace_back("--config");
-    args.emplace_back(bc.config.cmake_config.c_str());
+    args.emplace_back(bc.cmakeinfo.cmake_config.c_str());
   }
   if (!target.empty())
   {
@@ -83,7 +83,7 @@ void cmake(nsbuild const& bc, std::vector<std::string> args,
 {
   std::vector<char const*> sargs;
   sargs.reserve(args.size() + 1);
-  sargs.emplace_back(bc.config.cmake_bin.c_str());
+  sargs.emplace_back(bc.cmakeinfo.cmake_bin.c_str());
   for (auto const& a : args)
     sargs.emplace_back(a.c_str());
 

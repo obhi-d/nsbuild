@@ -24,6 +24,24 @@ static inline constexpr char k_ext_dir[]      = "ext";
 static inline constexpr char k_xpb_dir[]      = "xpb";
 static inline constexpr char k_json_val[]      = "  \n\"{}\": \"{}\"";
 
+enum class runas
+{
+  main,
+  check,
+  generate_enum,
+  copy_media,
+};
+
+enum class ide_type
+{
+  vs,
+  clion,
+  vscode,
+  all
+};
+
+ide_type get_ide(std::string_view);
+
 enum class output_fmt
 {
   cmake_def,
@@ -204,12 +222,12 @@ struct nsmetainfo
 
 struct nsmetastate
 {
-  bool full_regenerate    = false;
-  bool delete_timestamps  = false;
-  bool delete_cmake_cache = false;
-  bool meta_missing       = false;
-  bool is_dirty           = false;
-  bool stop_after_modtype = false;
+  bool  full_regenerate    = false;
+  bool  delete_timestamps  = false;
+  bool  delete_cmake_cache = false;
+  bool  meta_missing       = false;
+  bool  is_dirty           = false;
+  runas ras                = runas::main;
 };
 
 std::string to_upper(std::string s);

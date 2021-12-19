@@ -8,6 +8,7 @@
       +--externM
          +--cmake/CMakeLists.txt
 + out
+  +--CMakeLists.txt
   +--dl
   +--build [x64-debug, arm-release]
      +--CMakeLists.txt [generic file with all module includes]

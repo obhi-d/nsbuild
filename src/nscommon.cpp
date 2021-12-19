@@ -20,6 +20,18 @@ std::unordered_map<std::string_view, nspath_type> path_type = {
     {"binary", nspath_type::binary_list},
     {"dependencies", nspath_type::dependency_list}};
 
+ide_type get_ide(std::string_view name) 
+{ 
+  if (name == "vs")
+    return ide_type::vs;
+  if (name == "clion")
+    return ide_type::clion;
+  if (name == "vscode")
+    return ide_type::vscode;
+  if (name == "all")
+    return ide_type::all;
+}
+
 nsfilter classify_filter(std::string_view name)
 {
   auto it = filters.find(name);
