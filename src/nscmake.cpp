@@ -137,4 +137,12 @@ std::string_view get_filter(nsfilter filter)
   }
   return "";
 }
+
+void line(std::ostream& oss, std::string_view name) 
+{
+  auto middle = (unsigned int)(((120u - name.length()) / 2) - 1);
+  auto line   = std::string(middle, '-');
+  oss << "\n#" << line << " " << name << " " << line;
+}
+
 } // namespace cmake

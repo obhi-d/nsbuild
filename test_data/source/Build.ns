@@ -1,20 +1,20 @@
 
-out_dir        = "../out";
-build_dir      = "bld";
-sdk_dir        = "sdk";
-runtime_dir    = "rt";
-download_dir   = "dl";
-frameworks_dir = "Frameworks";
-
-config x64rel [msvc, release]
-{
-  compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
-}
+out_dir        : "../out";
+build_dir      : "bld";
+sdk_dir        : "sdk";
+runtime_dir    : "rt";
+download_dir   : "dl";
+frameworks_dir : "Frameworks";
 
 config x64dbg [msvc, debug]
 {
   compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
   linker_flags: [ "/debug", "-incremental:no" ];
+}
+
+config x64rel [msvc, release]
+{
+  compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
 }
 
 config x64asan [msvc, debug, asan]

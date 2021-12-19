@@ -1,6 +1,4 @@
-framework
-{
-  excludes = [
-    "ExternE"
-  ];
-}
+excludes = [
+  "ExternE"
+];
+

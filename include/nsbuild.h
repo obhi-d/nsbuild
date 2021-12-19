@@ -21,7 +21,7 @@ struct nsbuild : public neo::command_handler
   // path relative to out/config
   std::string runtime_dir    = "rt";
   // path relative to out/config
-  std::string cache_dir      = "cache";
+  std::string cache_dir      = "ts";
   // path relative to out
   std::string download_dir   = "dl";
   // path relative to current
@@ -70,10 +70,13 @@ struct nsbuild : public neo::command_handler
   // Runtime options
   nsmetainfo  meta;
   nsmetastate state;
+
+  bool static_libs = false;
+
     
   //--------------------------------------
   // Fn
-  nsbuild()          = default;
+  nsbuild();
   nsbuild(nsbuild&&) = default;
   nsbuild& operator=(nsbuild&&) = default;
   nsbuild(nsbuild const&)       = delete;
@@ -101,7 +104,10 @@ struct nsbuild : public neo::command_handler
   void read_module(std::filesystem::path);
   void generate_main_config();
   void write_include_modules() const;
-    
+  void check_modules();
+
+  void write_cxx_options(std::ostream&) const;  
+
   /// @brief Generates enum files
   /// @param target Should be FwName/ModName or full path to module directory
   void generate_enum(std::string target);
@@ -150,33 +156,24 @@ struct nsbuild : public neo::command_handler
   template <typename L>
   void foreach_module(L&&, std::filesystem::path fwpath);
 
-  inline std::filesystem::path get_full_scan_dir() const
+  struct fullpaths
   {
-    return wd / scan_dir;
-  }
+    std::filesystem::path scan_dir;
+    std::filesystem::path cfg_dir;
+    std::filesystem::path build_dir;
+    std::filesystem::path cache_dir;
+    std::filesystem::path out_dir;
+    std::filesystem::path dl_dir;
+  };
 
-  inline std::filesystem::path get_full_cfg_dir() const
-  {
-    return wd / scan_dir / out_dir / config_name;
-  }
+  fullpaths paths;
 
-  inline std::filesystem::path get_full_build_dir() const 
-  {
-    return wd / scan_dir / out_dir / config_name / build_dir;
-  }
+  void compute_paths();
 
-  inline std::filesystem::path get_full_cache_dir() const
-  {
-    return wd / scan_dir / out_dir / config_name / cache_dir;
-  }
-
-  inline std::filesystem::path get_full_out_dir() const
-  {
-    return wd / scan_dir / out_dir;
-  }
-
-  inline std::filesystem::path get_full_dl_dir() const
-  {
-    return wd / scan_dir / out_dir / download_dir;
-  }
+  inline std::filesystem::path const& get_full_scan_dir() const { return paths.scan_dir;  }
+  inline std::filesystem::path const& get_full_cfg_dir() const { return paths.cfg_dir; }
+  inline std::filesystem::path const& get_full_build_dir() const { return paths.build_dir; }
+  inline std::filesystem::path const& get_full_cache_dir() const { return paths.cache_dir; }
+  inline std::filesystem::path const& get_full_out_dir() const { return paths.out_dir; }
+  inline std::filesystem::path const& get_full_dl_dir() const { return paths.dl_dir; }
 };

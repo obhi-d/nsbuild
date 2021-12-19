@@ -1,0 +1,17 @@
+
+type = extern;
+
+fetch "https://github.com/obhi-d/neoscript.git"
+{
+  license = "LICENSE";
+  commit  = "226b3ae5722131989e45f18f4cfb2c5d14f7cfda";
+  package = neoscript;
+  args
+  {
+    // TODO This needs to be cache internal
+    NEOSCRIPT_BUILD_TESTS = OFF;
+    NEOSCRIPT_BUILD_STATIC = OFF;
+    NEOSCRIPT_HEADER_ONLY = ON;
+    NEOSCRIPT_USE_PRE_GENERATED_PARSERS = ON;
+  }
+}

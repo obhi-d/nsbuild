@@ -21,13 +21,15 @@
 
 config_filter (about = "list of [debug, release, windows, linux, osx, clang, msvc, gcc, asan]");
 
+out_dir        = (about = "Output directory");
 sdk_dir        = (about = "Package install directory");
 build_dir      = (about = "Build directory");
 frameworks_dir = (about = "Frameworks directory");
 runtime_dir    = (about = "Output directory for debugging/testing");
 download_dir   = (about = "Directory to download sources");
-compiler (about = "Compiler flags",
-          params = ["list of @config_filter, more configs will be added as seen fit"])
+static_libs    = (about = "Build all as static libs (Except plugins)");
+config (about = "Define a config",
+          params = ["first is name, second is list of @config_filter"])
 {
   compiler_flags (about = "Compile flags");
   linker_flags (about = "Compile flags");
@@ -57,7 +59,7 @@ framework(about = "Framework level declaration, can exclude modules",
     artifacts (about = "List of files produced as artifacts to this build. If element names dont start with $ (followed by a var name) it is assumed the paths are relative to gen directory");
     dependencies (about = "List of files that this step depends on. If element names dont start with $ (followed by a var name) it is assumed the paths are relative to gen directory");
     check_deps (about = "Boolean. Skip if dependencies are not present");
-    steps (about = "Commands to build the artifacts. see @fetch.build")
+    steps (about = "Commands to build the artifacts.")
     {
       cmake;
       trace;
@@ -72,8 +74,9 @@ framework(about = "Framework level declaration, can exclude modules",
   fetch (about = "Starts a fetch operation. This will fetch code from repository and add checkout modules and sumboudles given a commit, from build instructions it will add build targets to the module",
          params = "First parameter should be repository",
          variables = [
-           "$fetch_src : Source directory where repository was fetched",
-           "$fetch_install : Directory where built repository is installed, this is not the same as interface.install unless specified"
+           "$fetch_bulid_dir : Build dir",
+           "$fetch_src_dir : Source directory where repository was fetched",
+           "$fetch_sdk_dir : Directory where built repository is installed, this is not the same as interface.install unless specified"
          ])
   {
     license (about = "License file of the external module, this will be added to the generated external license file", params = ["License file"]);

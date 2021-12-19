@@ -12,9 +12,9 @@ struct nscmakeinfo
   std::string              cmake_generator_platform;
   std::string              cmake_generator_toolset;
   std::string              cmake_generator_instance;
+  std::string              cmake_ccompiler;
   std::string              cmake_cppcompiler;
   std::string              cmake_cppcompiler_version;
   std::string              cmake_build_dir; 
-  bool                     static_libs  = false;
-  bool                     is_multi_cfg = false;
+  bool                     cmake_is_multi_cfg = false;
 };

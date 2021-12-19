@@ -2,11 +2,13 @@
 #include <nsbuild.h>
 #include <nsbuildcmds.h>
 #include <nsmodule.h>
+#include <nscmake.h>
 
 void nsbuildstep::print(std::ostream& ofs, nsbuild const& bc,
                         nsmodule const& m) const
 {
   std::string indent = "\n";
+  cmake::line(ofs, "build-step");
   if (!check.empty())
   {
     ofs << "\nif(" << check << ")";
@@ -31,7 +33,7 @@ void nsbuildstep::print(std::ostream& ofs, nsbuild const& bc,
   if (!wd.empty())
     ofs << indent << "WORKING_DIRECTORY " << wd;
   indent.pop_back();
-  ofs << indent << ")";
+  ofs << indent << ")\n";
   if (!check.empty())
     ofs << "\nendif()";
 }

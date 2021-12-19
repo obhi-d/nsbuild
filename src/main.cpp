@@ -2,6 +2,10 @@
 #include <iostream>
 #include <neo_script.hpp>
 #include <nsbuild.h>
+#include <nsprocess.h>
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#include <Windows.h>
+#endif
 
 ns_registry(nsbuild);
 
@@ -12,35 +16,48 @@ nscmakeinfo read_config(char const* argv[], int i, int argc)
     cfg.cmake_bin = argv[i++];
   if (i < argc)
     cfg.cmake_build_dir = argv[i++];
-  if (i < argc)
-    cfg.cmake_config = argv[i++];
-  if (i < argc)
-    cfg.cmake_cppcompiler = argv[i++];
-  if (i < argc)
-    cfg.cmake_cppcompiler_version = argv[i++];
-  if (i < argc)
-    cfg.cmake_generator = argv[i++];
-  if (i < argc)
-    cfg.cmake_generator_instance = argv[i++];
-  if (i < argc)
-    cfg.cmake_generator_platform = argv[i++];
-  if (i < argc)
-    cfg.cmake_generator_toolset = argv[i++];
-  if (i < argc)
-    cfg.cmake_toolchain = argv[i++];
-  if (i < argc)
-    cfg.target_platform = argv[i++];
+  for (; i < argc; ++i)
+  {
+    std::string_view arg = argv[i];
+    if (arg.starts_with("-B="))
+      cfg.cmake_config = arg.substr(3);
+    else if (arg.starts_with("-X="))
+      cfg.cmake_cppcompiler = arg.substr(3);
+    else if (arg.starts_with("-C="))
+      cfg.cmake_ccompiler = arg.substr(3);
+    else if (arg.starts_with("-V="))
+      cfg.cmake_cppcompiler_version = arg.substr(3);
+    else if (arg.starts_with("-G="))
+      cfg.cmake_generator = arg.substr(3);
+    else if (arg.starts_with("-I="))
+      cfg.cmake_generator_instance = arg.substr(3);
+    else if (arg.starts_with("-U="))
+      cfg.cmake_generator_platform = arg.substr(3);
+    else if (arg.starts_with("-H="))
+      cfg.cmake_generator_toolset = arg.substr(3);
+    else if (arg.starts_with("-T="))
+      cfg.cmake_toolchain = arg.substr(3);
+    else if (arg.starts_with("-N="))
+      cfg.cmake_is_multi_cfg = to_bool(arg.substr(3));
+    else if (arg.starts_with("-P="))
+      cfg.target_platform = arg.substr(3);
+  }
   return cfg;
 }
 
-int      main(int argc, char const* argv[])
+int main(int argc, char const* argv[])
 {
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+  MessageBoxA(0, "Attach Debugger", "Debug", 0);
+#endif
+
   std::string working_dir = ".";
   std::string target      = "";
   nscmakeinfo nscfg;
   runas       ras = runas::main;
   ide_type    ide = ide_type::all;
   std::string project;
+  nsprocess::s_nsbuild = argv[0];
   for (int i = 1; i < argc; ++i)
   {
     std::string_view arg = argv[i];

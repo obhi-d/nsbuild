@@ -14,7 +14,7 @@ set(JSON_BuildTests OFF CACHE INTERNAL "")
 
 FetchContent_Declare(neoscript
   GIT_REPOSITORY https://github.com/obhi-d/neoscript.git
-  GIT_TAG origin/main
+  GIT_TAG 226b3ae5722131989e45f18f4cfb2c5d14f7cfda
 )
 
 FetchContent_Declare(fmt

@@ -50,6 +50,7 @@ void nsmodule::process(nsbuild const& bc, std::string const& targ_name,
 void nsmodule::update_properties(nsbuild const&     bc,
                                  std::string const& targ_name, nstarget& targ)
 {
+  target_name = targ_name;
   auto& fw = bc.frameworks[targ.fw_idx];
 
   std::filesystem::path p = fw.source_path;
@@ -123,6 +124,9 @@ void nsmodule::update_properties(nsbuild const&     bc,
     step.wd = bc.wd.generic_string();
     postbuild.push_back(step);
   }
+
+  std::filesystem::create_directories(get_full_bld_dir(bc));
+  std::filesystem::create_directories(get_full_gen_dir(bc));
 }
 
 void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name,
@@ -202,20 +206,25 @@ void nsmodule::generate_plugin_manifest(nsbuild const& bc)
 
 void nsmodule::write_fetch_build(nsbuild const& bc) const
 {
-  auto          cmlf = get_full_ext_dir(bc) / "CMakeLists.txt";
+  auto                                     ext_dir = get_full_ext_dir(bc);
+  std::filesystem::create_directories(ext_dir);
+  auto          cmlf = ext_dir / "CMakeLists.txt";
   std::ofstream ofs{cmlf};
   if (!ofs)
   {
     nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
     throw std::runtime_error("Could not create CMakeLists.txt");
   }
-  macros.print(ofs);
+  
+  ofs << fmt::format(cmake::k_fetch_content_start, fetch->package);
+
   bc.macros.print(ofs);
+  macros.print(ofs);
   write_variables(ofs, bc);
 
   std::filesystem::path src     = source_path;
   auto                  srccmk  = src / k_cmake_dir / "CMakeLists.txt";
-  auto                  src_var = fmt::format("{}_SOURCE_DIR", fetch->name);
+  auto                  src_var = fmt::format("{}_SOURCE_DIR", fetch->package);
   if (std::filesystem::exists(srccmk))
   {
     ofs << fmt::format("\nset(module_cmk_src \"{}\")", srccmk.generic_string());
@@ -227,7 +236,7 @@ void nsmodule::write_fetch_build(nsbuild const& bc) const
     a.print(ofs);
   }
 
-  ofs << fmt::format(cmake::k_fetch_content, fetch->name, fetch->repo,
+  ofs << fmt::format(cmake::k_fetch_content, fetch->package, fetch->repo,
                      fetch->commit, src_var);
 }
 
@@ -243,40 +252,54 @@ void nsmodule::fetch_content(nsbuild const& bc)
 
 void nsmodule::write_main_build(nsbuild const& bc) const
 {
-  auto          cmlf = get_full_bld_dir(bc) / "CMakeLists.txt";
+  auto fbld = get_full_bld_dir(bc);
+  std::filesystem::create_directories(fbld);
+  auto          cmlf = fbld / "CMakeLists.txt";
   std::ofstream ofs{cmlf};
   if (!ofs)
   {
     nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
     throw std::runtime_error("Could not create CMakeLists.txt");
   }
+  cmake::line(ofs, "variables");
   macros.print(ofs);
   write_variables(ofs, bc);
-
+  cmake::line(ofs, "globs");
   if (has_data(type))
     glob_media.print(ofs);
 
   if (has_sources(type))
     glob_sources.print(ofs);
 
+  cmake::line(ofs, "target");
   write_target(ofs, bc, target_name);
+  cmake::line(ofs, "cxx-options");
+  write_cxx_options(ofs, bc);
+  cmake::line(ofs, "includes");
   write_includes(ofs, bc);
+  cmake::line(ofs, "definitions");
   write_definitions(ofs, bc);
-
+  cmake::line(ofs, "prebuild-steps");
   write_prebuild_steps(ofs, bc);
+  cmake::line(ofs, "postbuild-steps");
   write_postbuild_steps(ofs, bc);
+  cmake::line(ofs, "find-package");
   write_find_package(ofs, bc);
+  cmake::line(ofs, "dependencies");
   write_dependencies(ofs, bc);
+  cmake::line(ofs, "linklibs");
   write_linklibs(ofs, bc);
+  cmake::line(ofs, "runtime-settings");
   write_runtime_settings(ofs, bc);
+  cmake::line(ofs, "final-config");
   write_final_config(ofs, bc);
+  cmake::line(ofs, "installation");
   write_install_command(ofs, bc);
   // config file
 }
 
 void nsmodule::write_variables(std::ofstream& ofs, nsbuild const& bc) const
 {
-  macros.print(ofs);
   for (auto const& e : exports)
   {
     e.print(ofs, output_fmt::set_cache);
@@ -306,7 +329,7 @@ void nsmodule::write_target(std::ofstream& ofs, nsbuild const& bc,
     ofs << fmt::format("\nadd_library({} INTERFACE IMPORTED GLOBAL)", name);
     break;
   case nsmodule_type::lib:
-    if (bc.cmakeinfo.static_libs)
+    if (bc.static_libs)
       ofs << fmt::format("\nadd_library({} STATIC ${{source_group}})", name);
     else
       ofs << fmt::format("\nadd_library({} SHARED ${{source_group}})", name);
@@ -330,7 +353,7 @@ void nsmodule::write_prebuild_steps(std::ofstream& ofs, const nsbuild& bc) const
       step.print(ofs, bc, *this);
 
     ofs << "\n# Prebuild target"
-        << fmt::format("\nadd_custom_target({}.prebuild \n\tDEPENDS",
+        << fmt::format("\nadd_custom_target({}.prebuild \n\tDEPENDS ",
                        target_name);
     for (auto const& step : prebuild)
     {
@@ -340,7 +363,7 @@ void nsmodule::write_prebuild_steps(std::ofstream& ofs, const nsbuild& bc) const
     ofs << fmt::format(
         "\n\tCOMMAND ${{CMAKE_COMMAND}} -E echo Prebuilt step for {}\n)",
         target_name);
-    ofs << fmt::format("\nadd_dependency({0} {0}.prebuild)", target_name);
+    ofs << fmt::format("\nadd_dependencies({0} {0}.prebuild)", target_name);
   }
 }
 
@@ -362,6 +385,16 @@ void nsmodule::write_postbuild_steps(std::ofstream& ofs,
     }
     ofs << "\n\t)";
   }
+}
+
+void nsmodule::write_cxx_options(std::ofstream& ofs, nsbuild const& bc) const 
+{
+  if (!has_sources(type))
+    return;
+  ofs << "\ntarget_compile_options(${module_target} PRIVATE "
+         "${__module_cxx_compile_flags})";
+  ofs << "\ntarget_link_options(${module_target} PRIVATE "
+         "${__module_cxx_linker_flags})";
 }
 
 void nsmodule::write_includes(std::ofstream& ofs, nsbuild const& bc) const
@@ -399,7 +432,7 @@ void nsmodule::write_include(std::ofstream& ofs, std::string_view path,
 {
   // Assume build
   ofs << fmt::format("\nif(EXISTS \"{}/{}\")", path, subpath);
-  ofs << "\n\ttarget_include_directories(${{module_target}} "
+  ofs << "\n\ttarget_include_directories(${module_target} "
       << cmake::to_string(inherit);
   ofs << fmt::format("\n\t\t$<BUILD_INTERFACE:\"{}/{}\">", path, subpath);
   if (expo == cmake::exposition::install)
@@ -447,11 +480,11 @@ void nsmodule::write_find_package(std::ofstream& ofs, nsbuild const& bc) const
     ofs << "\ntarget_link_libraries(${{module_target}} "
         << cmake::to_string(cmake::inheritance::intf);
     if (fetch->components.empty())
-      ofs << fmt::format(" {0}::{0}", fetch->name);
+      ofs << fmt::format(" {0}::{0}", fetch->package);
     else
     {
       for (auto const& c : fetch->components)
-        ofs << fmt::format(" {}::{}", fetch->name, c);
+        ofs << fmt::format(" {}::{}", fetch->package, c);
     }
     ofs << "\n)";
   }
@@ -466,15 +499,15 @@ void nsmodule::write_find_package(std::ofstream& ofs, nsbuild const& bc) const
     ofs << "\nlist(TRANSFORM __sdk_install_libraries REPLACE ${fetch_sdk_dir} "
            "\"\")";
 
-    ofs << "\ntarget_include_directories(${{module_target}} "
+    ofs << "\ntarget_include_directories(${module_target} "
         << cmake::to_string(cmake::inheritance::intf)
-        << fmt::format("\n\t$<BUILD_INTERFACE:\"{}_INCLUDE_DIR\">",
+        << fmt::format("\n\t$<BUILD_INTERFACE:\"${{{}_INCLUDE_DIR}}\">",
                        fetch->package)
         << "\n\t$<INSTALL_INTERFACE:\"${__sdk_install_includes}\">"
         << "\n)"
         << "\ntarget_link_libraries(${{module_target}} "
         << cmake::to_string(cmake::inheritance::intf)
-        << fmt::format("\n\t$<BUILD_INTERFACE:\"{}_LIBRARIES\">",
+        << fmt::format("\n\t$<BUILD_INTERFACE:\"${{{}_LIBRARIES}}\">",
                        fetch->package)
         << "\n\t$<INSTALL_INTERFACE:\"${__sdk_install_libraries}\">"
         << "\n)";
@@ -768,11 +801,11 @@ void nsmodule::write_runtime_settings(std::ofstream& ofs,
   case nsmodule_type::lib:
   case nsmodule_type::test:
     ofs << "\nset_target_properties(" << target_name << " PROPERTIES "
-        << cmake::k_rt_locations << "\n);";
+        << cmake::k_rt_locations << ")";
     break;
   case nsmodule_type::plugin:
     ofs << "\nset_target_properties(" << target_name << " PROPERTIES "
-        << cmake::k_plugin_locations << "\n);";
+        << cmake::k_plugin_locations << ")";
     break;
   default:
     return;

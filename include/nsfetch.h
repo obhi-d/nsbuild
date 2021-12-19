@@ -6,7 +6,6 @@
 struct nsfetch
 {
   std::string_view              repo;
-  std::string_view              name;
   std::string_view              license;
   std::string_view              commit;
   std::string_view              version;

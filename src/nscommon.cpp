@@ -28,8 +28,7 @@ ide_type get_ide(std::string_view name)
     return ide_type::clion;
   if (name == "vscode")
     return ide_type::vscode;
-  if (name == "all")
-    return ide_type::all;
+  return ide_type::all;
 }
 
 nsfilter classify_filter(std::string_view name)
@@ -184,4 +183,11 @@ std::string to_snake_case(std::string const& s)
     }
   }
   return result;
+}
+
+bool to_bool(std::string_view v) 
+{ 
+  if (v == "1" || v == "TRUE" || v == "ON" || v == "true")
+    return true;
+  return false;
 }

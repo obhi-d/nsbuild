@@ -22,7 +22,7 @@ enum class nsmodule_type
   test
 };
 
-std::string_view to_string(nsmodule_type);
+// std::string_view to_string(nsmodule_type);
 bool             has_data(nsmodule_type);
 bool             has_sources(nsmodule_type);
 
@@ -119,6 +119,9 @@ struct nsmodule
 
   void write_prebuild_steps(std::ofstream& ofs, nsbuild const& bc) const;
   void write_postbuild_steps(std::ofstream& ofs, nsbuild const& bc) const;
+
+  void write_cxx_options(std::ofstream&, nsbuild const& bc) const;
+  
   void write_includes(std::ofstream&, nsbuild const& bc) const;
   void write_include(std::ofstream& ofs, std::string_view path,
                      std::string_view subpath, cmake::inheritance,
@@ -126,7 +129,7 @@ struct nsmodule
   void write_refs_includes(std::ofstream& ofs, nsbuild const& bc,
                            nsmodule const& target) const;
   void write_find_package(std::ofstream& ofs, nsbuild const& bc) const;
-
+    
   void write_definitions(std::ofstream&, nsbuild const& bc) const;
   void write_definitions_mod(std::ofstream&, nsbuild const& bc) const;
   void write_definitions(std::ofstream&, nsbuild const& bc,

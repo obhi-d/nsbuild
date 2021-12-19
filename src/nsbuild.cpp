@@ -14,21 +14,29 @@
 #include <mutex>
 #include <nslog.h>
 #include <stdexcept>
+#include <nsprocess.h>
+
+nsbuild::nsbuild() 
+{ 
+  wd = std::filesystem::current_path();
+}
 
 void nsbuild::main_project(std::string_view proj, ide_type ide)
 { 
-  
+  compute_paths();
   auto cml = get_full_scan_dir() / "CMakeLists.txt";
   
   {
     std::ofstream ff{cml};
-    ff << fmt::format(cmake::k_main_preamble, proj, out_dir);
+    ff << fmt::format(cmake::k_main_preamble, proj, out_dir, cmake::path(nsprocess::get_nsbuild_path()));
   }
 
   {
-    auto          cml = get_full_out_dir() / "CMakeLists.txt";
+    auto          out_dir = get_full_out_dir();
+    std::filesystem::create_directories(out_dir);
+    auto          cml = out_dir / "CMakeLists.txt";
     std::ofstream off{cml};
-    off << "";
+    off << "\nmessage(\"-- Run build for the first time to generate project files.\")\n";
   }
 
   nside::write(ide, *this);
@@ -41,7 +49,7 @@ bool nsbuild::scan_file(std::filesystem::path path, bool store,
   if (iff.is_open())
   {
     std::string f1_str((std::istreambuf_iterator<char>(iff)),
-                       std::istreambuf_iterator<char>(iff));
+                       std::istreambuf_iterator<char>());
     contents.emplace_back(std::move(f1_str));
 
     neo::state_machine sm{reg, this};
@@ -77,22 +85,29 @@ void nsbuild::before_all()
 {
   // At this point we have read config!
   determine_build_type();
+  compute_paths();
+  std::filesystem::create_directories(get_full_cache_dir());
   scan_main(get_full_scan_dir());
-  read_meta(get_full_cache_dir() / ".meta");
+  read_meta(get_full_cache_dir() / "meta.ns");
   act_meta();
   foreach_framework([this](std::filesystem::path p) { read_framework(p); });
+  check_modules();
   update_macros();
   process_targets();
-  write_meta(get_full_cache_dir() / ".meta");
+  write_meta(get_full_cache_dir() / "meta.ns");
   generate_main_config();
+}
+
+void nsbuild::check_modules() 
+{ 
+  if (meta.ordered_timestamps.size() != meta.timestamps.size())
+    state.is_dirty = true;
 }
 
 void nsbuild::determine_build_type()
 {
-  auto it = cmakeinfo.cmake_build_dir.find_last_of("/\\");
-  if (it == std::string::npos)
-    throw std::runtime_error("Build config type could not be determined.");
-  config_name = cmakeinfo.cmake_build_dir.substr(it + 1);
+  std::filesystem::path p  = cmakeinfo.cmake_build_dir;
+  config_name = p.parent_path().filename().generic_string();
 }
 
 void nsbuild::read_meta(std::filesystem::path path)
@@ -147,15 +162,23 @@ void nsbuild::write_meta(std::filesystem::path path)
   ofs << fmt::format("\n compiler_version \"{}\";", meta.compiler_version)
       << fmt::format("\n compiler_name \"{}\";", meta.compiler_name)
       << "\n timestamps {";
-  for (auto& t : meta.timestamps)
-    ofs << fmt::format("\n  {} : \"{}\";", t.first, t.second);
-
+  for (auto& t : meta.ordered_timestamps)
+  {
+    ofs << t; // fmt::format("\n  {} : \"{}\";", t.first, t.second);
+  }
   ofs << "\n }\n}";
 }
 
 void nsbuild::scan_main(std::filesystem::path sp)
 {
-  scan_file(sp / "Build.ns", true);
+  if (sp.is_absolute())
+  {
+    wd = sp;
+    std::filesystem::current_path(wd);
+    scan_file("Build.ns", true);
+  }
+  else
+    scan_file(sp / "Build.ns", true);
 }
 
 void nsbuild::read_framework(std::filesystem::path sp)
@@ -169,14 +192,14 @@ void nsbuild::read_framework(std::filesystem::path sp)
 void nsbuild::read_module(std::filesystem::path sp)
 {
   auto mod_name  = sp.filename().string();
-  auto fwname    = sp.parent_path().string();
+  auto fwname    = sp.parent_path().filename().string();
   auto targ_name = target_name(fwname, mod_name);
   add_module(mod_name);
-  if (!frameworks.back().excludes.contains(targ_name))
+  if (!frameworks.back().excludes.contains(mod_name))
   {
     std::string hash_hex_str;
     scan_file(sp / "Module.ns", true, &hash_hex_str);
-
+        
     // Check if timestamp has changed
     auto ts = meta.timestamps.find(targ_name);
     if (ts == meta.timestamps.end() || ts->second != hash_hex_str || state.full_regenerate)
@@ -186,6 +209,8 @@ void nsbuild::read_module(std::filesystem::path sp)
       state.is_dirty             = true;
       meta.timestamps[targ_name] = hash_hex_str;
     }
+    meta.ordered_timestamps.emplace_back(
+        fmt::format("\n  {} : \"{}\";", targ_name, hash_hex_str));
     // Add a target
     auto t                 = targets.emplace(targ_name, nstarget{});
     t.first->second.sha256 = hash_hex_str;
@@ -202,15 +227,15 @@ void nsbuild::generate_main_config()
 
   // get_full_out_dir() / "CMakeLists.txt";
   std::string redirect =
-      fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LISTS_DIR}}/{0}  ${{CMAKE_CURRENT_LISTS_DIR}}/{0})",
-                  config_name);
+      fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{0}  ${{CMAKE_CURRENT_LIST_DIR}}/{0}/{1}/cc)",
+                  config_name, build_dir);
   bool rewrite = true;
   auto cml     = get_full_out_dir() / "CMakeLists.txt";
   if (std::filesystem::exists(cml))
   {
     std::ifstream iff{cml};
     std::string   f1_str((std::istreambuf_iterator<char>(iff)),
-                       std::istreambuf_iterator<char>(iff));
+                       std::istreambuf_iterator<char>());
     if (f1_str == redirect)
       rewrite = false;
   }
@@ -355,6 +380,30 @@ modid nsbuild::get_modid(std::string_view path) const
   return modid{fwname, modname};
 }
 
+void nsbuild::compute_paths() 
+{ 
+  namespace fs    = std::filesystem;
+  paths.scan_dir = fs::canonical(wd / scan_dir);
+  paths.out_dir   = (paths.scan_dir / out_dir);
+  paths.cfg_dir   = (paths.out_dir / config_name);
+  paths.build_dir = (paths.cfg_dir / build_dir);
+  paths.cache_dir = (paths.cfg_dir / cache_dir);
+  paths.dl_dir    = (paths.out_dir / download_dir);
+  fs::create_directories(paths.scan_dir);
+  fs::create_directories(paths.out_dir);
+  fs::create_directories(paths.cfg_dir);
+  fs::create_directories(paths.build_dir);
+  fs::create_directories(paths.cache_dir);
+  fs::create_directories(paths.dl_dir);
+
+  paths.scan_dir = fs::canonical(paths.scan_dir);
+  paths.out_dir = fs::canonical(paths.out_dir);
+  paths.cfg_dir = fs::canonical(paths.cfg_dir);
+  paths.build_dir = fs::canonical(paths.build_dir);
+  paths.cache_dir = fs::canonical(paths.cache_dir);
+  paths.dl_dir = fs::canonical(paths.dl_dir);
+}
+
 void nsbuild::update_macros()
 {
   auto pwd = get_full_scan_dir();
@@ -383,9 +432,46 @@ void nsbuild::write_include_modules() const
     throw std::runtime_error("Could not create CMakeLists.txt");
   }
   macros.print(ofs);
+  write_cxx_options(ofs);
   for (auto const& s : sorted_targets)
   {
     auto const& m = get_module(s);
-    ofs << fmt::format("\nadd_subdirectory({0}/{1} {0}/{1})", build_dir, m.name);
+    ofs << fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{0}/{1} ${{CMAKE_CURRENT_LIST_DIR}}/{0}/{1}/cc)", build_dir, m.name);
   }
+}
+
+void nsbuild::write_cxx_options(std::ostream& ofs) const
+{
+  ofs << "\n# Compiler and Linker options"
+         "\nset(__module_cxx_compile_flags)"
+         "\nset(__module_cxx_linker_flags)";
+
+  for (auto const& cxx : config)
+  {
+    if (cxx.name == config_name)
+    {
+      std::string filters = cmake::get_filter(cxx.filters);
+      if (filters.empty())
+      {
+        for (auto flag : cxx.compiler_flags)
+          ofs << fmt::format("\nlist(APPEND __module_cxx_compile_flags \"{}\")",
+                             flag);
+        for (auto flag : cxx.linker_flags)
+          ofs << fmt::format("\nlist(APPEND __module_cxx_linker_flags \"{}\")",
+                             flag);
+      }
+      else
+      {
+        for (auto flag : cxx.compiler_flags)
+          ofs << fmt::format("\nlist(APPEND __module_cxx_compile_flags $<{}:{}>)",
+                           filters, flag);
+        for (auto flag : cxx.linker_flags)
+          ofs << fmt::format(
+              "\nlist(APPEND __module_cxx_linker_flags $<{}:{}>)", filters,
+              flag);
+      }
+    }
+  }
+
+  ofs << "\n\n";
 }

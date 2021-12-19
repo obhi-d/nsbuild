@@ -33,3 +33,7 @@
 /.vs
 /external
 /out
+/test_data/out
+/test_data/source/.vs
+/test_data/source/CMakeSettings.json
+/test_data/source/CMakeLists.txt

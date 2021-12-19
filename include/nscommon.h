@@ -21,8 +21,8 @@ static inline constexpr char k_sdk_dir[]      = "sdk";
 static inline constexpr char k_src_dir[]      = "src";
 static inline constexpr char k_cmake_dir[]    = "cmake";
 static inline constexpr char k_ext_dir[]      = "ext";
-static inline constexpr char k_xpb_dir[]      = "xpb";
-static inline constexpr char k_json_val[]      = "  \n\"{}\": \"{}\"";
+static inline constexpr char k_xpb_dir[]      = "ccx";
+static inline constexpr char k_json_val[]     = "  \n\"{}\": \"{}\"";
 
 enum class runas
 {
@@ -179,6 +179,7 @@ void foreach_variable(std::ostream& ostr, std::string_view content, Lambda&& l)
     else
     {
       ostr << content.substr(r);
+      r = content.length();
     }
   }
 }
@@ -200,13 +201,13 @@ struct nsfilecopy
 
 struct nsplugin_manifest
 {
-  std::string_view desc;
-  std::string_view company;
-  std::string_view author;
-  std::string_view type;
-  std::string_view compatibility;
-  std::string_view context;
-  std::string_view optional;
+  std::string_view                                           desc;
+  std::string_view                                           company;
+  std::string_view                                           author;
+  std::string_view                                           type;
+  std::string_view                                           compatibility;
+  std::string_view                                           context;
+  std::string_view                                           optional;
   std::vector<std::pair<std::string_view, std::string_view>> services;
 };
 
@@ -217,17 +218,18 @@ struct nsmetainfo
 {
   std::string compiler_name;
   std::string compiler_version;
+  std::vector<std::string> ordered_timestamps;
   string_map  timestamps;
 };
 
 struct nsmetastate
 {
-  bool  full_regenerate    = false;
-  bool  delete_timestamps  = false;
-  bool  delete_cmake_cache = false;
-  bool  meta_missing       = false;
-  bool  is_dirty           = false;
-  runas ras                = runas::main;
+  bool        full_regenerate    = false;
+  bool        delete_timestamps  = false;
+  bool        delete_cmake_cache = false;
+  bool        meta_missing       = false;
+  bool        is_dirty           = false;
+  runas       ras                = runas::main;
 };
 
 std::string to_upper(std::string s);
@@ -236,3 +238,4 @@ std::string to_lower_camel_case(std::string const& s);
 std::string to_upper_camel_case(std::string const& s);
 std::string to_camel_case(std::string const& s);
 std::string to_snake_case(std::string const& s);
+bool        to_bool(std::string_view);

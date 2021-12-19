@@ -1,6 +1,40 @@
 #include "nscmdcommon.h"
 
 // -------------------------------------------------------------------------------------------------------------
+ns_cmd_handler(meta, build, state, cmd)
+{
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(compiler_version, build, state, cmd)
+{
+  build.meta.compiler_version = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(compiler_name, build, state, cmd)
+{
+  build.meta.compiler_name = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(timestamps, build, state, cmd)
+{
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(static_libs, build, state, cmd)
+{
+  build.static_libs = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
+
+ns_star_handler(timestamps, build, state, cmd)
+{
+  build.meta.timestamps[std::string{cmd.name()}] = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(sdk_dir, build, state, cmd)
 {
   build.sdk_dir = get_idx_param(cmd, 0);
@@ -25,26 +59,30 @@ ns_cmd_handler(runtime_dir, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(compiler, build, state, cmd)
+ns_cmd_handler(config, build, state, cmd)
 {
-  build.compiler.emplace_back();
+  build.config.emplace_back();
   auto const& p = cmd.params().value();
   if (p.size() > 0)
   {
-    build.compiler.back().filters = get_filters(p[0]);
+    build.config.back().name = get_idx_param(cmd, 0);
+  }
+  if (p.size() > 1)
+  {
+    build.config.back().filters = get_filters(p[1]);
   }
   return neo::retcode::e_success;
 }
 
 ns_cmd_handler(compiler_flags, build, state, cmd)
 {
-  build.compiler.back().compiler_flags = get_first_concat(cmd);
+  build.config.back().compiler_flags = get_first_list(cmd);
   return neo::retcode::e_success;
 }
 
 ns_cmd_handler(linker_flags, build, state, cmd)
 {
-  build.compiler.back().linker_flags = get_first_concat(cmd);
+  build.config.back().linker_flags = get_first_list(cmd);
   return neo::retcode::e_success;
 }
 
@@ -70,7 +108,9 @@ ns_cmd_handler(type, build, state, cmd)
     t = nsmodule_type::exe;
   else if (type == "lib")
     t = nsmodule_type::lib;
-  if (build.state.stop_after_modtype)
+  else if (type == "test")
+    t = nsmodule_type::test;
+  if (build.state.ras == runas::generate_enum)
     return neo::retcode::e_success_stop;
   return neo::retcode::e_success;
 }
@@ -339,16 +379,28 @@ ns_registry(nsbuild)
   neo::command_id intf;
   neo::command_id var;
 
+  ns_scope_def(meta)
+  {
+    ns_cmd(compiler_version);
+    ns_cmd(compiler_name);
+    ns_scope_def(timestamps) 
+    { 
+      ns_star(timestamps);
+    }
+  }
+
   ns_cmd(sdk_dir);
   ns_cmd(build_dir);
   ns_cmd(frameworks_dir);
   ns_cmd(runtime_dir);
-  ns_scope_def(compiler)
+  ns_cmd(static_libs);
+  ns_scope_def(config)
   {
     ns_cmd(compiler_flags);
     ns_cmd(linker_flags);
   }
   ns_cmd(excludes);
+  ns_cmd(type);
   ns_scope_def(var)
   {
     ns_save_scope(var);

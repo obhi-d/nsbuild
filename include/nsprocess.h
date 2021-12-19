@@ -16,4 +16,7 @@ void cmake_install(nsbuild const& bc, std::string_view prefix,
 
 void cmake(nsbuild const& bc, std::vector<std::string> args,
                   std::filesystem::path wd);
+
+std::filesystem::path get_nsbuild_path();
+extern std::filesystem::path s_nsbuild;
 }; // namespace nsprocess

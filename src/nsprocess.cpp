@@ -12,44 +12,44 @@
 namespace nsprocess
 {
 
-void cmake_config(nsbuild const& bc, std::vector<std::string> args,
-                         std::string src, std::filesystem::path wd)
+void cmake_config(nsbuild const& bc, std::vector<std::string> args, std::string src, std::filesystem::path wd)
 {
 
-  if (!bc.cmakeinfo.cmake_config.empty() && !bc.cmakeinfo.is_multi_cfg)
+  if (!bc.cmakeinfo.cmake_config.empty() && !bc.cmakeinfo.cmake_is_multi_cfg)
     args.emplace_back(cmake::dset("CMAKE_BUILD_TYPE", bc.cmakeinfo.cmake_config));
 
   if (!bc.cmakeinfo.cmake_toolchain.empty())
-    args.emplace_back(
-        cmake::dset("CMAKE_TOOLCHAIN_FILE", bc.cmakeinfo.cmake_toolchain));
+    args.emplace_back(cmake::dset("CMAKE_TOOLCHAIN_FILE", bc.cmakeinfo.cmake_toolchain));
 
   if (!bc.cmakeinfo.cmake_generator.empty())
-    args.emplace_back(
-        cmake::dset("CMAKE_GENERATOR", bc.cmakeinfo.cmake_generator));
+    args.emplace_back(cmake::dset("CMAKE_GENERATOR", bc.cmakeinfo.cmake_generator));
 
   if (!bc.cmakeinfo.cmake_generator_platform.empty())
-    args.emplace_back(cmake::dset("CMAKE_GENERATOR_PLATFORM",
-                                  bc.cmakeinfo.cmake_generator_platform));
+    args.emplace_back(cmake::dset("CMAKE_GENERATOR_PLATFORM", bc.cmakeinfo.cmake_generator_platform));
 
   if (!bc.cmakeinfo.cmake_generator_instance.empty())
-    args.emplace_back(cmake::dset("CMAKE_GENERATOR_INSTANCE",
-                                  bc.cmakeinfo.cmake_generator_instance));
+    args.emplace_back(cmake::dset("CMAKE_GENERATOR_INSTANCE", bc.cmakeinfo.cmake_generator_instance));
 
   if (!bc.cmakeinfo.cmake_generator_toolset.empty())
-    args.emplace_back(cmake::dset("CMAKE_GENERATOR_TOOLSET",
-                                  bc.cmakeinfo.cmake_generator_toolset));
+    args.emplace_back(cmake::dset("CMAKE_GENERATOR_TOOLSET", bc.cmakeinfo.cmake_generator_toolset));
+
+  if (!bc.cmakeinfo.cmake_cppcompiler.empty())
+    args.emplace_back(cmake::dset("CMAKE_CXX_COMPILER", bc.cmakeinfo.cmake_cppcompiler));
+
+  if (!bc.cmakeinfo.cmake_cppcompiler.empty())
+    args.emplace_back(cmake::dset("CMAKE_C_COMPILER", bc.cmakeinfo.cmake_ccompiler));
+
   args.emplace_back("-S");
   args.emplace_back(std::move(src));
   cmake(bc, std::move(args), wd);
 }
 
-void cmake_build(nsbuild const& bc, std::string_view target,
-                        std::filesystem::path wd)
+void cmake_build(nsbuild const& bc, std::string_view target, std::filesystem::path wd)
 {
   std::vector<std::string> args;
   args.emplace_back("--build");
   args.emplace_back(".");
-  if (bc.cmakeinfo.is_multi_cfg)
+  if (bc.cmakeinfo.cmake_is_multi_cfg)
   {
     args.emplace_back("--config");
     args.emplace_back(bc.cmakeinfo.cmake_config.c_str());
@@ -63,8 +63,7 @@ void cmake_build(nsbuild const& bc, std::string_view target,
   cmake(bc, std::move(args), wd);
 }
 
-void cmake_install(nsbuild const& bc, std::string_view prefix,
-                          std::filesystem::path wd)
+void cmake_install(nsbuild const& bc, std::string_view prefix, std::filesystem::path wd)
 {
   std::vector<std::string> args;
   args.emplace_back("--install");
@@ -78,16 +77,16 @@ void cmake_install(nsbuild const& bc, std::string_view prefix,
   cmake(bc, std::move(args), wd);
 }
 
-void cmake(nsbuild const& bc, std::vector<std::string> args,
-                  std::filesystem::path wd)
+void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::path wd)
 {
   std::vector<char const*> sargs;
   sargs.reserve(args.size() + 1);
   sargs.emplace_back(bc.cmakeinfo.cmake_bin.c_str());
   for (auto const& a : args)
     sargs.emplace_back(a.c_str());
-
+  sargs.emplace_back(nullptr);
   auto save = std::filesystem::current_path();
+  std::filesystem::create_directories(wd);
   std::filesystem::current_path(wd);
 
   reproc::arguments pargs{sargs.data()};
@@ -108,5 +107,7 @@ void cmake(nsbuild const& bc, std::vector<std::string> args,
   else
     nslog::print(output);
 }
+std::filesystem::path s_nsbuild;
+std::filesystem::path get_nsbuild_path() { return s_nsbuild; }
 
 } // namespace nsprocess
