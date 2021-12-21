@@ -9,7 +9,7 @@ frameworks_dir : "Frameworks";
 preset x64d-avx
 {
   display_name = "x64-debug-avx";
-
+  build_type = debug;
   config [msvc, debug]
   {
     compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
@@ -29,7 +29,7 @@ preset x64d-avx
 preset x64r-avx
 {
   display_name = "x64-release-avx";
-
+  build_type = release;
   config [msvc, release]
   {
     compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
@@ -48,7 +48,7 @@ preset x64r-avx
 preset x64dasan-avx
 {
   display_name = "x64-debug-asan";
-
+  build_type = debug;
   config [msvc, debug]
   {
     compiler_flags : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8", "/fsanitize=address"  ];

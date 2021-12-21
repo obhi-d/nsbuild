@@ -67,7 +67,7 @@ struct nsmodule
   bool regenerate    = false;
   bool force_rebuild = false;
   bool has_confixx   = false;
-
+  
   nsmodule()                    = default;
   nsmodule(nsmodule&&) noexcept = default;
   nsmodule& operator=(nsmodule&&) noexcept = default;
@@ -167,12 +167,13 @@ struct nsmodule
 
   void build_fetched_content(nsbuild const& bc) const;
 
+  std::filesystem::path get_full_cmake_gen_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_bld_dir(nsbuild const& bc) const;
-  std::filesystem::path get_full_xpb_dir(nsbuild const& bc) const;
-  std::filesystem::path get_full_sbld_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_fetch_bld_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_ext_bld_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_fetch_sbld_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_sdk_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_dl_dir(nsbuild const& bc) const;
-  std::filesystem::path get_full_ts_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_ext_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_gen_dir(nsbuild const& bc) const;
 };

@@ -8,6 +8,7 @@ struct nspreset
   static inline constexpr std::uint32_t write_compiler_paths = 3;
 
   std::string              name;
+  std::string              build_type;
   std::string              display_name;
   std::string              desc;
   std::string              architecture;

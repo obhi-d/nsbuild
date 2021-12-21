@@ -15,7 +15,7 @@ namespace nsprocess
 void cmake_config(nsbuild const& bc, std::vector<std::string> args, std::string src, std::filesystem::path wd)
 {
   args.emplace_back("--preset");
-  args.emplace_back(bc.preset_name);
+  args.emplace_back(bc.cmakeinfo.cmake_preset_name);
   args.emplace_back("-S");
   args.emplace_back(std::move(src));
   cmake(bc, std::move(args), wd);
@@ -79,11 +79,18 @@ void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::pa
   std::string          output;
   reproc::sink::string sink(output);
   rc = reproc::drain(proc, sink, reproc::sink::null);
+  std::string msg = rc.message();
   if (rc)
-    nslog::error(rc.message());
-  else
+  {
+    nslog::error("Build failed.");
+    if (!msg.empty())
+      nslog::error(msg);
+    throw std::system_error(rc);
+  }
+  else if (!output.empty())
     nslog::print(output);
 }
+
 std::filesystem::path s_nsbuild;
 std::filesystem::path get_nsbuild_path() { return s_nsbuild; }
 

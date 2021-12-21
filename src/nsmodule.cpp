@@ -57,19 +57,20 @@ void nsmodule::update_properties(nsbuild const&     bc,
   std::filesystem::path p = fw.source_path;
   p /= name;
 
+  force_rebuild  = bc.state.delete_builds;
   framework_path = fw.source_path;
   framework_name = fw.name;
   source_path    = p.generic_string();
 
   if (has_data(type))
     glob_media = nsglob{.name      = "data_group",
-                        .relative_to = "${CMAKE_CURRENT_LIST_DIR}",
+                        .relative_to = {},// "${CMAKE_CURRENT_LIST_DIR}",
                         .sub_paths = {"${module_dir}/media/*"},
                         .recurse   = true};
   if (has_sources(type))
     glob_sources = nsglob{
         .name      = "source_group",
-        .relative_to = "${CMAKE_CURRENT_LIST_DIR}",
+               .relative_to = {}, //"${CMAKE_CURRENT_LIST_DIR}",
         .sub_paths = {"${module_dir}/src/*.cpp",
                       "${module_dir}/src/platform/${config_platform}/*.cpp",
                       "${module_gen_dir}/*.cpp",
@@ -150,8 +151,8 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name,
     /// - bld/module/ts Timestamp directory
     /// - bld/module/bld  Build directory
     /// - bld/module/sdk Install directory
-    macros["fetch_bulid_dir"]    = cmake::path(get_full_xpb_dir(bc));
-    macros["fetch_subbulid_dir"] = cmake::path(get_full_sbld_dir(bc));
+    macros["fetch_bulid_dir"]    = cmake::path(get_full_fetch_bld_dir(bc));
+    macros["fetch_subbulid_dir"] = cmake::path(get_full_fetch_sbld_dir(bc));
     macros["fetch_sdk_dir"]      = cmake::path(get_full_sdk_dir(bc));
     macros["fetch_src_dir"]      = cmake::path(get_full_dl_dir(bc));
     // macros["fetch_ts_dir"]       = cmake::path(get_full_ts_dir(bc));
@@ -180,8 +181,9 @@ void nsmodule::update_fetch(nsbuild const& bc)
   if (force_rebuild)
   {
     // remove bld/module directory
+    std::filesystem::remove_all(get_full_fetch_bld_dir(bc), ec);
+    std::filesystem::remove_all(get_full_fetch_sbld_dir(bc), ec);
     std::filesystem::remove_all(get_full_bld_dir(bc), ec);
-    std::filesystem::remove_all(get_full_ts_dir(bc), ec);
     std::filesystem::remove_all(get_full_sdk_dir(bc), ec);
   }
 
@@ -246,7 +248,7 @@ void nsmodule::write_fetch_build(nsbuild const& bc) const
   {
     auto          cmlf = ext_dir / "CMakePresets.json";
     std::ofstream ofs{cmlf};
-    nspreset::write(ofs, nspreset::write_compiler_paths, cmake::path(get_full_ext_dir(bc) / "cc"), {}, bc);
+    nspreset::write(ofs, nspreset::write_compiler_paths, cmake::path(get_full_ext_bld_dir(bc)), {}, bc);
   }
 }
 
@@ -262,7 +264,7 @@ void nsmodule::fetch_content(nsbuild const& bc)
 
 void nsmodule::write_main_build(nsbuild const& bc) const
 {
-  auto fbld = get_full_bld_dir(bc);
+  auto fbld = get_full_cmake_gen_dir(bc);
   std::filesystem::create_directories(fbld);
   auto          cmlf = fbld / "CMakeLists.txt";
   std::ofstream ofs{cmlf};
@@ -825,7 +827,7 @@ void nsmodule::write_runtime_settings(std::ofstream& ofs,
 void nsmodule::build_fetched_content(nsbuild const& bc) const
 {
   auto src  = get_full_ext_dir(bc);
-  auto xpb  = get_full_xpb_dir(bc);
+  auto xpb  = get_full_ext_bld_dir(bc);
   auto dsdk = get_full_sdk_dir(bc);
 
   nsprocess::cmake_config(bc, {}, cmake::path(src), xpb);
@@ -835,17 +837,17 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
 
 std::filesystem::path nsmodule::get_full_bld_dir(nsbuild const& bc) const
 {
-  return bc.get_full_cfg_dir() / k_build_dir / name;
+  return bc.get_full_build_dir() / name;
 }
 
-std::filesystem::path nsmodule::get_full_xpb_dir(nsbuild const& bc) const
+std::filesystem::path nsmodule::get_full_fetch_bld_dir(nsbuild const& bc) const
 {
-  return bc.get_full_cfg_dir() / k_xpb_dir / name;
+  return bc.get_full_build_dir() / fmt::format("{}.dl", name);
 }
 
-std::filesystem::path nsmodule::get_full_sbld_dir(nsbuild const& bc) const
+std::filesystem::path nsmodule::get_full_fetch_sbld_dir(nsbuild const& bc) const
 {
-  return bc.get_full_cfg_dir() / k_subbuild_dir / name;
+  return bc.get_full_build_dir() / fmt::format("{}.sb", name);
 }
 
 std::filesystem::path nsmodule::get_full_sdk_dir(nsbuild const& bc) const
@@ -858,14 +860,19 @@ std::filesystem::path nsmodule::get_full_dl_dir(nsbuild const& bc) const
   return bc.get_full_dl_dir() / name;
 }
 
-std::filesystem::path nsmodule::get_full_ts_dir(nsbuild const& bc) const
+std::filesystem::path nsmodule::get_full_cmake_gen_dir(nsbuild const& bc) const
 {
-  return bc.get_full_cfg_dir() / k_ts_dir / name;
+  return bc.get_full_cmake_gen_dir() / name;
+}
+
+std::filesystem::path nsmodule::get_full_ext_bld_dir(nsbuild const& bc) const
+{
+  return bc.get_full_build_dir() / fmt::format("{}.ext", name);
 }
 
 std::filesystem::path nsmodule::get_full_ext_dir(nsbuild const& bc) const
 {
-  return bc.get_full_cfg_dir() / k_ext_dir / name;
+  return bc.get_full_cmake_gen_dir() / name / k_ext_dir;
 }
 
 std::filesystem::path nsmodule::get_full_gen_dir(nsbuild const& bc) const

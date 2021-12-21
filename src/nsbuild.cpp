@@ -90,7 +90,6 @@ void nsbuild::handle_error(neo::state_machine& err)
 void nsbuild::before_all()
 {
   // At this point we have read config!
-  determine_build_type();
   compute_paths();
   std::filesystem::create_directories(get_full_cache_dir());
   read_meta(get_full_cache_dir() / "meta.ns");
@@ -100,18 +99,20 @@ void nsbuild::before_all()
   update_macros();
   process_targets();
   write_meta(get_full_cache_dir() / "meta.ns");
+
+  if (state.is_dirty)
+  {
+    nslog::print("******************************************");
+    nslog::print("*** Modules were regenerated, rebuild! ***");
+    nslog::print("******************************************\n");
+    throw std::runtime_error("Modules regenerated");
+  }
 }
 
 void nsbuild::check_modules() 
 { 
   if (meta.ordered_timestamps.size() != meta.timestamps.size())
     state.is_dirty = true;
-}
-
-void nsbuild::determine_build_type()
-{
-  std::filesystem::path p  = cmakeinfo.cmake_build_dir;
-  preset_name = p.parent_path().filename().generic_string();
 }
 
 void nsbuild::read_meta(std::filesystem::path path)
@@ -122,37 +123,25 @@ void nsbuild::read_meta(std::filesystem::path path)
     state.meta_missing       = true;
     state.is_dirty           = true;
     state.full_regenerate    = true;
-    state.delete_cmake_cache = true;
-    state.delete_timestamps  = true;
+    state.delete_builds = true;
     return;
   }
   if (meta.compiler_version != cmakeinfo.cmake_cppcompiler_version)
   {
     meta.compiler_version    = cmakeinfo.cmake_cppcompiler_version;
-    state.delete_cmake_cache = true;
-    state.delete_timestamps  = true;
+    state.delete_builds      = true;
     state.is_dirty           = true;
   }
   if (meta.compiler_name != cmakeinfo.cmake_cppcompiler)
   {
     meta.compiler_name       = cmakeinfo.cmake_cppcompiler;
-    state.delete_cmake_cache = true;
-    state.delete_timestamps  = true;
+    state.delete_builds      = true;
     state.is_dirty           = true;
   }
 }
 
 void nsbuild::act_meta() 
 { 
-  if (state.delete_cmake_cache)
-  {
-    // TODO find paths to CMakeCache.txt and delete them
-  }
-
-  if (state.delete_timestamps)
-  {
-    // TODO find paths to -stamp and delete them
-  }
 }
 
 void nsbuild::write_meta(std::filesystem::path path)
@@ -260,7 +249,19 @@ void nsbuild::process_targets()
     process_target(targ.first, targ.second);
   }
   for (auto& f : process)
-    f.wait();
+  {
+    try
+    {
+      f.first.get();
+    }
+    catch (std::exception& ex)
+    {
+      // Fetch build failed ?
+      state.is_dirty = true; 
+      meta.timestamps[f.second->target_name] = "";
+      nslog::error(ex.what());
+    }
+  }    
   process.clear();
 
   foreach_module(
@@ -270,12 +271,24 @@ void nsbuild::process_targets()
         {
           process.emplace_back(std::move(std::async(std::launch::async,
                                                     &nsmodule::write_main_build,
-                                                    &m, std::cref(*this))));
+                                                    &m, std::cref(*this))), &m);
         }
       });
   write_include_modules();
   for (auto& f : process)
-    f.wait();
+  {
+    try
+    {
+      f.first.get();
+    }
+    catch(std::exception& ex)
+    {
+      state.is_dirty                         = true;
+      meta.timestamps[f.second->target_name] = "";
+      nslog::error(ex.what());
+    }
+  }
+    
 }
 
 void nsbuild::process_target(std::string const& name, nstarget& targ)
@@ -308,7 +321,7 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
   if (mod.regenerate)
     process.emplace_back(std::move(
         std::async(std::launch::async, &nsmodule::process, &mod,
-                   std::cref(*this), std::cref(name), std::ref(targ))));
+                   std::cref(*this), std::cref(name), std::ref(targ))), &mod);
 }
 
 void nsbuild::generate_enum(std::string from)
@@ -361,47 +374,47 @@ modid nsbuild::get_modid(std::string_view path) const
 void nsbuild::compute_paths() 
 { 
   namespace fs    = std::filesystem;
+  auto const& preset_name = cmakeinfo.cmake_preset_name;
   paths.scan_dir = fs::canonical(wd / scan_dir);
   paths.out_dir   = (paths.scan_dir / out_dir);
   paths.cfg_dir   = (paths.out_dir / preset_name);
-  if (!preset_name.empty())
-  {
-    paths.build_dir = (paths.cfg_dir / build_dir);
-    paths.cache_dir = (paths.cfg_dir / cache_dir);
-  }
   paths.dl_dir    = (paths.out_dir / download_dir);
+  
   fs::create_directories(paths.scan_dir);
   fs::create_directories(paths.out_dir);
   fs::create_directories(paths.cfg_dir);
-  if (!preset_name.empty())
-  {
-    fs::create_directories(paths.build_dir);
-    fs::create_directories(paths.cache_dir);
-  }
   fs::create_directories(paths.dl_dir);
 
   paths.scan_dir = fs::canonical(paths.scan_dir);
   paths.out_dir = fs::canonical(paths.out_dir);
   paths.cfg_dir = fs::canonical(paths.cfg_dir);
+  paths.dl_dir   = fs::canonical(paths.dl_dir);
+
   if (!preset_name.empty())
   {
-    paths.build_dir = fs::canonical(paths.build_dir);
+    paths.cmake_gen_dir = (paths.cfg_dir / cmake_gen_dir);
+    paths.cache_dir     = (paths.cfg_dir / cache_dir);
+    paths.build_dir     = (paths.cfg_dir / build_dir);
+    fs::create_directories(paths.cmake_gen_dir);
+    fs::create_directories(paths.cache_dir);
+    fs::create_directories(paths.build_dir);
+    paths.cmake_gen_dir = fs::canonical(paths.cmake_gen_dir);
     paths.cache_dir = fs::canonical(paths.cache_dir);
+    paths.build_dir     = fs::canonical(paths.build_dir);
   }
-  paths.dl_dir = fs::canonical(paths.dl_dir);
 }
 
 void nsbuild::update_macros()
 {
   auto pwd = get_full_scan_dir();
-
+  
   macros["config_source"]    = cmake::path(get_full_scan_dir());
-  macros["config_build_dir"] = cmake::path(get_full_build_dir());
+  macros["config_build_dir"] = cmake::path(get_full_cmake_gen_dir());
   macros["config_sdk_dir"]   = cmake::path(get_full_cfg_dir() / sdk_dir);
   macros["config_rt_dir"]    = cmake::path(get_full_cfg_dir() / runtime_dir);
   macros["config_frameworks_dir"] = cmake::path((pwd / frameworks_dir));
   macros["config_download_dir"]   = cmake::path((pwd / out_dir));
-  macros["config_preset_name"]    = preset_name;
+  macros["config_preset_name"]    = cmakeinfo.cmake_preset_name;
   macros["config_type"]           = cmakeinfo.cmake_config;
   macros["config_platform"]       = cmakeinfo.target_platform;
   macros["config_ignored_media"]  = ignore_media_from;
@@ -424,7 +437,7 @@ void nsbuild::write_include_modules() const
   for (auto const& s : sorted_targets)
   {
     auto const& m = get_module(s);
-    ofs << fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{0}/{1} ${{CMAKE_CURRENT_LIST_DIR}}/{0}/{1}/cc)", build_dir, m.name);
+    ofs << fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{0}/{1} ${{CMAKE_CURRENT_LIST_DIR}}/{2}/{1})", cmake_gen_dir, m.name, build_dir);
   }
 }
 
@@ -436,7 +449,7 @@ void nsbuild::write_cxx_options(std::ostream& ofs) const
 
   for (auto const& preset : presets)
   {
-    if (preset.name == preset_name)
+    if (preset.name == cmakeinfo.cmake_preset_name)
     {
       for (auto const& cxx : preset.configs)
       {

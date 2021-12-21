@@ -7,11 +7,15 @@
 #include <Windows.h>
 #endif
 
+#include <nslog.h>
+
 ns_registry(nsbuild);
 
-nscmakeinfo read_config(char const* argv[], int i, int argc) 
+nscmakeinfo read_config(char const* argv[], int i, int argc)
 {
   nscmakeinfo cfg;
+  if (i < argc)
+    cfg.cmake_preset_name = argv[i++];
   if (i < argc)
     cfg.cmake_bin = argv[i++];
   if (i < argc)
@@ -97,6 +101,7 @@ int main(int argc, char const* argv[])
       if (i + 1 < argc)
         ignore = argv[++i];
       nsbuild::copy_media(from, to, ignore);
+      std::cout << std::endl;
       return 0;
     }
   }
@@ -125,7 +130,8 @@ int main(int argc, char const* argv[])
   }
   catch (std::exception ex)
   {
-    std::cerr << ex.what() << std::endl;
+    nslog::error(ex.what());
+    std::cout << std::endl;
     return -1;
   }
 

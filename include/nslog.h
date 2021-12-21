@@ -8,15 +8,15 @@ namespace nslog
 inline void error(std::string_view sv)
 {
   fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::red),
-             "\nnsbuild ERROR: {}\n", sv);
+             "\n -- [ERROR]: {}", sv);
 }
 
 inline void warn(std::string_view sv)
 {
   fmt::print(fmt::emphasis::bold | fmt::fg(fmt::color::yellow),
-             "\nnsbuild WARN : {}\n", sv);
+             "\n -- [WARN ]: {}", sv);
 }
 
-inline void print(std::string_view sv) { fmt::print("\nnsbuild INFO : {}\n", sv); }
+inline void print(std::string_view sv) { fmt::print("\n -- [INFO ]: {}", sv); }
 
 } // namespace nslog

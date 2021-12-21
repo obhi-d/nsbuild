@@ -1,39 +1,39 @@
 #pragma once
 #include <future>
 #include <list>
-#include <nscommon.h>
-#include <nspreset.h>
 #include <nscmakeinfo.h>
+#include <nscommon.h>
 #include <nsframework.h>
 #include <nsmacros.h>
 #include <nsmodule.h>
+#include <nspreset.h>
 #include <nspython.h>
 #include <nstarget.h>
 
 struct nsbuild : public neo::command_handler
-{ 
+{
   // preferred generator
-  std::string preferred_gen  = "Ninja";
+  std::string preferred_gen = "Ninja";
   // path relative to scan
-  std::string out_dir        = "../out";
+  std::string out_dir = "../out";
   // path relative to out/presets
-  std::string build_dir      = "bld";
+  std::string cmake_gen_dir = "cmake";
   // path relative to out/presets
-  std::string sdk_dir        = "sdk";
+  std::string sdk_dir = "sdk";
   // path relative to out/presets
-  std::string runtime_dir    = "rt";
+  std::string runtime_dir = "rt";
   // path relative to out/presets
-  std::string cache_dir      = "ts";
+  std::string cache_dir = "ts";
   // path relative to out
-  std::string download_dir   = "dl";
+  std::string download_dir = "dl";
+  // path relative to out/presets
+  std::string build_dir = "bld";
   // path relative to current
-  std::string scan_dir      = ".";
+  std::string scan_dir = ".";
   // path relative to scan
   std::string frameworks_dir = "Frameworks";
   // path relative to runtime
   std::string plugin_rel_dir = "Media/Plugins";
-  // is x64-debug, x64-release, arm-debug
-  std::string preset_name     = "";
 
   std::string ignore_media_from = "Internal";
 
@@ -50,16 +50,16 @@ struct nsbuild : public neo::command_handler
   neo::registry          reg;
   std::list<std::string> contents;
 
-  std::unordered_map<std::string, nstarget>    targets;
-  std::vector<std::string>                     sorted_targets;
-  std::vector<std::future<void>>               process;
+  std::unordered_map<std::string, nstarget>            targets;
+  std::vector<std::string>                             sorted_targets;
+  std::vector<std::pair<std::future<void>, nsmodule const*>> process;
 
   // working dir
-  std::filesystem::path                        wd;
+  std::filesystem::path wd;
 
   //--------------------------------------
   // State
-  
+
   nsframework* s_nsframework = nullptr;
   nsmodule*    s_nsmodule    = nullptr;
   nsbuildcmds* s_nsbuildcmds = nullptr;
@@ -75,7 +75,6 @@ struct nsbuild : public neo::command_handler
 
   bool static_libs = false;
 
-    
   //--------------------------------------
   // Fn
   nsbuild();
@@ -91,13 +90,12 @@ struct nsbuild : public neo::command_handler
   void update_macros();
   void process_targets();
   void process_target(std::string const&, nstarget&);
-  
+
   /// @brief This initiates the main build: check mode
   /// - Checks current build directory, if it does not exist creates it
   /// - If not present, writes basic presets info in build dir
   /// - Generates external build and builds and installs exteranl libs
   void before_all();
-  void determine_build_type();
   void read_meta(std::filesystem::path);
   void act_meta();
   void write_meta(std::filesystem::path);
@@ -107,15 +105,15 @@ struct nsbuild : public neo::command_handler
   void write_include_modules() const;
   void check_modules();
 
-  void write_cxx_options(std::ostream&) const;  
+  void write_cxx_options(std::ostream&) const;
 
   /// @brief Generates enum files
   /// @param target Should be FwName/ModName or full path to module directory
   void generate_enum(std::string target);
 
   /// @brief Copy media directories and files, ignores media/Internal directory
-  /// @param from 
-  /// @param to 
+  /// @param from
+  /// @param to
   static void copy_media(std::filesystem::path from, std::filesystem::path to, std::string ignore);
 
   modid get_modid(std::string_view from) const;
@@ -161,6 +159,7 @@ struct nsbuild : public neo::command_handler
   {
     std::filesystem::path scan_dir;
     std::filesystem::path cfg_dir;
+    std::filesystem::path cmake_gen_dir;
     std::filesystem::path build_dir;
     std::filesystem::path cache_dir;
     std::filesystem::path out_dir;
@@ -171,8 +170,9 @@ struct nsbuild : public neo::command_handler
 
   void compute_paths();
 
-  inline std::filesystem::path const& get_full_scan_dir() const { return paths.scan_dir;  }
+  inline std::filesystem::path const& get_full_scan_dir() const { return paths.scan_dir; }
   inline std::filesystem::path const& get_full_cfg_dir() const { return paths.cfg_dir; }
+  inline std::filesystem::path const& get_full_cmake_gen_dir() const { return paths.cmake_gen_dir; }
   inline std::filesystem::path const& get_full_build_dir() const { return paths.build_dir; }
   inline std::filesystem::path const& get_full_cache_dir() const { return paths.cache_dir; }
   inline std::filesystem::path const& get_full_out_dir() const { return paths.out_dir; }

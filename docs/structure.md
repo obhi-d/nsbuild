@@ -11,18 +11,21 @@
   +--CMakeLists.txt
   +--dl
   +--build [x64-debug, arm-release]
-     +--CMakeLists.txt [generic file with all module includes]
-     +--bld
-     |  +--externM [is build directory for externM]
+     +--CMakeLists.txt -- includes all module CMakeLists.txt
+     +--cmake
+     |  +--externM 
      |     +--CMakeLists.txt [has find_package]
-     +--ext
+     +--extern
      |  +--externM
      |     +--CMakeLists.txt [has add_subdir]
-     +--gen
+     +--generated
      |  +--externM [generated code for externM]
      |     +--local [Local files]
-     +--xpb [is build directory for external package]
-     |  +--externM [is build directory external package for externM]
+     +--bld [is build directory for external package]
+     |  +--main --> preset build directory
+     |  +--externM --> Module build directory
+     |  +--externM.dl --> Fetch build directory
+     |  +--externM.ext --> extern build directory
      +--sdk [is install dir]
      |  +--externM [is install dir for sdk]
      +--rt    [runtime output directory]

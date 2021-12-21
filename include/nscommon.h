@@ -15,13 +15,10 @@
 /// @brief Directory names
 static inline constexpr char k_gen_dir[]      = "gen";
 static inline constexpr char k_ts_dir[]       = "ts";
-static inline constexpr char k_build_dir[]    = "bld";
-static inline constexpr char k_subbuild_dir[] = "sbd";
 static inline constexpr char k_sdk_dir[]      = "sdk";
 static inline constexpr char k_src_dir[]      = "src";
 static inline constexpr char k_cmake_dir[]    = "cmake";
-static inline constexpr char k_ext_dir[]      = "ext";
-static inline constexpr char k_xpb_dir[]      = "ccx";
+static inline constexpr char k_ext_dir[]      = "extern";
 static inline constexpr char k_json_val[]     = "  \n\"{}\": \"{}\"";
 
 enum class runas
@@ -215,10 +212,10 @@ struct nsmetainfo
 struct nsmetastate
 {
   bool        full_regenerate    = false;
-  bool        delete_timestamps  = false;
-  bool        delete_cmake_cache = false;
+  bool        delete_builds = false;
   bool        meta_missing       = false;
   bool        is_dirty           = false;
+  bool        fail_with_rebuild  = false;
   runas       ras                = runas::main;
 };
 

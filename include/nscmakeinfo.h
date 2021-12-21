@@ -5,6 +5,7 @@
 struct nscmakeinfo
 {
   std::string              target_platform;
+  std::string              cmake_preset_name;
   std::string              cmake_bin;
   std::string              cmake_toolchain;
   std::string              cmake_config;

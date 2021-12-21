@@ -23,11 +23,15 @@ void nspreset::write(std::ostream& ff, std::uint32_t options, std::string_view b
     cfg["generator"]      = (options & use_cmake_config) && (!bc.cmakeinfo.cmake_generator.empty())
                                 ? bc.cmakeinfo.cmake_generator
                                 : bc.preferred_gen;
-    cfg["binaryDir"] = bin_dir.empty() ? std::string{"${sourceDir}/"} + bc.out_dir + "/" + cxx.name + "/cc" : bin_dir;
+    cfg["binaryDir"] = bin_dir.empty() ? fmt::format("${{sourceDir}}/{}/{}/{}/main", bc.out_dir, cxx.name, bc.build_dir) : bin_dir;
     if (!cxx.architecture.empty())
       cfg["architecture"] = {{"value", cxx.architecture}, {"strategy", "external"}};
 
     auto& cacheVars = cfg["cacheVariables"];
+    if (cxx.build_type == "debug")
+      cacheVars["CMAKE_BUILD_TYPE"] = "Debug";
+    else
+      cacheVars["CMAKE_BUILD_TYPE"] = "RelWithDebInfo";
     if (options & write_compiler_paths)
     {
       if (!bc.cmakeinfo.cmake_config.empty() && !bc.cmakeinfo.cmake_is_multi_cfg)

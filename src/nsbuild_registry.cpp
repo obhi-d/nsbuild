@@ -41,9 +41,9 @@ ns_cmd_handler(sdk_dir, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(build_dir, build, state, cmd)
+ns_cmd_handler(cmake_gen_dir, build, state, cmd)
 {
-  build.build_dir = get_idx_param(cmd, 0);
+  build.cmake_gen_dir = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -88,6 +88,12 @@ ns_cmd_handler(config, build, state, cmd)
     build.s_nspreset->configs.back().filters = get_filters(p[0]);
   }
 
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(build_type, build, state, cmd)
+{
+  build.s_nspreset->build_type = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -423,7 +429,7 @@ ns_registry(nsbuild)
   }
 
   ns_cmd(sdk_dir);
-  ns_cmd(build_dir);
+  ns_cmd(cmake_gen_dir);
   ns_cmd(frameworks_dir);
   ns_cmd(runtime_dir);
   ns_cmd(static_libs);
@@ -437,6 +443,7 @@ ns_registry(nsbuild)
       ns_cmd(linker_flags);
     }
     ns_cmd(define);
+    ns_cmd(build_type);
   }
   ns_cmd(excludes);
   ns_cmd(type);

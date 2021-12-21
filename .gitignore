@@ -37,3 +37,4 @@
 /test_data/source/.vs
 /test_data/source/CMakeSettings.json
 /test_data/source/CMakeLists.txt
+/test_data/source/CMakePresets.json
