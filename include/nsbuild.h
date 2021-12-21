@@ -2,7 +2,7 @@
 #include <future>
 #include <list>
 #include <nscommon.h>
-#include <nsconfig.h>
+#include <nspreset.h>
 #include <nscmakeinfo.h>
 #include <nsframework.h>
 #include <nsmacros.h>
@@ -12,15 +12,17 @@
 
 struct nsbuild : public neo::command_handler
 { 
+  // preferred generator
+  std::string preferred_gen  = "Ninja";
   // path relative to scan
   std::string out_dir        = "../out";
-  // path relative to out/config
+  // path relative to out/presets
   std::string build_dir      = "bld";
-  // path relative to out/config
+  // path relative to out/presets
   std::string sdk_dir        = "sdk";
-  // path relative to out/config
+  // path relative to out/presets
   std::string runtime_dir    = "rt";
-  // path relative to out/config
+  // path relative to out/presets
   std::string cache_dir      = "ts";
   // path relative to out
   std::string download_dir   = "dl";
@@ -31,7 +33,7 @@ struct nsbuild : public neo::command_handler
   // path relative to runtime
   std::string plugin_rel_dir = "Media/Plugins";
   // is x64-debug, x64-release, arm-debug
-  std::string config_name     = "";
+  std::string preset_name     = "";
 
   std::string ignore_media_from = "Internal";
 
@@ -43,7 +45,7 @@ struct nsbuild : public neo::command_handler
 
   std::vector<nsframework> frameworks;
 
-  std::vector<nsconfig> config;
+  std::vector<nspreset> presets;
 
   neo::registry          reg;
   std::list<std::string> contents;
@@ -65,7 +67,7 @@ struct nsbuild : public neo::command_handler
   nsfetch*     s_nsfetch     = nullptr;
   nsinterface* s_nsinterface = nullptr;
   nsvars*      s_nsvar       = nullptr;
-
+  nspreset*    s_nspreset    = nullptr;
   //--------------------------------------
   // Runtime options
   nsmetainfo  meta;
@@ -82,7 +84,7 @@ struct nsbuild : public neo::command_handler
   nsbuild(nsbuild const&)       = delete;
   nsbuild& operator=(nsbuild const&) = delete;
 
-  void main_project(std::string_view proj, ide_type ide);
+  void main_project(std::string_view proj);
 
   bool scan_file(std::filesystem::path, bool store, std::string* sha = nullptr);
   void handle_error(neo::state_machine&);
@@ -92,7 +94,7 @@ struct nsbuild : public neo::command_handler
   
   /// @brief This initiates the main build: check mode
   /// - Checks current build directory, if it does not exist creates it
-  /// - If not present, writes basic config info in build dir
+  /// - If not present, writes basic presets info in build dir
   /// - Generates external build and builds and installs exteranl libs
   void before_all();
   void determine_build_type();
@@ -102,7 +104,6 @@ struct nsbuild : public neo::command_handler
   void scan_main(std::filesystem::path);
   void read_framework(std::filesystem::path);
   void read_module(std::filesystem::path);
-  void generate_main_config();
   void write_include_modules() const;
   void check_modules();
 

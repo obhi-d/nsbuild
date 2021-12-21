@@ -1,4 +1,5 @@
 
+#include <nscmake.h>
 #include <nsglob.h>
 
 void nsglob::print(std::ostream& oss) const 
@@ -14,5 +15,9 @@ void nsglob::print(std::ostream& oss) const
     oss << "\nfile(GLOB ";
 
   oss << "\n  " << name << " CONFIGURE_DEPENDS ${" << name << "}\n)";
+  if (relative_to.empty())
+    return;
+
+  oss << fmt::format(cmake::k_glob_relative, name, relative_to);
 }
 

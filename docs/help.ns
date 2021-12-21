@@ -28,9 +28,12 @@ frameworks_dir = (about = "Frameworks directory");
 runtime_dir    = (about = "Output directory for debugging/testing");
 download_dir   = (about = "Directory to download sources");
 static_libs    = (about = "Build all as static libs (Except plugins)");
-config (about = "Define a config",
+preset (about = "Define a preset",
           params = ["first is name, second is list of @config_filter"])
 {
+  define (about = "List of definitions to add to this config", params="First is name, second is value");
+  description (about = "Preset desc");
+  display_name (about = "Descriptive name");
   compiler_flags (about = "Compile flags");
   linker_flags (about = "Compile flags");
 }
@@ -104,7 +107,7 @@ framework(about = "Framework level declaration, can exclude modules",
                          type = "Can be static/shared/system, by default is shared",
                          "List or a single link target, list will be expanded"));
 
-    definitions (about = "List of strings to be added as preprocessor definitions");
+    define (about = "List of definitions to add to this config", params="First is name, second is value");
 
   }
 

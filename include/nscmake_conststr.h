@@ -10,24 +10,24 @@ cmake_minimum_required(VERSION 3.20)
 set(nsbuild "{2}")
 
 if (NOT DEFINED nsplatform)
-set(nsplatform)
-set(__main_build_ns_dir "${{CMAKE_CURRENT_LIST_DIR}}")
 
-if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-  set(nsplatform "windows")
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  set(nsplatform "linux")
-elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-  set(nsplatform "macOS")
-endif()
+  set(nsplatform)
+  set(__main_nsbuild_dir "${{CMAKE_CURRENT_LIST_DIR}}")
+
+  if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(nsplatform "windows")
+  elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(nsplatform "linux")
+  elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set(nsplatform "macOS")
+  endif()
 
 endif()
 
 # file(GENERATE OUTPUT ${{CMAKE_BINARY_DIR}}/FetchBuild.txt CONTENT "$<...>")
 add_custom_target(nsbuild-check ALL
   COMMAND ${{nsbuild}} --check "${{CMAKE_COMMAND}}" "${{CMAKE_BINARY_DIR}}" -B=${{CMAKE_BUILD_TYPE}} -X="${{CMAKE_CXX_COMPILER}}" -C="${{CMAKE_C_COMPILER}}" -V="${{CMAKE_CXX_COMPILER_VERSION}}" -G="${{CMAKE_GENERATOR}}" -I="${{CMAKE_GENERATOR_INSTANCE}}" -U="${{CMAKE_GENERATOR_PLATFORM}}" -H="${{CMAKE_GENERATOR_TOOLSET}}" -T="${{CMAKE_TOOLCHAIN}}"  -N=${{GENERATOR_IS_MULTI_CONFIG}} -P=${{nsplatform}}
-  WORKING_DIRECTORY ${{__main_build_ns_dir}}
-  BYPRODUCTS {1}/CMakeLists.txt
+  WORKING_DIRECTORY ${{__main_nsbuild_dir}}
 )
 
 # set_property(
@@ -37,8 +37,8 @@ add_custom_target(nsbuild-check ALL
 #   {1}/CMakeLists.txt
 # )
 
-add_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{1} ${{CMAKE_CURRENT_LIST_DIR}}/{1}/cc)
 include(CTest)
+include(${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/CMakeLists.txt)
 
 )_";
 
@@ -55,21 +55,17 @@ cmake_minimum_required(VERSION 3.20)
 static inline constexpr char k_fetch_content[] = R"_(
 
 
-set(FETCHCONTENT_BASE_DIR ${{fetch_src_dir}} CACHE PATH "" FORCE)
 include(FetchContent)
 FetchContent_Declare(
   {0}
   GIT_REPOSITORY {1}
   GIT_TAG {2}
-  SUBBUILD_DIR ${{CMAKE_CURRENT_BINARY_DIR}}/sbld
-  BINARY_DIR ${{CMAKE_CURRENT_BINARY_DIR}}/bld
-)
+  SOURCE_DIR ${{fetch_src_dir}}
+  SUBBUILD_DIR ${{fetch_subbulid_dir}}
+  BINARY_DIR ${{fetch_bulid_dir}}
+ )
 
-FetchContent_GetProperties({0})
-if (NOT {0}_POPULATED)
-    FetchContent_Populate({0})
-    add_subdirectory(${{{3}}} ${{{0}_BINARY_DIR}})
-endif ()
+FetchContent_MakeAvailable({0})
 
 )_";
 
@@ -115,7 +111,7 @@ static inline constexpr char k_plugin_locations[] = R"_(
 
 static inline constexpr char k_media_commands[] = R"_(
   set(__module_data)
-  foreach(l IN data_group)
+  foreach(l ${data_group})
     if (NOT l MATCHES "^${module_dir}/media/Internal/")
       list(APPEND __module_data ${l})
     endif()
@@ -133,4 +129,17 @@ endif()
 add_dependencies(${module_target} nsbuild-check)
 	
 )_";
+
+static inline constexpr char k_glob_relative[] = R"_(
+
+set(__glob_result)
+foreach(__glob_file ${{{0}}})
+  set(__rel_glob_file)
+  file(RELATIVE_PATH __rel_glob_file "{1}" ${{__glob_file}})
+  list(APPEND __glob_result ${{__rel_glob_file}})
+endforeach()
+set({0} ${{__glob_result}})
+
+)_";
+
 } // namespace cmake

@@ -59,30 +59,53 @@ ns_cmd_handler(runtime_dir, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(config, build, state, cmd)
+ns_cmd_handler(generator, build, state, cmd)
 {
-  build.config.emplace_back();
+  build.preferred_gen = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(preset, build, state, cmd)
+{
+  build.presets.emplace_back();
+  build.s_nspreset = &build.presets.back();
   auto const& p = cmd.params().value();
   if (p.size() > 0)
   {
-    build.config.back().name = get_idx_param(cmd, 0);
+    build.s_nspreset->name = get_idx_param(cmd, 0);
+    build.s_nspreset->display_name = build.s_nspreset->name;
   }
-  if (p.size() > 1)
+  
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(config, build, state, cmd) 
+{
+  build.s_nspreset->configs.emplace_back();
+  auto const& p = cmd.params().value();
+  if (p.size() > 0)
   {
-    build.config.back().filters = get_filters(p[1]);
+    build.s_nspreset->configs.back().filters = get_filters(p[0]);
   }
+
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(display_name, build, state, cmd)
+{
+  build.s_nspreset->display_name = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
 ns_cmd_handler(compiler_flags, build, state, cmd)
 {
-  build.config.back().compiler_flags = get_first_list(cmd);
+  build.s_nspreset->configs.back().compiler_flags = get_first_list(cmd);
   return neo::retcode::e_success;
 }
 
 ns_cmd_handler(linker_flags, build, state, cmd)
 {
-  build.config.back().linker_flags = get_first_list(cmd);
+  build.s_nspreset->configs.back().linker_flags = get_first_list(cmd);
   return neo::retcode::e_success;
 }
 
@@ -292,9 +315,10 @@ ns_cmd_handler(libraries, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(definitions, build, state, cmd)
+ns_cmd_handler(define, build, state, cmd)
 {
-  build.s_nsinterface->definitions = get_first_list(cmd);
+  auto& def = build.s_nspreset ? build.s_nspreset->definitions : build.s_nsinterface->definitions;
+  def.emplace_back(get_idx_param(cmd, 0), get_idx_param(cmd, 1));
   return neo::retcode::e_success;
 }
 
@@ -303,7 +327,10 @@ ns_cmd_handler(plugin, build, state, cmd)
 
 ns_cmd_handler(description, build, state, cmd) 
 {
-  build.s_nsmodule->manifest.desc = get_idx_param(cmd, 0);
+  if (build.s_nspreset)
+    build.s_nspreset->desc = get_idx_param(cmd, 0);
+  else if (build.s_nsmodule)
+    build.s_nsmodule->manifest.desc = get_idx_param(cmd, 0);
   return neo::retcode::e_success; 
 }
 
@@ -373,6 +400,12 @@ ns_cmdend_handler(clear_interface, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmdend_handler(clear_presets, build, state, cmd)
+{
+  build.s_nspreset = nullptr;
+  return neo::retcode::e_success;
+}
+
 ns_registry(nsbuild)
 {
   neo::command_id prebuild;
@@ -394,10 +427,16 @@ ns_registry(nsbuild)
   ns_cmd(frameworks_dir);
   ns_cmd(runtime_dir);
   ns_cmd(static_libs);
-  ns_scope_def(config)
+  ns_scope_cust(preset, clear_presets)
   {
-    ns_cmd(compiler_flags);
-    ns_cmd(linker_flags);
+    ns_cmd(display_name);
+    ns_cmd(description);
+    ns_scope_def(config)
+    {
+      ns_cmd(compiler_flags);
+      ns_cmd(linker_flags);
+    }
+    ns_cmd(define);
   }
   ns_cmd(excludes);
   ns_cmd(type);
@@ -445,7 +484,7 @@ ns_registry(nsbuild)
     ns_save_scope(intf);
     ns_cmd(dependencies);
     ns_cmd(libraries);
-    ns_cmd(definitions);
+    ns_cmd(define);
   }
 
   ns_scope_def(plugin) 

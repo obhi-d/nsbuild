@@ -53,7 +53,7 @@ add_executable(nsbuild
  "src/nscmake.cpp" 
  "src/nsbuildcmds.cpp" 
  "src/nsmedia.cpp" 
- "src/nsenums.cpp" "include/nside.h" "src/nside.cpp")
+ "src/nsenums.cpp"  "src/nspreset.cpp")
 
 target_include_directories(nsbuild PRIVATE 
 	"${CMAKE_SOURCE_DIR}/include")

@@ -55,7 +55,6 @@ int main(int argc, char const* argv[])
   std::string target      = "";
   nscmakeinfo nscfg;
   runas       ras = runas::main;
-  ide_type    ide = ide_type::all;
   std::string project;
   nsprocess::s_nsbuild = argv[0];
   for (int i = 1; i < argc; ++i)
@@ -66,12 +65,6 @@ int main(int argc, char const* argv[])
     {
       if (i + 1 < argc)
         project = argv[i + 1];
-      i++;
-    }
-    else if (arg == "--ide" || arg == "-i")
-    {
-      if (i + 1 < argc)
-        ide = get_ide(argv[i + 1]);
       i++;
     }
     else if (arg == "--check" || arg == "-c")
@@ -119,7 +112,7 @@ int main(int argc, char const* argv[])
     switch (ras)
     {
     case runas::main:
-      build.main_project(project, ide);
+      build.main_project(project);
       break;
     case runas::generate_enum:
       build.generate_enum(target);

@@ -6,46 +6,57 @@ runtime_dir    : "rt";
 download_dir   : "dl";
 frameworks_dir : "Frameworks";
 
-config x64dbg [msvc, debug]
+preset x64d-avx
 {
-  compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
-  linker_flags: [ "/debug", "-incremental:no" ];
-}
+  display_name = "x64-debug-avx";
 
-config x64rel [msvc, release]
-{
-  compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
-}
-
-config x64asan [msvc, debug, asan]
-{
-  compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8", "/fsanitize=address"  ];
-  linker_flags: [ "/debug", "-incremental:no", "/wholearchive:clang_rt.asan_dbg_dynamic-x86_64.lib", "/wholearchive:clang_rt.asan_dbg_dynamic_runtime_thunk-x86_64.lib" ];
-}
-
-config x64rel [gcc, release]
-{
-  compiler_flags  : [
+  config [msvc, debug]
+  {
+    compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
+    linker_flags    : [ "/debug", "-incremental:no" ];
+  }
+  config [gcc, debug]
+  {
+    compiler_flags  : [
       "-fcoroutines",
       "-fno-exceptions",
       "-mavx",
       "-std=c++2a"
     ];
+  }
 }
 
-config x64dbg [gcc, debug]
+preset x64r-avx
 {
-  compiler_flags  : [
+  display_name = "x64-release-avx";
+
+  config [msvc, release]
+  {
+    compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
+  }
+  config [gcc, release]
+  {
+    compiler_flags  : [
       "-fcoroutines",
       "-fno-exceptions",
       "-mavx",
       "-std=c++2a"
     ];
+  }
 }
 
-config x64asan [gcc, debug, asan]
+preset x64dasan-avx
 {
-  compiler_flags  : [
+  display_name = "x64-debug-asan";
+
+  config [msvc, debug]
+  {
+    compiler_flags : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8", "/fsanitize=address"  ];
+    linker_flags   : [ "/debug", "-incremental:no", "/wholearchive:clang_rt.asan_dbg_dynamic-x86_64.lib", "/wholearchive:clang_rt.asan_dbg_dynamic_runtime_thunk-x86_64.lib" ];
+  }
+  config [gcc, debug, asan]
+  {
+    compiler_flags : [
       "-fcoroutines",
       "-fno-exceptions",
       "-fsanitize=address",
@@ -53,5 +64,6 @@ config x64asan [gcc, debug, asan]
       "-mavx",
       "-std=c++2a"
     ];
-  linker_flags: [ "-fsanitize=address", "-fsanitize=leak" ];
+    linker_flags : [ "-fsanitize=address", "-fsanitize=leak" ];
+  }
 }

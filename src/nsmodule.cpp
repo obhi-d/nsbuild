@@ -6,6 +6,7 @@
 #include <nsmodule.h>
 #include <nsprocess.h>
 #include <nstarget.h>
+#include <nspreset.h>
 
 bool has_data(nsmodule_type t)
 {
@@ -62,11 +63,13 @@ void nsmodule::update_properties(nsbuild const&     bc,
 
   if (has_data(type))
     glob_media = nsglob{.name      = "data_group",
+                        .relative_to = "${CMAKE_CURRENT_LIST_DIR}",
                         .sub_paths = {"${module_dir}/media/*"},
                         .recurse   = true};
   if (has_sources(type))
     glob_sources = nsglob{
         .name      = "source_group",
+        .relative_to = "${CMAKE_CURRENT_LIST_DIR}",
         .sub_paths = {"${module_dir}/src/*.cpp",
                       "${module_dir}/src/platform/${config_platform}/*.cpp",
                       "${module_gen_dir}/*.cpp",
@@ -208,36 +211,43 @@ void nsmodule::write_fetch_build(nsbuild const& bc) const
 {
   auto                                     ext_dir = get_full_ext_dir(bc);
   std::filesystem::create_directories(ext_dir);
-  auto          cmlf = ext_dir / "CMakeLists.txt";
-  std::ofstream ofs{cmlf};
-  if (!ofs)
   {
-    nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
-    throw std::runtime_error("Could not create CMakeLists.txt");
+
+    auto          cmlf = ext_dir / "CMakeLists.txt";
+    std::ofstream ofs{cmlf};
+    if (!ofs)
+    {
+      nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
+      throw std::runtime_error("Could not create CMakeLists.txt");
+    }
+
+    ofs << fmt::format(cmake::k_fetch_content_start, fetch->package);
+
+    bc.macros.print(ofs);
+    macros.print(ofs);
+    write_variables(ofs, bc);
+
+    std::filesystem::path src     = source_path;
+    auto                  srccmk  = src / k_cmake_dir / "CMakeLists.txt";
+    auto                  src_var = fmt::format("{}_SOURCE_DIR", fetch->package);
+    if (std::filesystem::exists(srccmk))
+    {
+      ofs << fmt::format("\nset(module_cmk_src \"{}\")", srccmk.generic_string());
+      src_var = "module_cmk_src";
+    }
+
+    for (auto const& a : fetch->args)
+    {
+      a.print(ofs, output_fmt::set_cache, false);
+    }
+
+    ofs << fmt::format(cmake::k_fetch_content, fetch->package, fetch->repo, fetch->commit, src_var);
   }
-  
-  ofs << fmt::format(cmake::k_fetch_content_start, fetch->package);
-
-  bc.macros.print(ofs);
-  macros.print(ofs);
-  write_variables(ofs, bc);
-
-  std::filesystem::path src     = source_path;
-  auto                  srccmk  = src / k_cmake_dir / "CMakeLists.txt";
-  auto                  src_var = fmt::format("{}_SOURCE_DIR", fetch->package);
-  if (std::filesystem::exists(srccmk))
   {
-    ofs << fmt::format("\nset(module_cmk_src \"{}\")", srccmk.generic_string());
-    src_var = "module_cmk_src";
+    auto          cmlf = ext_dir / "CMakePresets.json";
+    std::ofstream ofs{cmlf};
+    nspreset::write(ofs, nspreset::write_compiler_paths, cmake::path(get_full_ext_dir(bc) / "cc"), {}, bc);
   }
-
-  for (auto const& a : fetch->args)
-  {
-    a.print(ofs);
-  }
-
-  ofs << fmt::format(cmake::k_fetch_content, fetch->package, fetch->repo,
-                     fetch->commit, src_var);
 }
 
 void nsmodule::fetch_content(nsbuild const& bc)
@@ -477,7 +487,7 @@ void nsmodule::write_find_package(std::ofstream& ofs, nsbuild const& bc) const
 
   if (fetch->link_with_ns)
   {
-    ofs << "\ntarget_link_libraries(${{module_target}} "
+    ofs << "\ntarget_link_libraries(${module_target} "
         << cmake::to_string(cmake::inheritance::intf);
     if (fetch->components.empty())
       ofs << fmt::format(" {0}::{0}", fetch->package);
@@ -505,7 +515,7 @@ void nsmodule::write_find_package(std::ofstream& ofs, nsbuild const& bc) const
                        fetch->package)
         << "\n\t$<INSTALL_INTERFACE:\"${__sdk_install_includes}\">"
         << "\n)"
-        << "\ntarget_link_libraries(${{module_target}} "
+        << "\ntarget_link_libraries(${module_target} "
         << cmake::to_string(cmake::inheritance::intf)
         << fmt::format("\n\t$<BUILD_INTERFACE:\"${{{}_LIBRARIES}}\">",
                        fetch->package)
@@ -553,10 +563,10 @@ void nsmodule::write_definitions(std::ofstream& ofs, nsbuild const& bc,
     auto        filter = cmake::get_filter(intf[type][i].filters);
     auto const& dep    = intf[type][i].definitions;
     for (auto const& d : dep)
-      write_definitions(ofs, d,
-                        type == pub_intf ? cmake::inheritance::pub
-                                         : cmake::inheritance::priv,
-                        filter);
+    {
+      auto def = fmt::format("{}={}", d.first, d.second);
+      write_definitions(ofs, def, type == pub_intf ? cmake::inheritance::pub : cmake::inheritance::priv, filter);
+    }
   }
 }
 

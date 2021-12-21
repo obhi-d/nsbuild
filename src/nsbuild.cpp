@@ -1,7 +1,6 @@
 #include "nsbuild.h"
 
 #include "nsenums.h"
-#include "nside.h"
 #include "picosha2.h"
 
 #include <exception>
@@ -21,7 +20,7 @@ nsbuild::nsbuild()
   wd = std::filesystem::current_path();
 }
 
-void nsbuild::main_project(std::string_view proj, ide_type ide)
+void nsbuild::main_project(std::string_view proj)
 { 
   compute_paths();
   auto cml = get_full_scan_dir() / "CMakeLists.txt";
@@ -32,14 +31,21 @@ void nsbuild::main_project(std::string_view proj, ide_type ide)
   }
 
   {
-    auto          out_dir = get_full_out_dir();
-    std::filesystem::create_directories(out_dir);
-    auto          cml = out_dir / "CMakeLists.txt";
-    std::ofstream off{cml};
-    off << "\nmessage(\"-- Run build for the first time to generate project files.\")\n";
+    auto          cml = get_full_scan_dir() / "CMakePresets.json";
+    std::ofstream ff{cml};
+    nspreset::write(ff, 0, {}, {}, *this);
   }
-
-  nside::write(ide, *this);
+  // create preset empty directories
+  for (auto const& preset : presets)
+  {
+    auto path = get_full_out_dir() / preset.name / "CMakeLists.txt";
+    if (!std::filesystem::exists(path))
+    {
+      std::filesystem::create_directories(path.parent_path());
+      std::ofstream ff{path};
+      ff << "\nmessage(\"-- Run build for the first time to generate project files.\")\n";
+    }
+  }
 }
 
 bool nsbuild::scan_file(std::filesystem::path path, bool store,
@@ -87,7 +93,6 @@ void nsbuild::before_all()
   determine_build_type();
   compute_paths();
   std::filesystem::create_directories(get_full_cache_dir());
-  scan_main(get_full_scan_dir());
   read_meta(get_full_cache_dir() / "meta.ns");
   act_meta();
   foreach_framework([this](std::filesystem::path p) { read_framework(p); });
@@ -95,7 +100,6 @@ void nsbuild::before_all()
   update_macros();
   process_targets();
   write_meta(get_full_cache_dir() / "meta.ns");
-  generate_main_config();
 }
 
 void nsbuild::check_modules() 
@@ -107,7 +111,7 @@ void nsbuild::check_modules()
 void nsbuild::determine_build_type()
 {
   std::filesystem::path p  = cmakeinfo.cmake_build_dir;
-  config_name = p.parent_path().filename().generic_string();
+  preset_name = p.parent_path().filename().generic_string();
 }
 
 void nsbuild::read_meta(std::filesystem::path path)
@@ -217,32 +221,6 @@ void nsbuild::read_module(std::filesystem::path sp)
     t.first->second.fw_idx = static_cast<std::uint32_t>(frameworks.size() - 1);
     t.first->second.mod_idx =
         static_cast<std::uint32_t>(frameworks.back().modules.size() - 1);
-  }
-}
-
-void nsbuild::generate_main_config()
-{
-  if (!state.is_dirty)
-    return;
-
-  // get_full_out_dir() / "CMakeLists.txt";
-  std::string redirect =
-      fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{0}  ${{CMAKE_CURRENT_LIST_DIR}}/{0}/{1}/cc)",
-                  config_name, build_dir);
-  bool rewrite = true;
-  auto cml     = get_full_out_dir() / "CMakeLists.txt";
-  if (std::filesystem::exists(cml))
-  {
-    std::ifstream iff{cml};
-    std::string   f1_str((std::istreambuf_iterator<char>(iff)),
-                       std::istreambuf_iterator<char>());
-    if (f1_str == redirect)
-      rewrite = false;
-  }
-  if (rewrite)
-  {
-    std::ofstream off{cml};
-    off << redirect;
   }
 }
 
@@ -385,22 +363,31 @@ void nsbuild::compute_paths()
   namespace fs    = std::filesystem;
   paths.scan_dir = fs::canonical(wd / scan_dir);
   paths.out_dir   = (paths.scan_dir / out_dir);
-  paths.cfg_dir   = (paths.out_dir / config_name);
-  paths.build_dir = (paths.cfg_dir / build_dir);
-  paths.cache_dir = (paths.cfg_dir / cache_dir);
+  paths.cfg_dir   = (paths.out_dir / preset_name);
+  if (!preset_name.empty())
+  {
+    paths.build_dir = (paths.cfg_dir / build_dir);
+    paths.cache_dir = (paths.cfg_dir / cache_dir);
+  }
   paths.dl_dir    = (paths.out_dir / download_dir);
   fs::create_directories(paths.scan_dir);
   fs::create_directories(paths.out_dir);
   fs::create_directories(paths.cfg_dir);
-  fs::create_directories(paths.build_dir);
-  fs::create_directories(paths.cache_dir);
+  if (!preset_name.empty())
+  {
+    fs::create_directories(paths.build_dir);
+    fs::create_directories(paths.cache_dir);
+  }
   fs::create_directories(paths.dl_dir);
 
   paths.scan_dir = fs::canonical(paths.scan_dir);
   paths.out_dir = fs::canonical(paths.out_dir);
   paths.cfg_dir = fs::canonical(paths.cfg_dir);
-  paths.build_dir = fs::canonical(paths.build_dir);
-  paths.cache_dir = fs::canonical(paths.cache_dir);
+  if (!preset_name.empty())
+  {
+    paths.build_dir = fs::canonical(paths.build_dir);
+    paths.cache_dir = fs::canonical(paths.cache_dir);
+  }
   paths.dl_dir = fs::canonical(paths.dl_dir);
 }
 
@@ -408,12 +395,13 @@ void nsbuild::update_macros()
 {
   auto pwd = get_full_scan_dir();
 
+  macros["config_source"]    = cmake::path(get_full_scan_dir());
   macros["config_build_dir"] = cmake::path(get_full_build_dir());
   macros["config_sdk_dir"]   = cmake::path(get_full_cfg_dir() / sdk_dir);
   macros["config_rt_dir"]    = cmake::path(get_full_cfg_dir() / runtime_dir);
   macros["config_frameworks_dir"] = cmake::path((pwd / frameworks_dir));
   macros["config_download_dir"]   = cmake::path((pwd / out_dir));
-  macros["config_name"]           = config_name;
+  macros["config_preset_name"]    = preset_name;
   macros["config_type"]           = cmakeinfo.cmake_config;
   macros["config_platform"]       = cmakeinfo.target_platform;
   macros["config_ignored_media"]  = ignore_media_from;
@@ -446,29 +434,27 @@ void nsbuild::write_cxx_options(std::ostream& ofs) const
          "\nset(__module_cxx_compile_flags)"
          "\nset(__module_cxx_linker_flags)";
 
-  for (auto const& cxx : config)
+  for (auto const& preset : presets)
   {
-    if (cxx.name == config_name)
+    if (preset.name == preset_name)
     {
-      std::string filters = cmake::get_filter(cxx.filters);
-      if (filters.empty())
+      for (auto const& cxx : preset.configs)
       {
-        for (auto flag : cxx.compiler_flags)
-          ofs << fmt::format("\nlist(APPEND __module_cxx_compile_flags \"{}\")",
-                             flag);
-        for (auto flag : cxx.linker_flags)
-          ofs << fmt::format("\nlist(APPEND __module_cxx_linker_flags \"{}\")",
-                             flag);
-      }
-      else
-      {
-        for (auto flag : cxx.compiler_flags)
-          ofs << fmt::format("\nlist(APPEND __module_cxx_compile_flags $<{}:{}>)",
-                           filters, flag);
-        for (auto flag : cxx.linker_flags)
-          ofs << fmt::format(
-              "\nlist(APPEND __module_cxx_linker_flags $<{}:{}>)", filters,
-              flag);
+        std::string filters = cmake::get_filter(cxx.filters);
+        if (filters.empty())
+        {
+          for (auto flag : cxx.compiler_flags)
+            ofs << fmt::format("\nlist(APPEND __module_cxx_compile_flags \"{}\")", flag);
+          for (auto flag : cxx.linker_flags)
+            ofs << fmt::format("\nlist(APPEND __module_cxx_linker_flags \"{}\")", flag);
+        }
+        else
+        {
+          for (auto flag : cxx.compiler_flags)
+            ofs << fmt::format("\nlist(APPEND __module_cxx_compile_flags $<{}:{}>)", filters, flag);
+          for (auto flag : cxx.linker_flags)
+            ofs << fmt::format("\nlist(APPEND __module_cxx_linker_flags $<{}:{}>)", filters, flag);
+        }
       }
     }
   }

@@ -17,7 +17,7 @@ void append(std::string& o, std::string_view v, char sep)
 void value(std::string& result, neo::list::vector::const_iterator b,
            neo::list::vector::const_iterator e, char sep)
 {
-  for (auto it = b; b != e; ++it)
+  for (auto it = b; it != e; ++it)
   {
     auto const& p = *it;
     if (p.index() == neo::command::k_param_single)
@@ -132,8 +132,6 @@ std::string_view get_filter(nsfilter filter)
     return "$<COMPILE_LANG_AND_ID:CXX,MSVC>";
   case nsfilter::gcc:
     return "$<COMPILE_LANG_AND_ID:CXX,GNU>";
-  case nsfilter::asan:
-    return "$<BOOL:${L_ASAN_ACTIVE}>";
   }
   return "";
 }

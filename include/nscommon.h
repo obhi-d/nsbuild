@@ -32,16 +32,6 @@ enum class runas
   copy_media,
 };
 
-enum class ide_type
-{
-  vs,
-  clion,
-  vscode,
-  all
-};
-
-ide_type get_ide(std::string_view);
-
 enum class output_fmt
 {
   cmake_def,
@@ -59,7 +49,6 @@ enum class nsfilter
   clang,
   msvc,
   gcc,
-  asan,
   unknown,
   count
 };
@@ -213,6 +202,7 @@ struct nsplugin_manifest
 
 using string_map  = std::unordered_map<std::string, std::string>;
 using stringv_map = std::unordered_map<std::string_view, std::string_view>;
+using nameval_list = std::vector<std::pair<std::string, std::string>>;
 
 struct nsmetainfo
 {

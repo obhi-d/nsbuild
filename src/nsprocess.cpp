@@ -14,31 +14,8 @@ namespace nsprocess
 
 void cmake_config(nsbuild const& bc, std::vector<std::string> args, std::string src, std::filesystem::path wd)
 {
-
-  if (!bc.cmakeinfo.cmake_config.empty() && !bc.cmakeinfo.cmake_is_multi_cfg)
-    args.emplace_back(cmake::dset("CMAKE_BUILD_TYPE", bc.cmakeinfo.cmake_config));
-
-  if (!bc.cmakeinfo.cmake_toolchain.empty())
-    args.emplace_back(cmake::dset("CMAKE_TOOLCHAIN_FILE", bc.cmakeinfo.cmake_toolchain));
-
-  if (!bc.cmakeinfo.cmake_generator.empty())
-    args.emplace_back(cmake::dset("CMAKE_GENERATOR", bc.cmakeinfo.cmake_generator));
-
-  if (!bc.cmakeinfo.cmake_generator_platform.empty())
-    args.emplace_back(cmake::dset("CMAKE_GENERATOR_PLATFORM", bc.cmakeinfo.cmake_generator_platform));
-
-  if (!bc.cmakeinfo.cmake_generator_instance.empty())
-    args.emplace_back(cmake::dset("CMAKE_GENERATOR_INSTANCE", bc.cmakeinfo.cmake_generator_instance));
-
-  if (!bc.cmakeinfo.cmake_generator_toolset.empty())
-    args.emplace_back(cmake::dset("CMAKE_GENERATOR_TOOLSET", bc.cmakeinfo.cmake_generator_toolset));
-
-  if (!bc.cmakeinfo.cmake_cppcompiler.empty())
-    args.emplace_back(cmake::dset("CMAKE_CXX_COMPILER", bc.cmakeinfo.cmake_cppcompiler));
-
-  if (!bc.cmakeinfo.cmake_cppcompiler.empty())
-    args.emplace_back(cmake::dset("CMAKE_C_COMPILER", bc.cmakeinfo.cmake_ccompiler));
-
+  args.emplace_back("--preset");
+  args.emplace_back(bc.preset_name);
   args.emplace_back("-S");
   args.emplace_back(std::move(src));
   cmake(bc, std::move(args), wd);

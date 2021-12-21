@@ -7,7 +7,6 @@ std::unordered_map<std::string_view, nsfilter> filters = {
     {"windows", nsfilter::windows}, {"linux", nsfilter::linux},
     {"macOS", nsfilter::macOS},     {"clang", nsfilter::clang},
     {"msvc", nsfilter::msvc},       {"gcc", nsfilter::gcc},
-    {"asan", nsfilter::asan},
 };
 // shared_lib, static_lib, system_lib, include_list, binary_list,
 // dependency_list
@@ -19,17 +18,6 @@ std::unordered_map<std::string_view, nspath_type> path_type = {
     {"include", nspath_type::include_list},
     {"binary", nspath_type::binary_list},
     {"dependencies", nspath_type::dependency_list}};
-
-ide_type get_ide(std::string_view name) 
-{ 
-  if (name == "vs")
-    return ide_type::vs;
-  if (name == "clion")
-    return ide_type::clion;
-  if (name == "vscode")
-    return ide_type::vscode;
-  return ide_type::all;
-}
 
 nsfilter classify_filter(std::string_view name)
 {
