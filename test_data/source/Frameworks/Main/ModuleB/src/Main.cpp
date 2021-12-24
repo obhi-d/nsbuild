@@ -1,5 +1,10 @@
 
+#include <neo_script.hpp>
 #include <iostream>
 
 int main() 
-{ return 0; }
+{
+ 
+  std::cout << "Hey";
+  return 0; 
+}

@@ -14,7 +14,7 @@ set(JSON_BuildTests OFF CACHE INTERNAL "")
 
 FetchContent_Declare(neoscript
   GIT_REPOSITORY https://github.com/obhi-d/neoscript.git
-  GIT_TAG 226b3ae5722131989e45f18f4cfb2c5d14f7cfda
+  GIT_TAG 86537bc482bb14aafa0ea54bb2ba58c38dbe48ec
 )
 
 FetchContent_Declare(fmt
@@ -46,14 +46,15 @@ add_executable(nsbuild
  "src/nspython.cpp" 
  "include/nsmacros.h" 
  "src/nsmacros.cpp" 
- "src/nsparams.cpp" 
+ "src/nsvars.cpp" 
  "src/nsglob.cpp" 
  "src/nsframework.cpp" 
  "src/nsprocess.cpp"
  "src/nscmake.cpp" 
  "src/nsbuildcmds.cpp" 
  "src/nsmedia.cpp" 
- "src/nsenums.cpp"  "src/nspreset.cpp")
+ "src/nsenums.cpp"  
+ "src/nspreset.cpp")
 
 target_include_directories(nsbuild PRIVATE 
 	"${CMAKE_SOURCE_DIR}/include")

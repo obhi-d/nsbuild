@@ -1,0 +1,39 @@
+type = extern;
+
+fetch "https://github.com/boostorg/boost.git"
+{
+  license = "LICENSE_1_0.txt";
+  commit  = "ecb35096bc1cb37ba62d9cb93a344b76ea4943ce";
+  package = Boost;
+  components = ["system", "container", "date_time"];
+  args
+  {
+    BOOST_EXCEPTION_DISABLE = OFF;
+    BOOST_INCLUDE_LIBRARIES = "system;container;date_time";
+    BUILD_TESTING = OFF;
+    BUILD_SHARED_LIBS = ON;
+  }
+}
+
+{{cmake:custom_build}}
+
+if (${config_platform} STREQUAL "windows")
+  set(bootstrap "bootstrap.bat")
+  set(b2 b2 --with-system --with-container --with-program_options --with-json --with-date_time)
+else()
+  set(bootstrap "./bootstrap.sh" "--with-libraries=system,container,program_options,json,date_time")
+  set(b2 "./b2")
+endif()
+
+
+if (${config_type} STREQUAL "Debug")
+  set(variant "debug")
+else()
+  set(variant "release")
+endif()
+
+
+set(__fetch_configure_cmd "${CMAKE_COMMAND}" -E chdir "${fetch_src_dir}" "${bootstrap}")
+set(__fetch_build_cmd "${CMAKE_COMMAND}" -E chdir "${fetch_src_dir}" ${b2} "--build-dir${fetch_build_dir}" "--prefix=${fetch_sdk_dir}" "address-model=64" "variant=${variant}" "define=BOOST_ALL_DYN_LINK" "link=shared")
+set(__fetch_install_cmd "${CMAKE_COMMAND}" -E chdir "${fetch_src_dir}" ${b2} install "--build-dir=${fetch_build_dir}" "--prefix=${fetch_sdk_dir}" "address-model=64" "variant=${variant}" "define=BOOST_ALL_DYN_LINK" "link=shared")
+

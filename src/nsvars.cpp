@@ -1,8 +1,8 @@
 
-#include <nsparams.h>
+#include <nsvars.h>
 #include <nscmake.h>
 
-void nsvars::print(std::ostream& os, output_fmt f, bool ignore_unfiltered) const
+void nsvars::print(std::ostream& os, output_fmt f, bool ignore_unfiltered, char sep) const
 {
   bool has_filters = filters.any();
   if (!has_filters && ignore_unfiltered)
@@ -15,7 +15,7 @@ void nsvars::print(std::ostream& os, output_fmt f, bool ignore_unfiltered) const
     if (has_filters)
     {
       os << "\nset(" << prefix << v.name << " $<IF:" << sf << ", ";
-      cmake::print(os, cmake::value(v.params));
+      cmake::print(os, cmake::value(v.params, sep));
       os << ", ${" << prefix << v.name << "}";
       if (f == output_fmt::set_cache)
         os << " CACHE INTERNAL \"\"";
@@ -23,8 +23,9 @@ void nsvars::print(std::ostream& os, output_fmt f, bool ignore_unfiltered) const
     }
     else
     {
-      os << "\nset(" << prefix << v.name << " ";
-      cmake::print(os, cmake::value(v.params));
+      os << "\nset(" << prefix << v.name << " \"";
+      cmake::print(os, cmake::value(v.params, sep));
+      os << "\" ";
       if (f == output_fmt::set_cache)
         os << " CACHE INTERNAL \"\"";
       os << ")";

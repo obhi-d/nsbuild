@@ -90,7 +90,7 @@ framework(about = "Framework level declaration, can exclude modules",
     components (about= "List of components to find");
   }
 
-  interface (about =  "Defines the export interface for the module, everything here will be used as public/interface property of this target", 
+  public (about =  "Defines the export public interface for the module, everything here will be used as public/interface property of this target", 
              params = "Filter with list of filter params, see @config_filter")
   {
     dependencies (about = "List of module targets of the form Framework.moduleName, that this module depends on");

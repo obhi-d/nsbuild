@@ -157,19 +157,6 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name,
     macros["fetch_src_dir"]      = cmake::path(get_full_dl_dir(bc));
     // macros["fetch_ts_dir"]       = cmake::path(get_full_ts_dir(bc));
   }
-
-  for (auto& v : vars)
-  {
-    if (!v.filters.any())
-    {
-      for (auto& p : v.params)
-      {
-        std::string name = "var_";
-        name += p.name;
-        macros[name] = cmake::value(p.params);
-      }
-    }
-  }
 }
 
 void nsmodule::update_fetch(nsbuild const& bc)
@@ -223,27 +210,55 @@ void nsmodule::write_fetch_build(nsbuild const& bc) const
       throw std::runtime_error("Could not create CMakeLists.txt");
     }
 
-    ofs << fmt::format(cmake::k_fetch_content_start, fetch->package);
+    ofs << fmt::format(cmake::k_project_name, name, bc.version);
 
     bc.macros.print(ofs);
     macros.print(ofs);
-    write_variables(ofs, bc);
-
-    std::filesystem::path src     = source_path;
-    auto                  srccmk  = src / k_cmake_dir / "CMakeLists.txt";
-    auto                  src_var = fmt::format("{}_SOURCE_DIR", fetch->package);
-    if (std::filesystem::exists(srccmk))
-    {
-      ofs << fmt::format("\nset(module_cmk_src \"{}\")", srccmk.generic_string());
-      src_var = "module_cmk_src";
-    }
-
+    //write_variables(ofs, bc);
     for (auto const& a : fetch->args)
     {
-      a.print(ofs, output_fmt::set_cache, false);
+      a.print(ofs, output_fmt::cmake_def, false);
     }
 
-    ofs << fmt::format(cmake::k_fetch_content, fetch->package, fetch->repo, fetch->commit, src_var);
+    std::filesystem::path src     = source_path;
+    auto                  srccmk  = src / k_cmake_dir / "CustomBuild.cmake";
+    if (!fetch->custom_build.fragments.empty() || std::filesystem::exists(srccmk))
+    {
+      if (!fetch->custom_build.fragments.empty())
+      {
+        for (auto const & f : fetch->custom_build.fragments)
+          ofs << f << "\n";
+      }
+
+      if (std::filesystem::exists(srccmk))
+      {
+        ofs << fmt::format("\ninclude({})", cmake::path(srccmk));
+      }
+      ofs << fmt::format(cmake::k_ext_proj_start, fetch->package, fetch->repo, fetch->commit);
+
+      auto postinstall = src / k_cmake_dir / "PostBuildInstall.cmake";
+      if (std::filesystem::exists(postinstall) || !fetch->post_build_install.fragments.empty())
+      {
+        if (std::filesystem::exists(postinstall))
+          ofs << fmt::format("\ninclude({})", cmake::path(postinstall));
+
+        if (!fetch->post_build_install.fragments.empty())
+        {
+          for (auto const& f : fetch->post_build_install.fragments)
+            ofs << f << "\n";
+        }
+      }
+    }
+    else
+    {
+      ofs << fmt::format(cmake::k_ext_cmake_proj_start, fetch->package, fetch->repo, fetch->commit);
+      for (auto const& a : fetch->args)
+      {
+        for (auto const& v : a.params)
+          ofs << fmt::format("\n    -D{0}=${{{0}}}", v.name);
+      }
+      ofs << "\n)\n";
+    }
   }
   {
     auto          cmlf = ext_dir / "CMakePresets.json";
@@ -310,15 +325,15 @@ void nsmodule::write_main_build(nsbuild const& bc) const
   // config file
 }
 
-void nsmodule::write_variables(std::ofstream& ofs, nsbuild const& bc) const
+void nsmodule::write_variables(std::ofstream& ofs, nsbuild const& bc, char sep) const
 {
   for (auto const& e : exports)
   {
-    e.print(ofs, output_fmt::set_cache);
+    e.print(ofs, output_fmt::set_cache, false, sep);
   }
   for (auto const& e : vars)
   {
-    e.print(ofs);
+    e.print(ofs, output_fmt::cmake_def, false, sep);
   }
 }
 
@@ -487,7 +502,7 @@ void nsmodule::write_find_package(std::ofstream& ofs, nsbuild const& bc) const
                        fetch->version, s);
   }
 
-  if (fetch->link_with_ns)
+  if (!fetch->legacy_linking)
   {
     ofs << "\ntarget_link_libraries(${module_target} "
         << cmake::to_string(cmake::inheritance::intf);
@@ -660,7 +675,7 @@ void nsmodule::write_dependency(std::ofstream& ofs, std::string_view target,
 {
   ofs << fmt::format("\nlist(APPEND {} {})",
                      inh == cmake::inheritance::pub ? "__module_pub_deps"
-                                                    : "__module_pub_deps",
+                                                    : "__module_priv_deps",
                      filter.empty() ? std::string{target}
                                     : fmt::format("$<{}:{}>", filter, target));
 }

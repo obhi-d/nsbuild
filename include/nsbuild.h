@@ -12,6 +12,7 @@
 
 struct nsbuild : public neo::command_handler
 {
+  std::string version = "0.0.1";
   // preferred generator
   std::string preferred_gen = "Ninja";
   // path relative to scan
@@ -96,9 +97,9 @@ struct nsbuild : public neo::command_handler
   /// - If not present, writes basic presets info in build dir
   /// - Generates external build and builds and installs exteranl libs
   void before_all();
-  void read_meta(std::filesystem::path);
+  void read_meta(std::filesystem::path const&);
   void act_meta();
-  void write_meta(std::filesystem::path);
+  void write_meta(std::filesystem::path const&);
   void scan_main(std::filesystem::path);
   void read_framework(std::filesystem::path);
   void read_module(std::filesystem::path);
@@ -164,6 +165,7 @@ struct nsbuild : public neo::command_handler
     std::filesystem::path cache_dir;
     std::filesystem::path out_dir;
     std::filesystem::path dl_dir;
+    std::filesystem::path sdk_dir;
   };
 
   fullpaths paths;
@@ -177,4 +179,5 @@ struct nsbuild : public neo::command_handler
   inline std::filesystem::path const& get_full_cache_dir() const { return paths.cache_dir; }
   inline std::filesystem::path const& get_full_out_dir() const { return paths.out_dir; }
   inline std::filesystem::path const& get_full_dl_dir() const { return paths.dl_dir; }
+  inline std::filesystem::path const& get_full_sdk_dir() const { return paths.sdk_dir; }
 };

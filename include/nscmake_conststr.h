@@ -5,7 +5,11 @@ namespace cmake
 {
 static inline constexpr char k_main_preamble[] = R"_(
 
-project({0})
+if (POLICY CMP0048)
+  cmake_policy(SET CMP0048 NEW)
+endif (POLICY CMP0048)
+
+project({0} VERSION {4} LANGUAGES C CXX)
 cmake_minimum_required(VERSION 3.20)
 set(nsbuild "{2}")
 
@@ -38,7 +42,7 @@ add_custom_target(nsbuild-check ALL
 # )
 
 include(CTest)
-include(${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/CMakeLists.txt)
+include(${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3}/CMakeLists.txt)
 
 )_";
 
@@ -47,8 +51,14 @@ static inline constexpr char k_target_include_directories[] =
 
 static inline constexpr char k_fetch_content_start[] = R"_(
 
-project({0}_install)
+if (POLICY CMP0048)
+  cmake_policy(SET CMP0048 NEW)
+endif (POLICY CMP0048)
+
+project({0}_install VERSION {1} LANGUAGES C CXX)
 cmake_minimum_required(VERSION 3.20)
+
+set(CMAKE_SKIP_INSTALL_RULES OFF CACHE INTERNAL "")
 
 )_";
 
@@ -70,12 +80,10 @@ FetchContent_MakeAvailable({0})
 )_";
 
 static inline constexpr char k_find_package[] =
-    "\nfind_package({} {} REQUIRED PATHS ${{fetch_sdk_dir}} "
-    "NO_DEFAULT_PATH)";
+    "\nfind_package({} {} REQUIRED PATHS ${{fetch_sdk_dir}} NO_DEFAULT_PATH)";
 
 static inline constexpr char k_find_package_comp[] =
-    "\nfind_package({} {} REQUIRED COMPONENTS {} PATHS ${{fetch_sdk_dir}} "
-    "NO_DEFAULT_PATH)";
+    "\nfind_package({} {} REQUIRED COMPONENTS {} PATHS ${{fetch_sdk_dir}} NO_DEFAULT_PATH)";
 
 static inline constexpr char k_write_dependency[] = R"_(
 
@@ -142,4 +150,58 @@ set({0} ${{__glob_result}})
 
 )_";
 
+static inline constexpr char k_ext_cmake_proj_start[] = R"_(
+
+
+ExternalProject_Add({0}
+  GIT_REPOSITORY  "{1}"
+  GIT_TAG  "{2}"
+  SOURCE_DIR ${{fetch_src_dir}}
+  BINARY_DIR ${{fetch_bulid_dir}}
+  INSTALL_DIR ${{fetch_sdk_dir}}
+  CMAKE_ARGS
+    -DCMAKE_BUILD_TYPE=${{fetch_bulid_dir}}
+    -DCMAKE_GENERATOR_PLATFORM=${{CMAKE_GENERATOR_PLATFORM}}
+    -DCMAKE_GENERATOR_INSTANCE=${{CMAKE_GENERATOR_INSTANCE}}
+    -DCMAKE_CXX_COMPILER=${{CMAKE_CXX_COMPILER}}
+    -DCMAKE_C_COMPILER=${{CMAKE_C_COMPILER}}
+    -DCMAKE_INSTALL_PREFIX=${{fetch_sdk_dir}})_";
+
+
+static inline constexpr char k_ext_proj_start[] = R"_(
+
+if (NOT __fetch_configure_cmd)
+  set(__fetch_configure_cmd ${{CMAKE_COMMAND}} -E echo " -- Fake Configuring ${{module_name}}")
+endif()
+if (NOT __fetch_build_cmd)
+  set(__fetch_build_cmd ${{CMAKE_COMMAND}} -E echo " -- Fake Building ${{module_name}}")
+endif()
+if (NOT __fetch_install_cmd)
+  set(__fetch_install_cmd ${{CMAKE_COMMAND}} -E echo " -- Fake Installing ${{module_name}}")
+endif()
+
+ExternalProject_Add({0}
+  GIT_REPOSITORY "{1}"
+  GIT_TAG  "{2}"
+  SOURCE_DIR ${{fetch_src_dir}}
+  BINARY_DIR ${{fetch_bulid_dir}}
+  INSTALL_DIR ${{fetch_sdk_dir}}
+  CONFIGURE_COMMAND ${{__fetch_configure_cmd}}
+  BUILD_COMMAND ${{__fetch_configure_cmd}}
+  INSTALL_COMMAND ${{__fetch_install_cmd}}
+)
+)_";
+
+static inline constexpr char k_project_name[] = R"_(
+
+if (POLICY CMP0048)
+  cmake_policy(SET CMP0048 NEW)
+endif (POLICY CMP0048)
+
+project({0}Fetch VERSION {1} LANGUAGES C CXX)
+cmake_minimum_required(VERSION 3.20)
+include(ExternalProject)
+
+
+)_";
 } // namespace cmake

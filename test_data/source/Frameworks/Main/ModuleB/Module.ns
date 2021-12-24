@@ -1,3 +1,7 @@
 
 type = exe;
 
+private
+{
+  dependencies = ["Extern.ExternM", "Extern.Boost"];
+}

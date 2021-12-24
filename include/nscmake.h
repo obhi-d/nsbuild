@@ -1,6 +1,6 @@
 #pragma once
 #include <nscmake_conststr.h>
-#include <nsparams.h>
+#include <nsvars.h>
 
 namespace cmake
 {

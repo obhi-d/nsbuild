@@ -68,17 +68,14 @@ void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::pa
 
   reproc::arguments pargs{sargs.data()};
   reproc::process   proc;
-  auto              rc = proc.start(pargs);
+  reproc::options   default_opt;
+ 
+  default_opt.redirect.parent = true;
+
+  auto              rc = proc.start(pargs, default_opt);
 
   std::filesystem::current_path(save);
-  if (rc)
-  {
-    throw std::system_error(rc);
-  }
 
-  std::string          output;
-  reproc::sink::string sink(output);
-  rc = reproc::drain(proc, sink, reproc::sink::null);
   std::string msg = rc.message();
   if (rc)
   {
@@ -87,8 +84,6 @@ void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::pa
       nslog::error(msg);
     throw std::system_error(rc);
   }
-  else if (!output.empty())
-    nslog::print(output);
 }
 
 std::filesystem::path s_nsbuild;

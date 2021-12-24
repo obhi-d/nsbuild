@@ -51,10 +51,7 @@ nscmakeinfo read_config(char const* argv[], int i, int argc)
 
 int main(int argc, char const* argv[])
 {
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-  MessageBoxA(0, "Attach Debugger", "Debug", 0);
-#endif
-
+  MessageBoxA(0, "Halt here", "Captions", 0);
   std::string working_dir = ".";
   std::string target      = "";
   nscmakeinfo nscfg;

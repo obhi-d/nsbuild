@@ -36,7 +36,7 @@ struct nsvars
 
   nsvars() = default;
   nsvars(std::string_view pfx) : prefix(pfx) {}
-  void print(std::ostream& os, output_fmt = output_fmt::cmake_def, bool ignore_unfiltered = true) const;
+  void print(std::ostream& os, output_fmt = output_fmt::cmake_def, bool ignore_unfiltered = true, char sep = ';') const;
 };
 
 nspath_type get_nspath_type(std::string_view);

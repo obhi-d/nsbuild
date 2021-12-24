@@ -1,16 +1,2 @@
 
 type = extern;
-
-fetch "https://github.com/obhi-d/neoscript.git"
-{
-  license = "LICENSE";
-  commit  = "cb49ed27e3b0c3cd11f10c15a03f10ec3b962b8c";
-  package = neoscript;
-  args
-  {
-    NEOSCRIPT_BUILD_TESTS = OFF;
-    NEOSCRIPT_BUILD_STATIC = OFF;
-    NEOSCRIPT_HEADER_ONLY = ON;
-    NEOSCRIPT_USE_PRE_GENERATED_PARSERS = ON;
-  }
-}

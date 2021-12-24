@@ -89,9 +89,22 @@ inline std::vector<std::string> get_first_list(neo::command const& cmd)
   if (!size)
     return {};
   auto const& l = params.value();
-  if (size == 1)
-    return {std::string{cmd.as_string(l[0], "")}};
   std::vector<std::string> ret;
+  if (size == 1)
+  {
+    if(l[0].index() == 2)
+    {
+      auto const& lst = std::get<2>(l[0]);
+      for (auto const& v : lst)
+      {
+        ret.emplace_back(cmd.as_string(v, ""));
+      }
+      return ret;
+    }
+    else
+      return {std::string{cmd.as_string(l[0], "")}};
+  }
+  
   for (std::size_t i = 0; i < size; ++i)
   {
     ret.emplace_back(cmd.as_string(l[i], ""));

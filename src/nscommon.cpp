@@ -1,6 +1,6 @@
 
 #include <nscommon.h>
-#include <nsparams.h>
+#include <nsvars.h>
 
 std::unordered_map<std::string_view, nsfilter> filters = {
     {"debug", nsfilter::debug},     {"release", nsfilter::release},

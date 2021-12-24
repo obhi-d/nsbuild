@@ -67,7 +67,8 @@ struct nsmodule
   bool regenerate    = false;
   bool force_rebuild = false;
   bool has_confixx   = false;
-  
+  bool disabled      = false;
+
   nsmodule()                    = default;
   nsmodule(nsmodule&&) noexcept = default;
   nsmodule& operator=(nsmodule&&) noexcept = default;
@@ -113,7 +114,7 @@ struct nsmodule
   /// @brief Called to write the cmake file
   /// @param bc config
   void write_main_build(nsbuild const& bc) const;
-  void write_variables(std::ofstream&, nsbuild const& bc) const;
+  void write_variables(std::ofstream&, nsbuild const& bc, char sep = ';') const;
   void write_target(std::ofstream&, nsbuild const& bc,
                     std::string const& name) const;
 

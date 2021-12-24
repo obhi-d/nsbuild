@@ -1,7 +1,27 @@
 #include "nscmdcommon.h"
 
 // -------------------------------------------------------------------------------------------------------------
-ns_cmd_handler(meta, build, state, cmd)
+ns_text_handler(custom_cmake, build, state, type, name, content)
+{
+  if (type == "cmake")
+  {
+    if (build.frameworks.empty())
+      return;
+    if (build.frameworks.back().modules.empty())
+      return;
+    auto& mod = build.frameworks.back().modules.back();
+    if (name == "custom_build" && mod.fetch)
+    {
+      mod.fetch->custom_build = content;
+    }
+    if (name == "post_build_install" && mod.fetch)
+    {
+      mod.fetch->custom_build = content;
+    }
+  }
+}
+
+ns_cmd_handler(meta, build, state, cmd) 
 {
   return neo::retcode::e_success;
 }
@@ -32,6 +52,12 @@ ns_cmd_handler(static_libs, build, state, cmd)
 ns_star_handler(timestamps, build, state, cmd)
 {
   build.meta.timestamps[std::string{cmd.name()}] = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(version, build, state, cmd)
+{
+  build.version = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -239,6 +265,12 @@ ns_cmd_handler(fetch, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(legacy_linking, build, state, cmd)
+{
+  build.s_nsfetch->legacy_linking = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(license, build, state, cmd)
 {
   build.s_nsfetch->license = get_idx_param(cmd, 0);
@@ -281,7 +313,7 @@ ns_cmd_handler(steps, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(interface, build, state, cmd)
+ns_cmd_handler(public, build, state, cmd)
 {
   if (build.s_nsmodule)
     build.s_nsinterface =
@@ -418,6 +450,7 @@ ns_registry(nsbuild)
   neo::command_id intf;
   neo::command_id var;
 
+  neo_handle_text(custom_cmake);
   ns_scope_def(meta)
   {
     ns_cmd(compiler_version);
@@ -428,6 +461,7 @@ ns_registry(nsbuild)
     }
   }
 
+  ns_cmd(version);
   ns_cmd(sdk_dir);
   ns_cmd(cmake_gen_dir);
   ns_cmd(frameworks_dir);
@@ -484,9 +518,10 @@ ns_registry(nsbuild)
     }
     ns_cmd(package);
     ns_cmd(components);
+    ns_cmd(legacy_linking);
   }
 
-  ns_scope_cust(interface, clear_interface)
+  ns_scope_cust(public, clear_interface)
   {
     ns_save_scope(intf);
     ns_cmd(dependencies);

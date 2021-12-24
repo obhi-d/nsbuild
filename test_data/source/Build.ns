@@ -10,12 +10,12 @@ preset x64d-avx
 {
   display_name = "x64-debug-avx";
   build_type = debug;
-  config [msvc, debug]
+  config [msvc]
   {
     compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
     linker_flags    : [ "/debug", "-incremental:no" ];
   }
-  config [gcc, debug]
+  config [gcc]
   {
     compiler_flags  : [
       "-fcoroutines",
@@ -30,11 +30,11 @@ preset x64r-avx
 {
   display_name = "x64-release-avx";
   build_type = release;
-  config [msvc, release]
+  config [msvc]
   {
     compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
   }
-  config [gcc, release]
+  config [gcc]
   {
     compiler_flags  : [
       "-fcoroutines",
@@ -49,12 +49,12 @@ preset x64dasan-avx
 {
   display_name = "x64-debug-asan";
   build_type = debug;
-  config [msvc, debug]
+  config [msvc]
   {
     compiler_flags : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8", "/fsanitize=address"  ];
     linker_flags   : [ "/debug", "-incremental:no", "/wholearchive:clang_rt.asan_dbg_dynamic-x86_64.lib", "/wholearchive:clang_rt.asan_dbg_dynamic_runtime_thunk-x86_64.lib" ];
   }
-  config [gcc, debug, asan]
+  config [gcc]
   {
     compiler_flags : [
       "-fcoroutines",

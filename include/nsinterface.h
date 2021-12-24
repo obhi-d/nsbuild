@@ -1,5 +1,5 @@
 #pragma once
-#include <nsparams.h>
+#include <nsvars.h>
 
 struct nsinterface
 {

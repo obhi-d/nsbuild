@@ -86,7 +86,7 @@ std::string get_filter(nsfilters filter)
 {
   if (!filter.any())
     return "";
-  bool needsor = true;
+  bool multiconditions = true;
   bool first   = true;
 
   std::string val;
@@ -97,17 +97,17 @@ std::string get_filter(nsfilters filter)
 
     if (!first)
     {
-      if (needsor)
+      if (multiconditions)
       {
-        val     = "$<OR:" + val;
-        needsor = false;
+        val     = "$<AND:" + val;
+        multiconditions = false;
       }
       val += ",";
     }
     val += get_filter((nsfilter)i);
     first = false;
   }
-  if (!needsor)
+  if (!multiconditions)
     val += ">";
   return val;
 }

@@ -9,7 +9,7 @@ struct nsbuild;
   neo_cmdend_handler(FnName, nsbuild, iObj, iState, iCmd)
 
 #define ns_text_handler(FnName, iObj, iState, iType, iName, iContent)          \
-  neo_text_handler(FnName, nsbuild, iObj, iState, iType, iName, iContext)
+  neo_text_handler(FnName, nsbuild, iObj, iState, iType, iName, iContent)
 
 #define ns_star_handler(FnName, iObj, iState, iCmd)                            \
   neo_star_handler(FnName, nsbuild, iObj, iState, iCmd)
@@ -29,3 +29,4 @@ struct nsbuild;
 #define ns_save_current(as) neo_save_current(as)
 #define ns_save_scope(as)   neo_save_scope(as)
 #define ns_fn(name)         neo_fn(name)
+

@@ -1,6 +1,6 @@
 #pragma once
 #include <nscommon.h>
-#include <nsparams.h>
+#include <nsvars.h>
 
 struct nsmodule;
 struct nsbuild;
