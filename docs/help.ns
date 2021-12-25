@@ -88,6 +88,8 @@ framework(about = "Framework level declaration, can exclude modules",
           params = ["Filter with list of filter params, see @config_filter"]);
     package (about = "A package to find");
     components (about= "List of components to find");
+    runtime_loc (about = "Location where runtime files are generated, they will be copied accordingly");
+    runtime_files (about = "Regex of files that are copied (according to subdirectories) into runtime_dir");
   }
 
   public (about =  "Defines the export public interface for the module, everything here will be used as public/interface property of this target", 
@@ -129,6 +131,5 @@ framework(about = "Framework level declaration, can exclude modules",
     any (about = "Key value pairs",
          params = ["Value should be a string"]);
   }
-  install (about = "Custom install script only meant for external modules, see @fetch.install");
 
 //}

@@ -17,14 +17,15 @@
 
 nsbuild::nsbuild() { wd = std::filesystem::current_path(); }
 
-void nsbuild::main_project(std::string_view proj)
+void nsbuild::main_project()
 {
   compute_paths();
   auto cml = get_full_scan_dir() / "CMakeLists.txt";
 
   {
     std::ofstream ff{cml};
-    ff << fmt::format(cmake::k_main_preamble, proj, out_dir, cmake::path(nsprocess::get_nsbuild_path()), cmake_gen_dir,
+    ff << fmt::format(cmake::k_main_preamble, project_name, out_dir, cmake::path(nsprocess::get_nsbuild_path()),
+                      cmake_gen_dir,
                       version);
   }
 
@@ -101,7 +102,7 @@ void nsbuild::before_all()
   update_macros();
   process_targets();
   write_meta(get_full_cache_dir());
-
+  
   if (state.is_dirty)
   {
     nslog::print("******************************************");
@@ -404,14 +405,17 @@ void nsbuild::compute_paths()
     paths.cache_dir     = (paths.cfg_dir / cache_dir);
     paths.build_dir     = (paths.cfg_dir / build_dir);
     paths.sdk_dir       = (paths.cfg_dir / sdk_dir);
+    paths.rt_dir       = (paths.cfg_dir / runtime_dir);
     fs::create_directories(paths.cmake_gen_dir);
     fs::create_directories(paths.cache_dir);
     fs::create_directories(paths.build_dir);
     fs::create_directories(paths.sdk_dir);
+    fs::create_directories(paths.rt_dir);
     paths.cmake_gen_dir = fs::canonical(paths.cmake_gen_dir);
     paths.cache_dir     = fs::canonical(paths.cache_dir);
     paths.build_dir     = fs::canonical(paths.build_dir);
     paths.sdk_dir       = fs::canonical(paths.sdk_dir);
+    paths.rt_dir        = fs::canonical(paths.rt_dir);
   }
 }
 
@@ -421,8 +425,8 @@ void nsbuild::update_macros()
 
   macros["config_source"]         = cmake::path(get_full_scan_dir());
   macros["config_build_dir"]      = cmake::path(get_full_cmake_gen_dir());
-  macros["config_sdk_dir"]        = cmake::path(get_full_cfg_dir() / sdk_dir);
-  macros["config_rt_dir"]         = cmake::path(get_full_cfg_dir() / runtime_dir);
+  macros["config_sdk_dir"]        = cmake::path(get_full_sdk_dir());
+  macros["config_rt_dir"]         = cmake::path(get_full_rt_dir());
   macros["config_frameworks_dir"] = cmake::path((pwd / frameworks_dir));
   macros["config_download_dir"]   = cmake::path((pwd / out_dir));
   macros["config_preset_name"]    = cmakeinfo.cmake_preset_name;
@@ -452,6 +456,7 @@ void nsbuild::write_include_modules() const
       ofs << fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{0} ${{CMAKE_CURRENT_LIST_DIR}}/../{1}/{0})",
                        m.name, build_dir);
   }
+  write_install_configs(ofs);
 }
 
 void nsbuild::write_cxx_options(std::ostream& ofs) const
@@ -486,4 +491,14 @@ void nsbuild::write_cxx_options(std::ostream& ofs) const
   }
 
   ofs << "\n\n";
+}
+
+void nsbuild::write_install_configs(std::ofstream& ofs) const 
+{
+  auto cmlf = get_full_build_dir() / fmt::format("{}Config.cmake", project_name);
+  {
+    std::ofstream cfg{cmlf};
+    cfg << cmake::k_module_install_cfg_in;
+  }
+  // Write install commands
 }

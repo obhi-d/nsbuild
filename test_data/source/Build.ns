@@ -1,4 +1,5 @@
 
+project_name   : "test_data";
 out_dir        : "../out";
 build_dir      : "bld";
 sdk_dir        : "sdk";

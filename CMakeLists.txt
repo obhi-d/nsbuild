@@ -32,7 +32,25 @@ FetchContent_Declare(json
   GIT_TAG fec56a1a16c6e1c1b1f4e116a20e79398282626c
 )
 
-FetchContent_MakeAvailable(neoscript fmt reproc json)
+if(NOT neoscript_POPULATED)
+  FetchContent_Populate(neoscript)
+  add_subdirectory(${neoscript_SOURCE_DIR} ${neoscript_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+if(NOT fmt_POPULATED)
+  FetchContent_Populate(fmt)
+  add_subdirectory(${fmt_SOURCE_DIR} ${fmt_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+if(NOT reproc_POPULATED)
+  FetchContent_Populate(reproc)
+  add_subdirectory(${reproc_SOURCE_DIR} ${reproc_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
+
+if(NOT json_POPULATED)
+  FetchContent_Populate(json)
+  add_subdirectory(${json_SOURCE_DIR} ${json_BINARY_DIR} EXCLUDE_FROM_ALL)
+endif()
 
 ## Basic tests
 add_executable(nsbuild
@@ -65,7 +83,9 @@ target_compile_features(nsbuild PUBLIC cxx_std_20)
 target_compile_options(nsbuild PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>")
 target_compile_options(nsbuild PUBLIC "$<$<CXX_COMPILER_ID:MSVC>:/Zc:preprocessor>")
 
-target_link_libraries(nsbuild fmt)
-target_link_libraries(nsbuild reproc++)
-target_link_libraries(nsbuild neoscript)
-target_link_libraries(nsbuild nlohmann_json::nlohmann_json)
+target_link_libraries(nsbuild PRIVATE fmt)
+target_link_libraries(nsbuild PRIVATE reproc++)
+target_link_libraries(nsbuild PRIVATE neoscript)
+target_link_libraries(nsbuild PRIVATE nlohmann_json::nlohmann_json)
+
+install (TARGETS nsbuild RUNTIME DESTINATION ./)

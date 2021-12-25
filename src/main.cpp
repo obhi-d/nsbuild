@@ -4,7 +4,10 @@
 #include <nsbuild.h>
 #include <nsprocess.h>
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+#define NS_DLL_EXT "\.dll$"
 #include <Windows.h>
+#else
+#define NS_DLL_EXT "\.so[\.0-9]*$"
 #endif
 
 #include <nslog.h>
@@ -51,24 +54,17 @@ nscmakeinfo read_config(char const* argv[], int i, int argc)
 
 int main(int argc, char const* argv[])
 {
-  MessageBoxA(0, "Halt here", "Captions", 0);
+  // MessageBoxA(0, "Halt here", "Captions", 0);
   std::string working_dir = ".";
   std::string target      = "";
   nscmakeinfo nscfg;
   runas       ras = runas::main;
-  std::string project;
   nsprocess::s_nsbuild = argv[0];
   for (int i = 1; i < argc; ++i)
   {
     std::string_view arg = argv[i];
 
-    if (arg == "--project" || arg == "-p")
-    {
-      if (i + 1 < argc)
-        project = argv[i + 1];
-      i++;
-    }
-    else if (arg == "--check" || arg == "-c")
+    if (arg == "--check" || arg == "-c")
     {
       ras   = runas::check;
       nscfg = read_config(argv, i + 1, argc);
@@ -104,6 +100,7 @@ int main(int argc, char const* argv[])
   }
 
   nsbuild build;
+  build.dll_ext   = NS_DLL_EXT;
   build.state.ras = ras;
   neo_register(nsbuild, build.reg);
 
@@ -114,7 +111,7 @@ int main(int argc, char const* argv[])
     switch (ras)
     {
     case runas::main:
-      build.main_project(project);
+      build.main_project();
       break;
     case runas::generate_enum:
       build.generate_enum(target);

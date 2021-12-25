@@ -9,6 +9,7 @@
 #include <nspreset.h>
 #include <nspython.h>
 #include <nstarget.h>
+#include <regex>
 
 struct nsbuild : public neo::command_handler
 {
@@ -34,11 +35,16 @@ struct nsbuild : public neo::command_handler
   // path relative to scan
   std::string frameworks_dir = "Frameworks";
   // path relative to runtime
-  std::string plugin_rel_dir = "Media/Plugins";
+  std::string plugin_rel_dir = "media/plugins";
 
-  std::string ignore_media_from = "Internal";
+  std::string ignore_media_from = "internal";
+
+  // Project name
+  std::string project_name;
 
   std::string test_ref = "";
+
+  std::regex dll_ext;
 
   nscmakeinfo cmakeinfo;
 
@@ -84,7 +90,7 @@ struct nsbuild : public neo::command_handler
   nsbuild(nsbuild const&)       = delete;
   nsbuild& operator=(nsbuild const&) = delete;
 
-  void main_project(std::string_view proj);
+  void main_project();
 
   bool scan_file(std::filesystem::path, bool store, std::string* sha = nullptr);
   void handle_error(neo::state_machine&);
@@ -104,6 +110,7 @@ struct nsbuild : public neo::command_handler
   void read_framework(std::filesystem::path);
   void read_module(std::filesystem::path);
   void write_include_modules() const;
+  void write_install_configs(std::ofstream&) const;
   void check_modules();
 
   void write_cxx_options(std::ostream&) const;
@@ -166,6 +173,7 @@ struct nsbuild : public neo::command_handler
     std::filesystem::path out_dir;
     std::filesystem::path dl_dir;
     std::filesystem::path sdk_dir;
+    std::filesystem::path rt_dir;
   };
 
   fullpaths paths;
@@ -174,6 +182,7 @@ struct nsbuild : public neo::command_handler
 
   inline std::filesystem::path const& get_full_scan_dir() const { return paths.scan_dir; }
   inline std::filesystem::path const& get_full_cfg_dir() const { return paths.cfg_dir; }
+  inline std::filesystem::path const& get_full_rt_dir() const { return paths.rt_dir; }
   inline std::filesystem::path const& get_full_cmake_gen_dir() const { return paths.cmake_gen_dir; }
   inline std::filesystem::path const& get_full_build_dir() const { return paths.build_dir; }
   inline std::filesystem::path const& get_full_cache_dir() const { return paths.cache_dir; }

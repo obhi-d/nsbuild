@@ -87,7 +87,7 @@ void nsmodule::update_properties(nsbuild const&     bc,
     step.injected_config.push_back(cmake::k_media_commands);
     cmd.msgs.push_back(fmt::format("Building data files for {}", name));
     cmd.command = "${nsbuild}";
-    cmd.params  = "--copy-media ${module_dir}/media ${config_rt_dir}/Media "
+    cmd.params  = "--copy-media ${module_dir}/media ${config_rt_dir}/media "
                  "${config_ignored_media}";
 
     step.steps.push_back(cmd);
@@ -807,7 +807,7 @@ void nsmodule::write_final_config(std::ofstream& ofs, nsbuild const& bc) const
   case nsmodule_type::ref:
     break;
   case nsmodule_type::test:
-    ofs << "\nadd_test(" << name << " COMMAND ${config_rt_dir}/Bin/"
+    ofs << "\nadd_test(" << name << " COMMAND ${config_rt_dir}/bin/"
         << target_name << ");";
     break;
   default:
@@ -848,6 +848,39 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
   nsprocess::cmake_config(bc, {}, cmake::path(src), xpb);
   nsprocess::cmake_build(bc, "", xpb);
   nsprocess::cmake_install(bc, cmake::path(dsdk), xpb);
+  if(!fetch->runtime_loc.empty())
+  {
+    for (auto const& l : fetch->runtime_loc)
+    {
+      namespace fs            = std::filesystem;
+      
+      auto       it           = fs::directory_iterator{get_full_sdk_dir(bc) / l};
+      const auto copy_options = fs::copy_options::update_existing | fs::copy_options::recursive;
+      for (auto const& dir_entry : it)
+      {
+        if (!dir_entry.is_regular_file() && !dir_entry.is_symlink())
+          continue;
+        auto name = dir_entry.path().filename().generic_string();
+        bool copy = false;
+        if (std::regex_search(name, bc.dll_ext))
+          std::filesystem::copy(dir_entry.path(), bc.get_full_rt_dir() / dir_entry.path().filename(), copy_options);
+        
+        if (fetch->runtime_files.empty())
+          continue;
+        name = dir_entry.path().generic_string();
+        for (auto const& rt : fetch->runtime_files)
+        {
+          std::smatch match;
+          if (!std::regex_search(name, match, bc.dll_ext))
+            continue;
+          if (match.empty())
+            continue;
+          std::filesystem::copy(dir_entry.path(), bc.get_full_rt_dir() / match[0].str(), copy_options);
+          break;
+        }
+      }
+    }
+  }
 }
 
 std::filesystem::path nsmodule::get_full_bld_dir(nsbuild const& bc) const
@@ -867,7 +900,7 @@ std::filesystem::path nsmodule::get_full_fetch_sbld_dir(nsbuild const& bc) const
 
 std::filesystem::path nsmodule::get_full_sdk_dir(nsbuild const& bc) const
 {
-  return bc.get_full_cfg_dir() / k_sdk_dir / name;
+  return bc.get_full_sdk_dir();
 }
 
 std::filesystem::path nsmodule::get_full_dl_dir(nsbuild const& bc) const

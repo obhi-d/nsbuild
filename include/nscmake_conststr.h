@@ -108,13 +108,13 @@ target_link_libraries(${module_target} PRIVATE ${__module_pub_libs})
 )_";
 
 static inline constexpr char k_rt_locations[] = R"_(
-  ARCHIVE_OUTPUT_DIRECTORY "${config_rt_dir}/Lib"
-  LIBRARY_OUTPUT_DIRECTORY "${config_rt_dir}/Lib"
-  RUNTIME_OUTPUT_DIRECTORY "${config_rt_dir}/Bin"
+  ARCHIVE_OUTPUT_DIRECTORY "${config_rt_dir}/lib"
+  LIBRARY_OUTPUT_DIRECTORY "${config_rt_dir}/lib"
+  RUNTIME_OUTPUT_DIRECTORY "${config_rt_dir}/bin"
 )_";
 
 static inline constexpr char k_plugin_locations[] = R"_(
-  RUNTIME_OUTPUT_DIRECTORY "${config_rt_dir}/Media/Plugins"
+  RUNTIME_OUTPUT_DIRECTORY "${config_rt_dir}/media/Plugins"
 )_";
 
 static inline constexpr char k_media_commands[] = R"_(
@@ -126,7 +126,7 @@ static inline constexpr char k_media_commands[] = R"_(
   endforeach()
   
   set(__module_data_output ${__module_data})
-  list(TRANSFORM __module_data_output REPLACE ${module_dir}/media ${config_runtime_dir}/Media)
+  list(TRANSFORM __module_data_output REPLACE ${module_dir}/media ${config_runtime_dir}/media)
 )_";
 
 static inline constexpr char k_finale[] = R"_(
@@ -202,6 +202,53 @@ project({0}Fetch VERSION {1} LANGUAGES C CXX)
 cmake_minimum_required(VERSION 3.20)
 include(ExternalProject)
 
+
+)_";
+
+
+static inline constexpr char k_module_install_cfg_in[] = R"_(
+
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/@module_name@Targets.cmake")
+check_required_components("@module_name@")
+
+)_";
+
+static inline constexpr char k_module_install[] = R"_(
+
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+
+# include files are installed in sdk/include/Module directory
+install(DIRECTORY ${fetch_src_dir}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+
+# include files are installed in sdk/include/Module directory
+install(TARGETS ${module_target}
+        EXPORT ${module_name}_Targets
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
+       )
+
+write_basic_package_version_file("${module_name}ConfigVersion.cmake"
+                                 VERSION ${PROJECT_VERSION}
+                                 COMPATIBILITY SameMajorVersion)
+
+configure_package_config_file(
+  "${config_build_dir}/${PROJECT_NAME}Config.cmake.in"
+  "${module_build_dir}/${module_name}Config.cmake"
+  INSTALL_DESTINATION
+    lib/cmake)
+
+install(EXPORT ${module_name}_Targets
+  FILE ${module_name}Targets.cmake
+  NAMESPACE ${PROJECT_NAME}::
+  DESTINATION lib/cmake)
+
+install(FILES "${module_build_dir}/${module_name}Config.cmake"
+              "${module_build_dir}/${module_name}ConfigVersion.cmake"
+        DESTINATION lib/cmake)
 
 )_";
 } // namespace cmake

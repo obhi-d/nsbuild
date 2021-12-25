@@ -21,6 +21,12 @@ ns_text_handler(custom_cmake, build, state, type, name, content)
   }
 }
 
+ns_cmd_handler(project_name, build, state, cmd) 
+{ 
+  build.project_name = get_idx_param(cmd, 0);
+  return neo::retcode::e_success; 
+}
+
 ns_cmd_handler(meta, build, state, cmd) 
 {
   return neo::retcode::e_success;
@@ -265,6 +271,18 @@ ns_cmd_handler(fetch, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(runtime_loc, build, state, cmd)
+{
+  build.s_nsfetch->runtime_loc = get_first_list(cmd);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(runtime_files, build, state, cmd)
+{
+  build.s_nsfetch->runtime_files = get_first_list(cmd);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(legacy_linking, build, state, cmd)
 {
   build.s_nsfetch->legacy_linking = to_bool(get_idx_param(cmd, 0));
@@ -461,6 +479,7 @@ ns_registry(nsbuild)
     }
   }
 
+  ns_cmd(project_name);
   ns_cmd(version);
   ns_cmd(sdk_dir);
   ns_cmd(cmake_gen_dir);
@@ -519,6 +538,8 @@ ns_registry(nsbuild)
     ns_cmd(package);
     ns_cmd(components);
     ns_cmd(legacy_linking);
+    ns_cmd(runtime_loc);
+    ns_cmd(runtime_files);
   }
 
   ns_scope_cust(public, clear_interface)
