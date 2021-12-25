@@ -5,7 +5,7 @@
 #include <nscmake.h>
 #include <nslog.h>
 #include <nsprocess.h>
-#include <reproc++/drain.hpp>
+#include <reproc++/run.hpp>
 #include <reproc++/reproc.hpp>
 #include <system_error>
 
@@ -72,17 +72,19 @@ void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::pa
  
   default_opt.redirect.parent = true;
 
-  auto              rc = proc.start(pargs, default_opt);
-
+  auto [status, rc] = reproc::run(pargs);
   std::filesystem::current_path(save);
 
   std::string msg = rc.message();
-  if (rc)
+  if (rc || status != 0)
   {
     nslog::error("Build failed.");
     if (!msg.empty())
       nslog::error(msg);
-    throw std::system_error(rc);
+    if (rc)
+      throw std::system_error(rc);
+    else
+      throw std::runtime_error(fmt::format("Command returned : {}", status));
   }
 }
 

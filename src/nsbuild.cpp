@@ -268,7 +268,7 @@ void nsbuild::process_targets()
   {
     try
     {
-      f.first.get();
+      //f.first.get();
     }
     catch (std::exception& ex)
     {
@@ -285,6 +285,7 @@ void nsbuild::process_targets()
       {
         if (m.regenerate)
         {
+          m.write_main_build(*this);
           process.emplace_back(
               std::move(std::async(std::launch::async, &nsmodule::write_main_build, &m, std::cref(*this))), &m);
         }
@@ -333,9 +334,12 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
 
   sorted_targets.push_back(name);
   if (mod.regenerate)
-    process.emplace_back(std::move(std::async(std::launch::async, &nsmodule::process, &mod, std::cref(*this),
-                                              std::cref(name), std::ref(targ))),
-                         &mod);
+  {
+
+    mod.process(*this, name, targ);
+    // process.emplace_back(std::move(std::async(std::launch::async, &nsmodule::process, &mod, std::cref(*this),
+                                             // std::cref(name), std::ref(targ))), &mod);
+  }
 }
 
 void nsbuild::generate_enum(std::string from)

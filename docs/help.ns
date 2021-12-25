@@ -92,6 +92,8 @@ framework(about = "Framework level declaration, can exclude modules",
     runtime_files (about = "Regex of files that are copied (according to subdirectories) into runtime_dir");
   }
 
+  references (about = "List of references");
+
   public (about =  "Defines the export public interface for the module, everything here will be used as public/interface property of this target", 
              params = "Filter with list of filter params, see @config_filter")
   {

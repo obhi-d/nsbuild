@@ -146,6 +146,16 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name,
 
   if (fetch)
   {
+    std::string components;
+    bool        first = true;
+    for (auto c : fetch->components)
+    {
+      if (!first)
+        components += ";";
+      first = false;
+      components += c;
+    }
+
     std::filesystem::path tmp = bc.get_full_cfg_dir();
     /// - dl/module contains sources
     /// - bld/module/ts Timestamp directory
@@ -155,6 +165,8 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name,
     macros["fetch_subbulid_dir"] = cmake::path(get_full_fetch_sbld_dir(bc));
     macros["fetch_sdk_dir"]      = cmake::path(get_full_sdk_dir(bc));
     macros["fetch_src_dir"]      = cmake::path(get_full_dl_dir(bc));
+    macros["fetch_package"]      = fetch->package;
+    macros["fetch_components"]   = components;
     // macros["fetch_ts_dir"]       = cmake::path(get_full_ts_dir(bc));
   }
 }
@@ -221,7 +233,7 @@ void nsmodule::write_fetch_build(nsbuild const& bc) const
     }
 
     std::filesystem::path src     = source_path;
-    auto                  srccmk  = src / k_cmake_dir / "CustomBuild.cmake";
+    auto                  srccmk  = src / "Build.cmake";
     if (!fetch->custom_build.fragments.empty() || std::filesystem::exists(srccmk))
     {
       if (!fetch->custom_build.fragments.empty())
@@ -236,7 +248,7 @@ void nsmodule::write_fetch_build(nsbuild const& bc) const
       }
       ofs << fmt::format(cmake::k_ext_proj_start, fetch->package, fetch->repo, fetch->commit);
 
-      auto postinstall = src / k_cmake_dir / "PostBuildInstall.cmake";
+      auto postinstall = src / "PostBuildInstall.cmake";
       if (std::filesystem::exists(postinstall) || !fetch->post_build_install.fragments.empty())
       {
         if (std::filesystem::exists(postinstall))

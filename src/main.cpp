@@ -54,7 +54,7 @@ nscmakeinfo read_config(char const* argv[], int i, int argc)
 
 int main(int argc, char const* argv[])
 {
-  // MessageBoxA(0, "Halt here", "Captions", 0);
+  MessageBoxA(0, "Halt here", "Captions", 0);
   std::string working_dir = ".";
   std::string target      = "";
   nscmakeinfo nscfg;
