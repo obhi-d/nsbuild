@@ -1,4 +1,5 @@
-#include <nscmake.h>
+#include "nscmake.h"
+#include "nscmake_conststr.h"
 
 namespace cmake
 {
@@ -82,17 +83,46 @@ void print(std::ostream& ostr, std::string_view content)
                    { ostr << "${" << sv << "}"; });
 }
 
-std::string get_filter(nsfilters filter)
+std::string_view get_filter(nsfilter filter)
 {
-  if (!filter.any())
-    return "";
+  switch ((nsfilter)filter)
+  {
+  case nsfilter::clang:
+    return "$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>";
+  case nsfilter::msvc:
+    return "$<COMPILE_LANG_AND_ID:CXX,MSVC>";
+  case nsfilter::gcc:
+    return "$<COMPILE_LANG_AND_ID:CXX,GNU>";
+  }
+  return "";
+}
+
+std::optional<std::string> get_filter(nspreset const& preset, nsfilters const& filter)
+{
+  if (filter.custom.empty() && !filter.known.any())
+    return std::optional<std::string>{""};
+
+  if (!filter.custom.empty())
+  {
+    for (auto const& f : filter.custom)
+    {
+      if ((std::find(preset.disallowed_filters.begin(), preset.disallowed_filters.end(), f) !=
+           preset.disallowed_filters.end()) ||
+          (std::find(preset.allowed_filters.begin(), preset.allowed_filters.end(), f) == preset.allowed_filters.end()))
+        return std::optional<std::string>();
+    }
+  }
+
+  if (!filter.known.any())
+    return std::optional<std::string>{""};
+
   bool multiconditions = true;
   bool first   = true;
 
   std::string val;
   for (std::uint32_t i = 0; i < (std::uint32_t)nsfilter::count; ++i)
   {
-    if (!filter[i])
+    if (!filter.known[i])
       continue;
 
     if (!first)
@@ -110,30 +140,6 @@ std::string get_filter(nsfilters filter)
   if (!multiconditions)
     val += ">";
   return val;
-}
-
-std::string_view get_filter(nsfilter filter)
-{
-  switch ((nsfilter)filter)
-  {
-  case nsfilter::debug:
-    return "$<CONFIG:Debug>";
-  case nsfilter::release:
-    return "$<CONFIG:RelWithDebInfo>";
-  case nsfilter::windows:
-    return "$<STREQUAL:${config_platform},windows>";
-  case nsfilter::linux:
-    return "$<STREQUAL:${config_platform},linux>";
-  case nsfilter::macOS:
-    return "$<STREQUAL:${config_platform},macOS>";
-  case nsfilter::clang:
-    return "$<COMPILE_LANG_AND_ID:CXX,AppleClang,Clang>";
-  case nsfilter::msvc:
-    return "$<COMPILE_LANG_AND_ID:CXX,MSVC>";
-  case nsfilter::gcc:
-    return "$<COMPILE_LANG_AND_ID:CXX,GNU>";
-  }
-  return "";
 }
 
 void line(std::ostream& oss, std::string_view name) 

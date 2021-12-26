@@ -3,10 +3,9 @@
 #include <nsvars.h>
 
 std::unordered_map<std::string_view, nsfilter> filters = {
-    {"debug", nsfilter::debug},     {"release", nsfilter::release},
-    {"windows", nsfilter::windows}, {"linux", nsfilter::linux},
-    {"macOS", nsfilter::macOS},     {"clang", nsfilter::clang},
-    {"msvc", nsfilter::msvc},       {"gcc", nsfilter::gcc},
+    {"clang", nsfilter::clang},
+    {"msvc", nsfilter::msvc},       
+    {"gcc", nsfilter::gcc},
 };
 // shared_lib, static_lib, system_lib, include_list, binary_list,
 // dependency_list
@@ -30,21 +29,24 @@ nsfilter classify_filter(std::string_view name)
 nsfilters get_filters(neo::command::param_t const& p)
 {
   nsfilters flags;
+  auto      lamda = [&](std::string_view name)
+  {
+    auto filter = classify_filter(name);
+    if (filter == nsfilter::unknown)
+      flags.custom.emplace_back(name);
+    else
+      flags.known.set(static_cast<unsigned>(filter), true);
+  };
+
   if (p.index() == neo::command::k_param_single)
   {
-    flags.set(
-        static_cast<unsigned>(classify_filter(neo::command::as_string(p))),
-        true);
+    lamda( neo::command::as_string(p) );
   }
   else if (p.index() == neo::command::k_param_list)
   {
     auto const& l = std::get<neo::list>(p);
     for (auto const& v : l)
-    {
-      flags.set(
-          static_cast<unsigned>(classify_filter(neo::command::as_string(v))),
-          true);
-    }
+      lamda(neo::command::as_string(v));
   }
   return flags;
 }

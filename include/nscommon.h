@@ -38,11 +38,6 @@ enum class output_fmt
 
 enum class nsfilter
 {
-  debug,
-  release,
-  windows,
-  linux,
-  macOS,
   clang,
   msvc,
   gcc,
@@ -50,8 +45,15 @@ enum class nsfilter
   count
 };
 
+using nsknownfilters = std::bitset<static_cast<unsigned>(nsfilter::count)>;
+
+struct nsfilters
+{
+  nsknownfilters known;
+  std::vector<std::string> custom;
+};
+
 nsfilter classify_filter(std::string_view);
-using nsfilters = std::bitset<static_cast<unsigned>(nsfilter::count)>;
 nsfilters get_filters(neo::command::param_t const& p);
 
 inline std::string_view get_idx_param(neo::command const& cmd, std::size_t i,

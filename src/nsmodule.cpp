@@ -1,12 +1,13 @@
 #include <exception>
 #include <fstream>
-#include <nsbuild.h>
-#include <nscmake.h>
-#include <nslog.h>
-#include <nsmodule.h>
-#include <nsprocess.h>
-#include <nstarget.h>
-#include <nspreset.h>
+#include "nsbuild.h"
+#include "nscmake.h"
+#include "nslog.h"
+#include "nsmodule.h"
+#include "nsprocess.h"
+#include "nstarget.h"
+#include "nspreset.h"
+#include "nscmake_conststr.h"
 
 bool has_data(nsmodule_type t)
 {
@@ -222,8 +223,8 @@ void nsmodule::write_fetch_build(nsbuild const& bc) const
       throw std::runtime_error("Could not create CMakeLists.txt");
     }
 
-    ofs << fmt::format(cmake::k_project_name, name, bc.version);
-
+    ofs << fmt::format(cmake::k_project_name, fetch->package, bc.version);
+    ofs << fmt::format("\nlist(PREPEND CMAKE_MODULE_PATH \"{}\")", cmake::path(get_full_sdk_dir(bc)));
     bc.macros.print(ofs);
     macros.print(ofs);
     //write_variables(ofs, bc);
@@ -313,6 +314,8 @@ void nsmodule::write_main_build(nsbuild const& bc) const
     nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
     throw std::runtime_error("Could not create CMakeLists.txt");
   }
+  cmake::line(ofs, "module-path");
+  ofs << fmt::format("\nlist(PREPEND CMAKE_MODULE_PATH \"{}\")", cmake::path(get_full_sdk_dir(bc)));
   cmake::line(ofs, "variables");
   macros.print(ofs);
   write_variables(ofs, bc);
@@ -602,7 +605,7 @@ void nsmodule::write_definitions(std::ofstream& ofs, nsbuild const& bc,
 {
   for (std::size_t i = 0; i < intf[type].size(); ++i)
   {
-    auto        filter = cmake::get_filter(intf[type][i].filters);
+    auto        filter = intf[type][i].filters;
     auto const& dep    = intf[type][i].definitions;
     for (auto const& d : dep)
     {
@@ -684,7 +687,7 @@ void nsmodule::write_dependencies(std::ofstream& ofs, nsbuild const& bc,
 {
   for (std::size_t i = 0; i < intf[type].size(); ++i)
   {
-    auto        filter = cmake::get_filter(intf[type][i].filters);
+    auto        filter = intf[type][i].filters;
     auto const& dep    = intf[type][i].dependencies;
     for (auto const& d : dep)
       write_dependency(ofs, d,
@@ -764,7 +767,7 @@ void nsmodule::write_linklibs(std::ofstream& ofs, nsbuild const& bc,
 {
   for (std::size_t i = 0; i < intf[type].size(); ++i)
   {
-    auto        filter = cmake::get_filter(intf[type][i].filters);
+    auto        filter = intf[type][i].filters;
     auto const& libs   = intf[priv_intf][i].sys_libraries;
     for (auto const& d : libs)
       write_linklibs(ofs, d,

@@ -11,6 +11,8 @@ preset x64d-avx
 {
   display_name = "x64-debug-avx";
   build_type = debug;
+  allow = [avx];
+  disallow = [release];
   config [msvc]
   {
     compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
@@ -31,6 +33,7 @@ preset x64r-avx
 {
   display_name = "x64-release-avx";
   build_type = release;
+  allow = [avx];
   config [msvc]
   {
     compiler_flags  : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8" ];
@@ -50,6 +53,8 @@ preset x64dasan-avx
 {
   display_name = "x64-debug-asan";
   build_type = debug;
+  allow = [asan, avx];
+  disallow = release;
   config [msvc]
   {
     compiler_flags : [ "/std:c++latest", "/Zc:__cplusplus", "/EHsc", "/arch:AVX", "/Zc:preprocessor", "/source-charset:utf-8", "/fsanitize=address"  ];

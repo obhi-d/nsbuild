@@ -1,5 +1,5 @@
 #include "nsbuild.h"
-
+#include "nscmake_conststr.h"
 #include "nsenums.h"
 #include "picosha2.h"
 
@@ -92,6 +92,12 @@ void nsbuild::handle_error(neo::state_machine& err)
 
 void nsbuild::before_all()
 {
+  for (auto const& preset : presets)
+    if (preset.name == cmakeinfo.cmake_preset_name)
+    {
+      s_current_preset = &preset;
+      break;
+    }
   // At this point we have read config!
   compute_paths();
   std::filesystem::create_directories(get_full_cache_dir());
@@ -469,31 +475,29 @@ void nsbuild::write_cxx_options(std::ostream& ofs) const
          "\nset(__module_cxx_compile_flags)"
          "\nset(__module_cxx_linker_flags)";
 
-  for (auto const& preset : presets)
+  auto const& preset = *s_current_preset;
+  for (auto const& cxx : preset.configs)
   {
-    if (preset.name == cmakeinfo.cmake_preset_name)
+    auto filters = cmake::get_filter(preset, cxx.filters);
+    if (!filters.has_value())
+      continue;
+    auto value = filters.value();
+    if (value.empty())
     {
-      for (auto const& cxx : preset.configs)
-      {
-        std::string filters = cmake::get_filter(cxx.filters);
-        if (filters.empty())
-        {
-          for (auto flag : cxx.compiler_flags)
-            ofs << fmt::format("\nlist(APPEND __module_cxx_compile_flags \"{}\")", flag);
-          for (auto flag : cxx.linker_flags)
-            ofs << fmt::format("\nlist(APPEND __module_cxx_linker_flags \"{}\")", flag);
-        }
-        else
-        {
-          for (auto flag : cxx.compiler_flags)
-            ofs << fmt::format("\nlist(APPEND __module_cxx_compile_flags $<{}:{}>)", filters, flag);
-          for (auto flag : cxx.linker_flags)
-            ofs << fmt::format("\nlist(APPEND __module_cxx_linker_flags $<{}:{}>)", filters, flag);
-        }
-      }
+      for (auto flag : cxx.compiler_flags)
+        ofs << fmt::format("\nlist(APPEND __module_cxx_compile_flags \"{}\")", flag);
+      for (auto flag : cxx.linker_flags)
+        ofs << fmt::format("\nlist(APPEND __module_cxx_linker_flags \"{}\")", flag);
+    }
+    else
+    {
+      for (auto flag : cxx.compiler_flags)
+        ofs << fmt::format("\nlist(APPEND __module_cxx_compile_flags $<{}:{}>)", value, flag);
+      for (auto flag : cxx.linker_flags)
+        ofs << fmt::format("\nlist(APPEND __module_cxx_linker_flags $<{}:{}>)", value, flag);
     }
   }
-
+  
   ofs << "\n\n";
 }
 

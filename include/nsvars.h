@@ -31,7 +31,7 @@ using nspath_list = std::vector<nspath>;
 struct nsvars
 {
   std::string_view            prefix;
-  nsfilters                   filters;
+  std::string_view            filters;
   std::vector<nsnamed_params> params;
 
   nsvars() = default;

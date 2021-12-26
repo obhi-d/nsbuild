@@ -1,16 +1,24 @@
 #pragma once
 #include "nsbuild.h"
+#include "nscmake.h"
 
 template <typename T>
-T* cmd_insert_with_filter(std::vector<T>& build, neo::command const& cmd)
+T* cmd_insert_with_filter(std::vector<T>& v, nsbuild const& build, neo::command const& cmd)
 {
-  build.emplace_back();
   auto const& p = cmd.params().value();
+
   if (p.size() > 0)
   {
-    build.back().filters = get_filters(p[0]);
+    auto filters = cmake::get_filter(*build.s_current_preset, get_filters(p[0]));
+    if (!filters.has_value())
+      return nullptr;
+
+    v.emplace_back();
+    v.back().filters = filters.value();
   }
-  return &build.back();
+  
+  v.emplace_back();
+  return &v.back();
 }
 
 template <typename T>

@@ -198,7 +198,7 @@ if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
 
-project({0}Fetch VERSION {1} LANGUAGES C CXX)
+project({0}-sdk VERSION {1} LANGUAGES C CXX)
 cmake_minimum_required(VERSION 3.20)
 include(ExternalProject)
 

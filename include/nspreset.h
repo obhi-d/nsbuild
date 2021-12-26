@@ -14,6 +14,9 @@ struct nspreset
   std::string              architecture;
   nameval_list             definitions;
 
+  std::vector<std::string> allowed_filters;
+  std::vector<std::string> disallowed_filters;
+
   struct cfg
   {
     nsfilters                filters;

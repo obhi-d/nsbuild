@@ -36,6 +36,8 @@ preset (about = "Define a preset",
   display_name (about = "Descriptive name");
   compiler_flags (about = "Compile flags");
   linker_flags (about = "Compile flags");
+  allow (about = "Custom filters allowed for this preset");
+  disallow (about = "Custom filters not allowed for this preset");
 }
 
 framework(about = "Framework level declaration, can exclude modules",

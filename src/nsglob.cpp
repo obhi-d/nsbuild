@@ -1,5 +1,6 @@
 
 #include <nscmake.h>
+#include <nscmake_conststr.h>
 #include <nsglob.h>
 
 void nsglob::print(std::ostream& oss) const 

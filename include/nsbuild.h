@@ -75,6 +75,8 @@ struct nsbuild : public neo::command_handler
   nsinterface* s_nsinterface = nullptr;
   nsvars*      s_nsvar       = nullptr;
   nspreset*    s_nspreset    = nullptr;
+
+  nspreset const* s_current_preset = nullptr;
   //--------------------------------------
   // Runtime options
   nsmetainfo  meta;

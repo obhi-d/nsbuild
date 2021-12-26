@@ -3,7 +3,7 @@
 
 struct nsinterface
 {
-  nsfilters                filters;
+  std::string_view         filters;
   std::vector<std::string> dependencies;
   std::vector<std::string> sys_libraries;
   nameval_list definitions;

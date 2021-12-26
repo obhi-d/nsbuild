@@ -4,11 +4,11 @@
 
 void nsvars::print(std::ostream& os, output_fmt f, bool ignore_unfiltered, char sep) const
 {
-  bool has_filters = filters.any();
+  bool has_filters = !filters.empty();
   if (!has_filters && ignore_unfiltered)
     return;
 
-  auto sf = cmake::get_filter(filters);
+  auto sf = filters;
   os << "\n# Conditional vars " << sf;
   for (auto const& v : params)
   {
