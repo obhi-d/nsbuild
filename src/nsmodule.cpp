@@ -283,9 +283,22 @@ void nsmodule::fetch_content(nsbuild const& bc)
 {
   if (regenerate || force_rebuild)
   {
-
     write_fetch_build(bc);
-    build_fetched_content(bc);
+    try
+    {
+      build_fetched_content(bc);
+    }
+    catch(std::exception const& excep)
+    {
+      // overwrite 
+      {
+        auto fbld = get_full_cmake_gen_dir(bc);
+        std::filesystem::create_directories(fbld);
+        auto          cmlf = fbld / "CMakeLists.txt";
+        std::ofstream ofs{cmlf};
+      }
+      throw excep;
+    }
   }
 }
 
