@@ -75,7 +75,7 @@ add_executable(nsbuild
  "src/nspreset.cpp")
 
 target_include_directories(nsbuild PRIVATE 
-	"${CMAKE_SOURCE_DIR}/include")
+	"${PROJECT_SOURCE_DIR}/include")
  
 target_compile_features(nsbuild PUBLIC cxx_std_20)
 
