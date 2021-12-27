@@ -62,7 +62,7 @@ bool nsbuild::scan_file(std::filesystem::path path, bool store, std::string* sha
     contents.emplace_back(std::move(f1_str));
 
     neo::state_machine sm{reg, this};
-    sm.parse(path.filename().string(), contents.back());
+    sm.parse(path.string(), contents.back());
     handle_error(sm);
     if (sha)
     {
