@@ -100,6 +100,27 @@ if(__module_ref_deps)
 endif()
 )_";
 
+static inline constexpr char k_begin_prebuild_steps[] = R"_(
+# Prebuild target
+add_custom_target(${module_target}.prebuild 
+  DEPENDS 
+)_";
+
+static inline constexpr char k_finalize_prebuild_steps[] = R"_(
+  COMMAND ${CMAKE_COMMAND} -E echo "Prebuilt step for"
+)
+add_dependencies(${module_target} ${module_target}.prebuild)
+if(__module_pub_deps)
+  add_dependencies(${module_target}.prebuild ${__module_pub_deps})
+endif()
+if (__module_priv_deps)
+  add_dependencies(${module_target}.prebuild ${__module_priv_deps})
+endif()
+if(__module_ref_deps)
+  add_dependencies(${module_target}.prebuild ${__module_ref_deps})
+endif()
+)_";
+
 static inline constexpr char k_write_libs[] = R"_(
 
 target_link_libraries(${module_target} PUBLIC ${__module_priv_libs})

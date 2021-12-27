@@ -462,8 +462,7 @@ void nsbuild::write_include_modules() const
   for (auto const& s : sorted_targets)
   {
     auto const& m = get_module(s);
-    if (!m.disabled)
-      ofs << fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{0} ${{CMAKE_CURRENT_LIST_DIR}}/../{1}/{0})",
+    ofs << fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{0} ${{CMAKE_CURRENT_LIST_DIR}}/../{1}/{0})",
                        m.name, build_dir);
   }
   write_install_configs(ofs);

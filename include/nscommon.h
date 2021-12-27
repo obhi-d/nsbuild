@@ -20,6 +20,7 @@ static inline constexpr char k_src_dir[]      = "src";
 static inline constexpr char k_cmake_dir[]    = "cmake";
 static inline constexpr char k_ext_dir[]      = "extern";
 static inline constexpr char k_json_val[]     = "  \n\"{}\": \"{}\"";
+static inline constexpr char k_json_obj[]     = "  \n\"{}\": {{";
 
 enum class runas
 {

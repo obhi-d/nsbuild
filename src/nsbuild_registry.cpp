@@ -57,7 +57,10 @@ ns_star_handler(timestamps, build, state, cmd)
 
 ns_cmd_handler(version, build, state, cmd)
 {
-  build.version = get_idx_param(cmd, 0);
+  if (build.s_nsmodule)
+    build.s_nsmodule->version = get_idx_param(cmd, 0);
+  else
+    build.version = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -167,6 +170,30 @@ ns_cmd_handler(type, build, state, cmd)
     t = nsmodule_type::test;
   if (build.state.ras == runas::generate_enum)
     return neo::retcode::e_success_stop;
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(exclude_when, build, state, cmd) 
+{
+  auto const& p = cmd.params().value();
+  if (p.size() > 0)
+  {
+    auto filters = cmake::get_filter(*build.s_current_preset, get_filters(p[0]));
+    if (filters.has_value())
+      build.s_nsmodule->disabled = true;
+  }
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(include_when, build, state, cmd) 
+{
+  auto const& p = cmd.params().value();
+  if (p.size() > 0)
+  {
+    auto filters = cmake::get_filter(*build.s_current_preset, get_filters(p[0]));
+    if (!filters.has_value())
+      build.s_nsmodule->disabled = true;
+  }
   return neo::retcode::e_success;
 }
 
@@ -487,6 +514,8 @@ ns_registry(nsbuild)
   }
   ns_cmd(excludes);
   ns_cmd(type);
+  ns_cmd(include_when);
+  ns_cmd(exclude_when);
   ns_scope_def(var)
   {
     ns_save_scope(var);

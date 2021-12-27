@@ -18,6 +18,9 @@
 // framework_name
 // module_dir
 // module_name
+// module_gen_dir
+// module_build_dir
+// module_target
 
 config_filter (about = "list of [debug, release, windows, linux, osx, clang, msvc, gcc, asan]");
 
@@ -52,6 +55,9 @@ framework(about = "Framework level declaration, can exclude modules",
 
 //{
   type (about = "Module types", params = "Any of plugin|lib|ref|exe|extern|data");
+  version (about = "Module version");
+  exclude_when (about = "List of custom filters. Exclude this module when these filters are active");
+  include_when (about = "List of custom filters. Include this module when these filters are active");
   var (about = "Declares configuration variables that are only defined if configuration definition is satisfied",
        params = ["list of @config_filter, more configs will be added as seen fit"])
   {
