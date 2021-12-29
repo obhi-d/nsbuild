@@ -2,11 +2,10 @@
 #include "nsbuild.h"
 #include <fstream>
 #include <regex>
+extern void halt();
 
-void nsenum_context::begin_header(std::ostream&                   ofs,
-                                  std::vector<std::string> const& includes)
+void nsenum_context::begin_header(std::ostream& ofs, std::unordered_set<std::string> const& includes)
 {
-  ofs << "\n#include <FlagType.h>\n#include <StringKey.h>";
   add_includes(ofs, includes);
 }
 
@@ -19,7 +18,7 @@ void nsenum_context::start_namespace(std::ostream& ofs, std::string str)
     str.replace(start_pos, 2, to);
     start_pos += to.length(); // ...
   }
-  ofs << "\nnamespace " << str << " {";
+  ofs << "\nnamespace " << str << "\n{";
   if (str != "lumiere")
     ofs << "\nusing namespace lumiere;";
 }
@@ -29,11 +28,13 @@ void nsenum_context::end_namespace(std::ostream& ofs, std::string const& str)
   std::size_t start_pos = 0;
   ofs << "\n}";
   while ((start_pos = str.find("::", start_pos)) != std::string::npos)
+  {
     ofs << "\n}";
+    start_pos += 2;
+  }
 }
 
-void nsenum_context::add_includes(std::ostream&                   ofs,
-                                  std::vector<std::string> const& includes)
+void nsenum_context::add_includes(std::ostream& ofs, std::unordered_set<std::string> const& includes)
 {
   for (auto const& i : includes)
     ofs << fmt::format("\n#include <{}>", i);
@@ -51,7 +52,7 @@ std::string nsenum_context::prefix_words(std::string const& pref,
   {
     std::string result;
     std::string replace = fmt::format("{}$&", pref);
-    std::regex  re("\\b\\w\\b");
+    std::regex  re("\\w+");
     return std::regex_replace(sentence, re, replace);
   }
 }
@@ -77,18 +78,27 @@ void nsenum_context::parse(
   std::string const&           header, 
   std::filesystem::path const& lenumsj, std::ofstream& cpp,
   std::ofstream& hpp, std::vector<std::string> const& incl, bool exp)
-{
+{  
+  // if (mod_name == "Graphics")
+  //   halt();
+
   std::ifstream j{lenumsj};
   nlohmann::json js;
   j >> js;
   nsenum_context ctx;
+  ctx.includes.emplace("FlagType.h");
+  ctx.includes.emplace("StringKey.h");
+  std::vector<nsenum> enums;
+  for (auto const& en : js)
+    enums.emplace_back(ctx, en);
   if (exp)
     ctx.export_api = fmt::format("Lum{0}API", mod_name);
-  begin_header(hpp, incl);
+  for (auto const& in : incl)
+    ctx.includes.emplace(in);
+  begin_header(hpp, ctx.includes);
   cpp << fmt::format("\n#include <{}>", header);
-  for (auto const& en : js)
+  for (auto const& p : enums)
   {
-    nsenum p{ctx, en};
     p.write_header(hpp);
     p.write_source(cpp);
   }
@@ -98,7 +108,7 @@ void nsenum_context::write_file_header(std::ofstream& ofs, bool isheader)
 {
   ofs << "\n // Auto generated enum file";
   if (isheader)
-    ofs << "\n#pragam once\n";
+    ofs << "\n#pragma once\n";
   ofs << "\n\n";
 }
 
@@ -150,8 +160,7 @@ void nsenum_context::generate(std::string mod_name, nsmodule_type type,
     }
   }
 }
-
-nsenum::nsenum(nsenum_context const& ictx, nlohmann::json const& jv)
+nsenum::nsenum(nsenum_context& ictx, nlohmann::json const& jv)
     : ctx{ictx}, jenum{jv}
 {
   auto it = jenum.find("name");
@@ -184,7 +193,7 @@ nsenum::nsenum(nsenum_context const& ictx, nlohmann::json const& jv)
       if (opt == "string-key")
       {
         string_key = true;
-        includes.emplace_back("StringKey.h");
+        ictx.includes.emplace("StringKey.h");
       }
       if (opt == "custom-strings")
         custom_strings = true;
@@ -216,12 +225,19 @@ nsenum::nsenum(nsenum_context const& ictx, nlohmann::json const& jv)
   it = jenum.find("default");
   if (it != jenum.end())
     default_value = (*it).get<std::string>();
+  it = jenum.find("include");
+  if (it != jenum.end())
+  {
+    auto const& includes = *it;
+    for (auto const& v : includes)
+      ictx.includes.emplace(v.get<std::string>());
+  }
   parse_associations();
   parse_entries();
   one = get_1_shift();
   if (auto_flags || usage == nsenum_usage::as_enum)
     has_enum = true;
-  if (usage == nsenum_usage::as_flags)
+  if (auto_flags || usage == nsenum_usage::as_flags)
     has_flags = true;
   else if (usage == nsenum_usage::as_const)
     has_consts = true;
@@ -391,7 +407,31 @@ void nsenum::enum_entry(nlohmann::json const& j)
   if (j.is_array() && j.size() > 0)
   {
     for (auto const& v : j)
-      values.push_back(v.get<std::string>());
+    {
+      using type = decltype(v.type());
+      switch(v.type()) 
+      {
+      case type::number_float:
+        values.push_back(std::to_string(v.get<float>()));
+        break;
+      case type::string:
+        values.push_back(v.get<std::string>());
+        break;
+      case type::boolean:
+        values.push_back(v.get<bool>() ? "true" : "false");
+        break;
+      case type::number_integer:
+        values.push_back(std::to_string(v.get<std::int64_t>()));
+        break;
+      case type::number_unsigned:
+        values.push_back(std::to_string(v.get<std::uint64_t>()));
+        break;
+      default:
+        values.emplace_back();
+        break;
+      }
+    }
+      
   }
   else
     values.push_back(j.get<std::string>());
@@ -429,7 +469,6 @@ bool nsenum::has_tuples_to_print() const
 
 void nsenum::write_header(std::ostream& ofs) const
 {
-  nsenum_context::add_includes(ofs, includes);
   nsenum_context::start_namespace(ofs, namespace_name);
   if (!comment.empty())
     ofs << "\n// " << comment;
@@ -437,6 +476,10 @@ void nsenum::write_header(std::ostream& ofs) const
   if (auto_flags || usage == nsenum_usage::as_enum)
   {
     write_header_enum(ofs, usage == nsenum_usage::as_enum);
+    if (auto_flags)
+      write_header_auto_flags(ofs);
+    else if (has_flags)
+      write_header_flags(ofs);
   }
   else if (usage == nsenum_usage::as_flags)
   {
@@ -461,7 +504,7 @@ void nsenum::write_header(std::ostream& ofs) const
         write_header_string_table(ofs);
     }
   }
-  ofs << "\n}";
+  ofs << "\n};";
   write_header_alias(ofs);
   ctx.end_namespace(ofs, namespace_name);
   //
@@ -470,10 +513,10 @@ void nsenum::write_header(std::ostream& ofs) const
 void nsenum::write_header_alias(std::ostream& ofs) const
 {
   if (has_enum)
-    ofs << fmt::format("\n\nusing {}Enum = {}::Enum;", name, enum_name());
+    ofs << fmt::format("\nusing {}Enum = {}::Enum;", name, enum_name());
   if (has_flags)
   {
-    ofs << fmt::format("\n\nusing {}Flags = MaskFlags<{}::Bit>;", name, name);
+    ofs << fmt::format("\nusing {}Flags = MaskFlags<{}::Bit>;", name, name);
     ofs << fmt::format("\nL_DECLARE_SCOPED_MASK_FLAGS({}, Bit);", name);
   }
 }
@@ -542,7 +585,7 @@ void nsenum::write_header_value_functions(std::ostream& ofs) const
   if (it != jenum.end())
   {
     auto const& declarations = *it;
-    ofs << ("\n// Declarations \n");
+    ofs << ("\n  // Declarations \n");
     if (declarations.is_array())
     {
       for (auto const& c : declarations)
@@ -603,7 +646,7 @@ void nsenum::write_header_consts(std::ostream& ofs) const
 
 void nsenum::write_header_enum(std::ostream& ofs, bool write_value) const
 {
-  ofs << fmt::format("\n  enum Enum : {}\n{{", type);
+  ofs << fmt::format("\n  enum Enum : {}\n  {{", type);
   bool print_comma = false;
   for (auto const& entry : entries)
   {
@@ -619,14 +662,15 @@ void nsenum::write_header_enum(std::ostream& ofs, bool write_value) const
   if (!skip_last_element)
   {
     if (print_comma)
-      ofs << ", ";
+      ofs << ",\n";
     ofs << "    kCount";
   }
+  ofs << "\n  };\n";
 }
 
 void nsenum::write_header_flags(std::ostream& ofs) const
 {
-  ofs << fmt::format("\n  enum Bit : {}\n{{", type);
+  ofs << fmt::format("\n  enum Bit : {}\n  {{", type);
   bool print_comma = false;
   for (auto const& entry : entries)
   {
@@ -643,7 +687,7 @@ void nsenum::write_header_flags(std::ostream& ofs) const
 
 void nsenum::write_header_auto_flags(std::ostream& ofs) const
 {
-  ofs << fmt::format("\n  enum Bit : {}\n{{", type);
+  ofs << fmt::format("\n  enum Bit : {}\n  {{", type);
   bool print_comma = false;
   for (auto const& entry : entries)
   {
@@ -683,7 +727,7 @@ void nsenum::write_source_to_value(std::ostream& ofs) const
   auto value_type = default_value_type();
   auto usage_type = default_usage_type();
 
-  ofs << fmt::format("\n{0}::Value {0}::ToValue({1} iValue) \n{{\n  switch(iValue) \n{{\n", name, value_type);
+  ofs << fmt::format("\n{0}::Value {0}::ToValue({1} iValue) \n{{\n  switch(iValue) \n  {{\n", name, value_type);
   for (auto const& entry : entries)
   {
       bool is_default = !default_entry.name.empty() && entry.name == default_entry.name;
@@ -799,7 +843,7 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
       ofs << fmt::format("::{});\n}}\n",
                          default_entry.get_entry(def_usage_type));
     else
-      ofs << "(0));\n}}\n";
+      ofs << "(0));\n}\n";
   };
 
   if (string_key)
@@ -815,14 +859,13 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
 
     if (prefix_match)
     {
-
       ofs << fmt::format("\nstd::tuple<{0}::{1}, StringView> "
                          "{0}::StartsWith(StringView iValue) \n{{\n",
                          enum_name, def_value_type);
       if (search_modifier != nsenum_modifier::none)
         ofs << nsenum_context::modify_search("iValue", search_modifier);
       ofs << fmt::format(
-          "\n  return EnumStringStartsWith(k{0}StringTable, iValue, {0}::",
+          "\n  return EnumStringStartsWith(k{0}StringTable, iValue, {0}::{1}",
           enum_name, def_value_type);
       finish_with();
     }
@@ -835,7 +878,7 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
       if (search_modifier != nsenum_modifier::none)
         ofs << nsenum_context::modify_search("iValue", search_modifier);
       ofs << fmt::format(
-          "\n  return EnumStringEndsWith(k{0}StringTable, iValue, {0}::",
+          "\n  return EnumStringEndsWith(k{0}StringTable, iValue, {0}::{1}",
           enum_name, def_value_type);
       finish_with();
     }

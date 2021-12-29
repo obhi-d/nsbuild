@@ -43,12 +43,13 @@ struct nsmodule
   nsbuildsteplist     prebuild;
   nsbuildsteplist     postbuild;
   nsbuildcmdlist      install;
-  nsglob              glob_sources;
   nsglob              glob_media;
   std::string         version;
   std::uint32_t       framework;
 
   std::vector<std::string> references;
+
+  std::vector<std::string_view> unset;
 
   std::array<nsinterface_list, 2> intf;
 
@@ -56,12 +57,13 @@ struct nsmodule
 
   std::string   name;
   nsmodule_type type = nsmodule_type::none;
-
+  
   // deferred properties
   std::string_view framework_name;
   std::string_view framework_path;
   std::string      target_name;
   std::string      source_path;
+  std::string      gen_path;
 
   nsplugin_manifest manifest;
 
@@ -69,6 +71,9 @@ struct nsmodule
   bool force_rebuild = false;
   bool has_confixx   = false;
   bool disabled      = false;
+  
+  // .. Options
+  bool console_app              = false;
 
   nsmodule()                    = default;
   nsmodule(nsmodule&&) noexcept = default;
@@ -107,57 +112,59 @@ struct nsmodule
   void update_fetch(nsbuild const& bc);
   void generate_plugin_manifest(nsbuild const& bc);
 
-  void write_fetch_build(nsbuild const& bc) const;
-  void fetch_content(nsbuild const& bc);
-
+  std::string write_fetch_build(nsbuild const& bc) const;
+  void        fetch_content(nsbuild const& bc);
+  bool        fetch_changed(nsbuild const& bc, std::string const& last_sha) const;
+  void        write_fetch_meta(nsbuild const& bc, std::string const& last_sha) const;
   /// @brief Called to write the cmake file
   /// @param bc config
-  void write_main_build(nsbuild const& bc) const;
-  void write_variables(std::ofstream&, nsbuild const& bc, char sep = ';') const;
-  void write_target(std::ofstream&, nsbuild const& bc, std::string const& name) const;
+  void write_main_build(std::ostream&, nsbuild const& bc) const;
+  void write_variables(std::ostream&, nsbuild const& bc, char sep = ';') const;
+  void write_sources(std::ostream&, nsbuild const& bc) const;
+  void write_source_subpath(nsglob& glob, nsbuild const& bc) const;
+  void write_target(std::ostream&, nsbuild const& bc, std::string const& name) const;
+  void write_enums_init(std::ostream&, nsbuild const& bc) const;
+  
+  void write_prebuild_steps(std::ostream& ofs, nsbuild const& bc) const;
+  void write_postbuild_steps(std::ostream& ofs, nsbuild const& bc) const;
 
-  void write_prebuild_steps(std::ofstream& ofs, nsbuild const& bc) const;
-  void write_postbuild_steps(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_cxx_options(std::ostream&, nsbuild const& bc) const;
 
-  void write_cxx_options(std::ofstream&, nsbuild const& bc) const;
+  void write_includes(std::ostream&, nsbuild const& bc) const;
+  void write_include(std::ostream& ofs, std::string_view path, std::string_view subpath, cmake::inheritance) const;
+  void write_refs_includes(std::ostream& ofs, nsbuild const& bc, nsmodule const& target) const;
+  void write_find_package(std::ostream& ofs, nsbuild const& bc) const;
 
-  void write_includes(std::ofstream&, nsbuild const& bc) const;
-  void write_include(std::ofstream& ofs, std::string_view path, std::string_view subpath, cmake::inheritance,
-                     cmake::exposition = cmake::exposition::build) const;
-  void write_refs_includes(std::ofstream& ofs, nsbuild const& bc, nsmodule const& target) const;
-  void write_find_package(std::ofstream& ofs, nsbuild const& bc) const;
+  void write_definitions(std::ostream&, nsbuild const& bc) const;
+  void write_definitions_mod(std::ostream&, nsbuild const& bc) const;
+  void write_definitions(std::ostream&, nsbuild const& bc, std::uint32_t type) const;
+  void write_definitions(std::ostream&, std::string_view def, cmake::inheritance, std::string_view filter) const;
+  void write_refs_definitions(std::ostream& ofs, nsbuild const& bc, nsmodule const& target) const;
 
-  void write_definitions(std::ofstream&, nsbuild const& bc) const;
-  void write_definitions_mod(std::ofstream&, nsbuild const& bc) const;
-  void write_definitions(std::ofstream&, nsbuild const& bc, std::uint32_t type) const;
-  void write_definitions(std::ofstream&, std::string_view def, cmake::inheritance, std::string_view filter) const;
-  void write_refs_definitions(std::ofstream& ofs, nsbuild const& bc, nsmodule const& target) const;
-
-  void write_dependencies(std::ofstream& ofs, nsbuild const& bc) const;
-  void write_dependencies_begin(std::ofstream& ofs, nsbuild const& bc) const;
-  void write_dependencies_mod(std::ofstream& ofs, nsbuild const& bc) const;
-  void write_dependencies_end(std::ofstream& ofs, nsbuild const& bc) const;
-  void write_dependencies(std::ofstream& ofs, nsbuild const& bc, std::uint32_t intf) const;
-  void write_dependency(std::ofstream& ofs, std::string_view target, cmake::inheritance, std::string_view filter) const;
-  void write_target_link_libs(std::ofstream& ofs, std::string_view target, cmake::inheritance,
+  void write_dependencies(std::ostream& ofs, nsbuild const& bc) const;
+  void write_dependencies_begin(std::ostream& ofs, nsbuild const& bc) const;
+  void write_dependencies_mod(std::ostream& ofs, nsbuild const& bc) const;
+  void write_dependencies_end(std::ostream& ofs, nsbuild const& bc) const;
+  void write_dependencies(std::ostream& ofs, nsbuild const& bc, std::uint32_t intf) const;
+  void write_dependency(std::ostream& ofs, std::string_view target, cmake::inheritance, std::string_view filter) const;
+  void write_target_link_libs(std::ostream& ofs, std::string_view target, cmake::inheritance,
                               std::string_view filter) const;
-  void write_refs_dependencies(std::ofstream& ofs, nsbuild const& bc, nsmodule const& target) const;
+  void write_refs_dependencies(std::ostream& ofs, nsbuild const& bc, nsmodule const& target) const;
 
-  void write_linklibs(std::ofstream& ofs, nsbuild const& bc) const;
-  void write_linklibs_begin(std::ofstream& ofs, nsbuild const& bc) const;
-  void write_linklibs_mod(std::ofstream& ofs, nsbuild const& bc) const;
-  void write_linklibs_end(std::ofstream& ofs, nsbuild const& bc) const;
-  void write_linklibs(std::ofstream& ofs, nsbuild const& bc, std::uint32_t intf) const;
-  void write_linklibs(std::ofstream& ofs, std::string_view target, cmake::inheritance, std::string_view filter) const;
-  void write_refs_linklibs(std::ofstream& ofs, nsbuild const& bc, nsmodule const& target) const;
+  void write_linklibs(std::ostream& ofs, nsbuild const& bc) const;
+  void write_linklibs_begin(std::ostream& ofs, nsbuild const& bc) const;
+  void write_linklibs_mod(std::ostream& ofs, nsbuild const& bc) const;
+  void write_linklibs_end(std::ostream& ofs, nsbuild const& bc) const;
+  void write_linklibs(std::ostream& ofs, nsbuild const& bc, std::uint32_t intf) const;
+  void write_linklibs(std::ostream& ofs, std::string_view target, cmake::inheritance, std::string_view filter) const;
+  void write_refs_linklibs(std::ostream& ofs, nsbuild const& bc, nsmodule const& target) const;
 
-  void write_install_command(std::ofstream&, nsbuild const& bc) const;
-  void write_final_config(std::ofstream&, nsbuild const& bc) const;
-  void write_runtime_settings(std::ofstream&, nsbuild const& bc) const;
+  void write_install_command(std::ostream&, nsbuild const& bc) const;
+  void write_final_config(std::ostream&, nsbuild const& bc) const;
+  void write_runtime_settings(std::ostream&, nsbuild const& bc) const;
 
   void build_fetched_content(nsbuild const& bc) const;
 
-  std::filesystem::path get_full_cmake_gen_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_bld_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_fetch_bld_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_ext_bld_dir(nsbuild const& bc) const;

@@ -22,6 +22,18 @@
 // module_build_dir
 // module_target
 
+// Text sections
+// {{cmake:section-name}}
+prepare (about = "Alternative section to Prepare.cmake, Code to prepend before build");
+build (about = "Alternative section to Build.cmake, use this code before ExternalProject_Add and define 
+       __fetch_is_custom_build:bool -- set to true, to skip ExternalProject_Add 
+       __fetch_configure_cmd:list -- Command to execute in ExternalProject_Add 
+       __fetch_build_cmd:list -- Command to execute in ExternalProject_Add  
+       __fetch_install_cmd:list -- Command to execute in ExternalProject_Add ");
+package_install (about = "Alternative to section PackageInstall.cmake, custom package install commands to execute");
+post_build_install (about = "Alternative to section PostBuildInstall.cmake, post install commands to execute");
+
+// Code section
 config_filter (about = "list of [debug, release, windows, linux, osx, clang, msvc, gcc, asan]");
 
 out_dir        = (about = "Output directory");
@@ -30,7 +42,6 @@ build_dir      = (about = "Build directory");
 frameworks_dir = (about = "Frameworks directory");
 runtime_dir    = (about = "Output directory for debugging/testing");
 download_dir   = (about = "Directory to download sources");
-static_libs    = (about = "Build all as static libs (Except plugins)");
 preset (about = "Define a preset",
           params = ["first is name, second is list of @config_filter"])
 {
@@ -41,6 +52,7 @@ preset (about = "Define a preset",
   linker_flags (about = "Compile flags");
   allow (about = "Custom filters allowed for this preset");
   disallow (about = "Custom filters not allowed for this preset");
+  static_libs    = (about = "Boolean. Build all as static libs (Except plugins)");
 }
 
 framework(about = "Framework level declaration, can exclude modules",
@@ -96,8 +108,15 @@ framework(about = "Framework level declaration, can exclude modules",
           params = ["Filter with list of filter params, see @config_filter"]);
     package (about = "A package to find");
     components (about= "List of components to find");
+    targets (about = "Targets to link to, if not specified equals to components");
     runtime_loc (about = "Location where runtime files are generated, they will be copied accordingly");
     runtime_files (about = "Regex of files that are copied (according to subdirectories) into runtime_dir");
+    runtime_only (about = "Boolean. Set to true if the package just provides runtime dlls and is not linked to");
+    extern_name (about = "Explicit naming of the target in ExternalProject_Add/FetchContent");
+    legacy_linking (about = "Boolean. Set to true to link with _LIBRARIES/_INCLUDE_DIRS");
+    namespace (about = "Set a namespace name to be used to link components or libraries");
+    skip_namespace (about = "Skip namespace from link libraries");
+    fetch_content (about = "Use FetchContent instead of ExternalProject_Add");
   }
 
   references (about = "List of references");

@@ -28,5 +28,6 @@ void        value(std::string& result, neo::list::vector::const_iterator b, neo:
                   char seperator = ';');
 std::string value(nsparams const&, char seperator = ';');
 std::string path(std::filesystem::path const&);
-void        line(std::ostream&, std::string_view name);
+std::string value(std::string val);
+void        line(std::ostream&, std::string_view name, char type = '-', bool header = false);
 } // namespace cmake

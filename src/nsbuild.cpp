@@ -19,7 +19,7 @@ nsbuild::nsbuild() { wd = std::filesystem::current_path(); }
 
 void nsbuild::main_project()
 {
-  compute_paths();
+  compute_paths({});
   auto cml = get_full_scan_dir() / "CMakeLists.txt";
 
   {
@@ -99,7 +99,7 @@ void nsbuild::before_all()
       break;
     }
   // At this point we have read config!
-  compute_paths();
+  compute_paths(cmakeinfo.cmake_preset_name);
   std::filesystem::create_directories(get_full_cache_dir());
   read_meta(get_full_cache_dir());
   act_meta();
@@ -267,49 +267,9 @@ void nsbuild::foreach_module(L&& l, std::filesystem::path fwpath)
 void nsbuild::process_targets()
 {
   for (auto& targ : targets)
-  {
     process_target(targ.first, targ.second);
-  }
-  for (auto& f : process)
-  {
-    try
-    {
-      //f.first.get();
-    }
-    catch (std::exception& ex)
-    {
-      // Fetch build failed ?
-      state.is_dirty                         = true;
-      meta.timestamps[f.second->target_name] = "";
-      nslog::error(ex.what());
-    }
-  }
-  process.clear();
-
-  foreach_module(
-      [this](nsmodule const& m)
-      {
-        if (m.regenerate)
-        {
-          m.write_main_build(*this);
-          process.emplace_back(
-              std::move(std::async(std::launch::async, &nsmodule::write_main_build, &m, std::cref(*this))), &m);
-        }
-      });
+  
   write_include_modules();
-  for (auto& f : process)
-  {
-    try
-    {
-      f.first.get();
-    }
-    catch (std::exception& ex)
-    {
-      state.is_dirty                         = true;
-      meta.timestamps[f.second->target_name] = "";
-      nslog::error(ex.what());
-    }
-  }
 }
 
 void nsbuild::process_target(std::string const& name, nstarget& targ)
@@ -339,17 +299,12 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
       });
 
   sorted_targets.push_back(name);
-  if (mod.regenerate)
-  {
-
-    mod.process(*this, name, targ);
-    // process.emplace_back(std::move(std::async(std::launch::async, &nsmodule::process, &mod, std::cref(*this),
-                                             // std::cref(name), std::ref(targ))), &mod);
-  }
+  mod.process(*this, name, targ);
 }
 
-void nsbuild::generate_enum(std::string from)
+void nsbuild::generate_enum(std::string from, std::string preset)
 {
+  compute_paths(preset);
   auto spwd         = get_full_scan_dir();
   auto [fw, mod]    = get_modid(from);
   auto mod_src_path = spwd / frameworks_dir / fw / mod;
@@ -363,6 +318,9 @@ void nsbuild::generate_enum(std::string from)
 
 void nsbuild::copy_media(std::filesystem::path from, std::filesystem::path to, std::string ignore)
 {
+  if (!std::filesystem::exists(from))
+    return;
+  std::filesystem::create_directories(to);
   namespace fs            = std::filesystem;
   auto       it           = std::filesystem::directory_iterator{from};
   const auto copy_options = fs::copy_options::update_existing | fs::copy_options::recursive;
@@ -390,10 +348,10 @@ modid nsbuild::get_modid(std::string_view path) const
   return modid{fwname, modname};
 }
 
-void nsbuild::compute_paths()
+void nsbuild::compute_paths(std::string const& preset)
 {
   namespace fs            = std::filesystem;
-  auto const& preset_name = cmakeinfo.cmake_preset_name;
+  auto const& preset_name = preset;
   paths.scan_dir          = fs::canonical(wd / scan_dir);
   paths.out_dir           = (paths.scan_dir / out_dir);
   paths.cfg_dir           = (paths.out_dir / preset_name);
@@ -459,11 +417,14 @@ void nsbuild::write_include_modules() const
   }
   macros.print(ofs);
   write_cxx_options(ofs);
-  for (auto const& s : sorted_targets)
+
+  ofs << fmt::format("\nlist(PREPEND CMAKE_MODULE_PATH \"{}\")\n", cmake::path(get_full_sdk_dir()));
+
+  for (auto& sort_targ : sorted_targets)
   {
-    auto const& m = get_module(s);
-    ofs << fmt::format("\nadd_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{0} ${{CMAKE_CURRENT_LIST_DIR}}/../{1}/{0})",
-                       m.name, build_dir);
+    auto& m = get_module(sort_targ);
+    cmake::line(ofs, m.target_name, '*', true);
+    m.write_main_build(ofs, *this);
   }
   write_install_configs(ofs);
 }

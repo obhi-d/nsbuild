@@ -22,6 +22,7 @@ struct nsbuildstep
   nsbuildcmdlist steps;
   std::string    check;
   std::string    wd;
+  std::string    name;
 
   void print(std::ostream&, nsbuild const&, nsmodule const&) const;
 };

@@ -4,10 +4,10 @@
 #include <nsbuild.h>
 #include <nsprocess.h>
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-#define NS_DLL_EXT "\.dll$"
+#define NS_DLL_EXT "\\.dll$"
 #include <Windows.h>
 #else
-#define NS_DLL_EXT "\.so[\.0-9]*$"
+#define NS_DLL_EXT "\\.so[\.0-9]*$"
 #endif
 
 #include <nslog.h>
@@ -52,11 +52,18 @@ nscmakeinfo read_config(char const* argv[], int i, int argc)
   return cfg;
 }
 
-int main(int argc, char const* argv[])
+void halt() 
+{ 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
+  MessageBoxA(0, "Halt here", "Captions", 0); 
+#endif
+}
+int  main(int argc, char const* argv[])
 {
-  MessageBoxA(0, "Halt here", "Captions", 0);
+  //MessageBoxA(0, "Halt here", "Captions", 0);
   std::string working_dir = ".";
   std::string target      = "";
+  std::string preset      = "";
   nscmakeinfo nscfg;
   runas       ras = runas::main;
   nsprocess::s_nsbuild = argv[0];
@@ -80,6 +87,10 @@ int main(int argc, char const* argv[])
       ras = runas::generate_enum;
       if (i + 1 < argc)
         target = argv[i + 1];
+      i++;
+      if (i + 1 < argc)
+        preset = argv[i + 1];
+      i++;
     }
     else if (arg == "--copy-media" || arg == "-e")
     {
@@ -114,7 +125,7 @@ int main(int argc, char const* argv[])
       build.main_project();
       break;
     case runas::generate_enum:
-      build.generate_enum(target);
+      build.generate_enum(target, preset);
       break;
     case runas::check:
       build.cmakeinfo = nscfg;

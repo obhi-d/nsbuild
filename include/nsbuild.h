@@ -35,7 +35,9 @@ struct nsbuild : public neo::command_handler
   // path relative to scan
   std::string frameworks_dir = "Frameworks";
   // path relative to runtime
-  std::string plugin_rel_dir = "media/plugins";
+  std::string manifests_dir = "media/Plugins";
+  // path relative to runtime
+  std::string plugin_dir = "media/Plugins/bin";
 
   std::string ignore_media_from = "internal";
 
@@ -57,9 +59,8 @@ struct nsbuild : public neo::command_handler
   neo::registry          reg;
   std::list<std::string> contents;
 
-  std::unordered_map<std::string, nstarget>            targets;
-  std::vector<std::string>                             sorted_targets;
-  std::vector<std::pair<std::future<void>, nsmodule const*>> process;
+  std::unordered_map<std::string, nstarget> targets;
+  std::vector<std::string>                  sorted_targets;
 
   // working dir
   std::filesystem::path wd;
@@ -82,7 +83,7 @@ struct nsbuild : public neo::command_handler
   nsmetainfo  meta;
   nsmetastate state;
 
-  bool static_libs = false;
+  bool skip_fetch_builds = false;
 
   //--------------------------------------
   // Fn
@@ -119,7 +120,7 @@ struct nsbuild : public neo::command_handler
 
   /// @brief Generates enum files
   /// @param target Should be FwName/ModName or full path to module directory
-  void generate_enum(std::string target);
+  void generate_enum(std::string target, std::string preset);
 
   /// @brief Copy media directories and files, ignores media/Internal directory
   /// @param from
@@ -180,7 +181,7 @@ struct nsbuild : public neo::command_handler
 
   fullpaths paths;
 
-  void compute_paths();
+  void compute_paths(std::string const& preset);
 
   inline std::filesystem::path const& get_full_scan_dir() const { return paths.scan_dir; }
   inline std::filesystem::path const& get_full_cfg_dir() const { return paths.cfg_dir; }

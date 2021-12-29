@@ -36,7 +36,7 @@ void value(std::string& result, neo::list::vector::const_iterator b,
 std::string value(nsparams const& params, char sep)
 {
   std::string result;
-  value(result, params.value().begin(), params.value().end());
+  value(result, params.value().begin(), params.value().end(), sep);
   return result;
 }
 
@@ -48,6 +48,14 @@ std::string path(std::filesystem::path const& path)
   std::replace(ret.begin(), ret.end(), '\\', '/');
   #endif
   return ret;
+}
+
+std::string value(std::string val) 
+{ 
+  std::replace(val.begin(), val.end(), '\\', '_'); 
+  std::replace(val.begin(), val.end(), '.', '_');
+  std::replace(val.begin(), val.end(), ' ', '_');
+  return val;
 }
 
 std::string_view to_string(inheritance inh)
@@ -142,11 +150,27 @@ std::optional<std::string> get_filter(nspreset const& preset, nsfilters const& f
   return val;
 }
 
-void line(std::ostream& oss, std::string_view name) 
+void line(std::ostream& oss, std::string_view name, char type, bool header) 
 {
-  auto middle = (unsigned int)(((120u - name.length()) / 2) - 1);
-  auto line   = std::string(middle, '-');
-  oss << "\n#" << line << " " << name << " " << line;
+  const unsigned int shift  = header ? 16 : 2;
+  auto               middle = (unsigned int)(((120u - name.length()) / 2) - shift);
+
+  auto        midline = std::string(middle, type);
+  auto        space   = std::string(shift, ' ');
+  auto        name_len= std::string(name.length(), ' ');
+  static auto line    = std::string(120, '=');
+
+  if (header)
+  {
+    oss << "\n\n#" << line;
+    oss << "\n#" << midline << space << name_len << space << midline;
+  }
+  oss << "\n#" << midline << space << name << space << midline;
+  if (header)
+  {
+    oss << "\n#" << midline << space << name_len << space << midline;
+    oss << "\n#" << line << "\n";
+  }
 }
 
 } // namespace cmake
