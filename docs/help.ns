@@ -10,7 +10,7 @@
 // config_build_dir
 // config_sdk_dir
 // config_frameworks_dir
-// config_runtime_dir
+// config_rt_dir
 // config_download_dir
 
 // Under Module

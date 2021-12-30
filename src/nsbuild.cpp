@@ -15,6 +15,7 @@
 #include <nsprocess.h>
 #include <stdexcept>
 
+extern void halt();
 nsbuild::nsbuild() { wd = std::filesystem::current_path(); }
 
 void nsbuild::main_project()
@@ -107,6 +108,7 @@ void nsbuild::before_all()
   check_modules();
   update_macros();
   process_targets();
+  copy_installed_binaries();
   write_meta(get_full_cache_dir());
   
   if (state.is_dirty)
@@ -300,6 +302,28 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
 
   sorted_targets.push_back(name);
   mod.process(*this, name, targ);
+}
+
+void nsbuild::copy_installed_binaries() 
+{
+  std::array<std::string_view, 2> runtime_loc = {"bin", "lib"};
+  auto                            bin         = get_full_rt_dir() / "bin";
+  for (auto const& l : runtime_loc)
+  {
+    namespace fs = std::filesystem;
+
+    auto       it           = fs::directory_iterator{get_full_sdk_dir() / l};
+    const auto copy_options = fs::copy_options::update_existing | fs::copy_options::recursive;
+    for (auto const& dir_entry : it)
+    {
+      if (!dir_entry.is_regular_file() && !dir_entry.is_symlink())
+        continue;
+      auto name = dir_entry.path().filename().generic_string();
+      bool copy = false;
+      if (std::regex_search(name, dll_ext))
+        std::filesystem::copy(dir_entry.path(), bin / dir_entry.path().filename(), copy_options);
+    }
+  }
 }
 
 void nsbuild::generate_enum(std::string from, std::string preset)

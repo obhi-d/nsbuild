@@ -4,10 +4,10 @@
 #include <nsbuild.h>
 #include <nsprocess.h>
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-#define NS_DLL_EXT "\\.dll$"
+#define NS_DLL_EXT "(\\.dll$)|(\\.json$)"
 #include <Windows.h>
 #else
-#define NS_DLL_EXT "\\.so[\.0-9]*$"
+#define NS_DLL_EXT "(\\.so[\.0-9]*$)|(\\.json$)"
 #endif
 
 #include <nslog.h>
@@ -111,7 +111,6 @@ int  main(int argc, char const* argv[])
   }
 
   nsbuild build;
-  build.dll_ext   = NS_DLL_EXT;
   build.state.ras = ras;
   neo_register(nsbuild, build.reg);
 
@@ -128,6 +127,7 @@ int  main(int argc, char const* argv[])
       build.generate_enum(target, preset);
       break;
     case runas::check:
+      build.dll_ext   = std::regex(NS_DLL_EXT, std::regex_constants::icase);
       build.cmakeinfo = nscfg;
       build.before_all();
       break;

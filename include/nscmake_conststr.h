@@ -145,7 +145,7 @@ if (EXISTS "${module_dir}/local_include/Enums.json")
   set(has_enums_json TRUE)
 endif()
 if(has_enums_json)
-  list(APPEND enums_json_output "${module_gen_dir}/Lum${module_name}Enums.cpp")
+  list(APPEND enums_json_output "${module_gen_dir}/local/Lum${module_name}Enums.cpp")
 endif()
 
 )_";
@@ -159,7 +159,7 @@ static inline constexpr char k_media_commands[] = R"_(
   endforeach()
   
   set(data_group_output ${__module_data})
-  list(TRANSFORM data_group_output REPLACE ${module_dir}/media ${config_runtime_dir}/media)
+  list(TRANSFORM data_group_output REPLACE ${module_dir}/media ${config_rt_dir}/media)
 )_";
 
 static inline constexpr char k_finale[] = R"_(

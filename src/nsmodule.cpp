@@ -1021,6 +1021,7 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
   nsprocess::cmake_config(bc, {}, cmake::path(src), xpb);
   nsprocess::cmake_build(bc, "", xpb);
   nsprocess::cmake_install(bc, cmake::path(dsdk), xpb);
+  // custom location copy
   if (!fetch->runtime_loc.empty())
   {
     for (auto const& l : fetch->runtime_loc)

@@ -100,6 +100,7 @@ struct nsbuild : public neo::command_handler
   void update_macros();
   void process_targets();
   void process_target(std::string const&, nstarget&);
+  void copy_installed_binaries();
 
   /// @brief This initiates the main build: check mode
   /// - Checks current build directory, if it does not exist creates it
