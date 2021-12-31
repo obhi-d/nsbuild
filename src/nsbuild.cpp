@@ -116,7 +116,7 @@ void nsbuild::before_all()
     nslog::print("******************************************");
     nslog::print("*** Modules were regenerated, rebuild! ***");
     nslog::print("******************************************\n");
-    throw std::runtime_error("Modules regenerated");
+    throw module_regenerated();
   }
   else
   {

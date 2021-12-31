@@ -77,6 +77,9 @@ struct nsbuild : public neo::command_handler
   nsvars*      s_nsvar       = nullptr;
   nspreset*    s_nspreset    = nullptr;
 
+  std::string s_nstestNamespace;
+  std::string s_nstestClass;
+
   nspreset const* s_current_preset = nullptr;
   //--------------------------------------
   // Runtime options

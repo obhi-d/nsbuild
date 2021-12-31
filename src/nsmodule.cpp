@@ -131,18 +131,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     prebuild.push_back(step);
   }
   else if (type == nsmodule_type::test)
-  {
-    nsbuildstep step;
-    nsbuildcmds cmd;
-    step.name = "test config";
-    cmd.msgs.push_back(fmt::format("Copying test config for {}", name));
-    cmd.command = "${CMAKE_COMMAND}";
-    cmd.params  = fmt::format("-E copy_if_different ${{module_dir}}/TestConfig.json "
-                             "${{config_rt_dir}}/tests/{0}.json",
-                             name);
-    step.steps.push_back(cmd);
-    step.wd = bc.wd.generic_string();
-    postbuild.push_back(step);
+  {    
   }
 
   if (has_headers(type))
@@ -992,10 +981,30 @@ void nsmodule::write_final_config(std::ostream& ofs, nsbuild const& bc) const
   case nsmodule_type::test:
     cmake::line(ofs, "final-config");
     ofs << cmake::k_finale;
-    ofs << "\nadd_test(NAME " << name << " COMMAND  ./" << target_name << " WORKING_DIRECTORY ${config_rt_dir}/bin)";
+    write_tests(ofs, bc);
     break;
   default:
     return;
+  }
+}
+
+void nsmodule::write_tests(std::ostream& ofs, nsbuild const& bc) const
+{
+  for (auto const& t : tests)
+  {
+    ofs << fmt::format("\nadd_test(NAME {}\n  COMMAND  ./{} ", t.name, target_name);
+    ofs << fmt::format("--test=\"{}\" ", t.name);
+    bool first = true;
+    for (auto const& p : t.parameters)
+    {
+      if (first)
+      {
+        first = false;
+        continue;
+      }
+      ofs << fmt::format("--test-param-{}=\"{}\" ", p.first, p.second);
+    }
+    ofs << "\n  WORKING_DIRECTORY ${config_rt_dir}/bin)";
   }
 }
 

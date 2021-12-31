@@ -26,6 +26,14 @@ enum class nsmodule_type
 bool has_data(nsmodule_type);
 bool has_sources(nsmodule_type);
 
+using name_value_pair = std::pair<std::string, std::string>;
+// @brief Test configs
+struct nstest
+{
+  std::string                  name;
+  std::vector<name_value_pair> parameters;
+};
+
 /// @brief These targets are defined by every module
 /// target.prebuild : Optional. Executed before target build
 /// target : Actual build target, depends on target.prebuild, and its artifacts
@@ -50,6 +58,8 @@ struct nsmodule
   std::vector<std::string> references;
 
   std::vector<std::string_view> unset;
+
+  std::vector<nstest> tests;
 
   std::array<nsinterface_list, 2> intf;
 
@@ -161,6 +171,7 @@ struct nsmodule
 
   void write_install_command(std::ostream&, nsbuild const& bc) const;
   void write_final_config(std::ostream&, nsbuild const& bc) const;
+  void write_tests(std::ostream&, nsbuild const& bc) const;
   void write_runtime_settings(std::ostream&, nsbuild const& bc) const;
 
   void build_fetched_content(nsbuild const& bc) const;

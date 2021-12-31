@@ -195,13 +195,13 @@ ns_cmd_handler(type, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(console_app, build, state, cmd) 
+ns_cmd_handler(console_app, build, state, cmd)
 {
   build.s_nsmodule->console_app = to_bool(get_idx_param(cmd, 0));
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(exclude_when, build, state, cmd) 
+ns_cmd_handler(exclude_when, build, state, cmd)
 {
   auto const& p = cmd.params().value();
   if (p.size() > 0)
@@ -213,7 +213,7 @@ ns_cmd_handler(exclude_when, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(include_when, build, state, cmd) 
+ns_cmd_handler(include_when, build, state, cmd)
 {
   auto const& p = cmd.params().value();
   if (p.size() > 0)
@@ -227,8 +227,8 @@ ns_cmd_handler(include_when, build, state, cmd)
 
 ns_cmd_handler(var, build, state, cmd)
 {
-  auto& m               = build.s_nsmodule->vars;
-  build.s_nsvar         = cmd_insert_with_filter(m, build, cmd);
+  auto& m       = build.s_nsmodule->vars;
+  build.s_nsvar = cmd_insert_with_filter(m, build, cmd);
   if (!build.s_nsvar)
     return neo::retcode::e_skip_block;
   build.s_nsvar->prefix = "var";
@@ -237,8 +237,8 @@ ns_cmd_handler(var, build, state, cmd)
 
 ns_cmd_handler(exports, build, state, cmd)
 {
-  auto& m               = build.s_nsmodule->exports;
-  build.s_nsvar         = cmd_insert_with_filter(m, build, cmd);
+  auto& m       = build.s_nsmodule->exports;
+  build.s_nsvar = cmd_insert_with_filter(m, build, cmd);
   if (!build.s_nsvar)
     return neo::retcode::e_skip_block;
   build.s_nsvar->prefix = "glob";
@@ -481,7 +481,7 @@ ns_cmd_handler(description, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(allow, build, state, cmd) 
+ns_cmd_handler(allow, build, state, cmd)
 {
   if (build.s_nspreset)
     build.s_nspreset->allowed_filters = get_first_list(cmd);
@@ -543,6 +543,37 @@ ns_cmdend_handler(fetch, build, state, name)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(test_namespace, build, state, cmd)
+{
+  build.s_nstestNamespace = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(test_class, build, state, cmd)
+{
+  build.s_nstestClass = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(test_name, build, state, cmd)
+{
+  nstest test;
+  test.name          = fmt::format("{}.{}.{}", build.s_nstestNamespace, build.s_nstestClass, get_idx_param(cmd, 0));
+  auto const& params = cmd.params().value();
+  for (auto const& p : params)
+  {
+
+    std::visit(neo::overloaded{[](std::monostate const&) {},
+                               [&test](neo::list const& l)
+                               { test.parameters.emplace_back(l.name(), neo::command::as_string(l)); },
+                               [&test](neo::esq_string const& l) { test.parameters.emplace_back(l.name(), l.value()); },
+                               [&test](neo::single const& l) { test.parameters.emplace_back(l.name(), l.value()); }},
+               p);
+  }
+  build.s_nsmodule->tests.push_back(test);
+  return neo::retcode::e_success;
+}
+
 ns_cmdend_handler(clear_buildstep, build, state, cmd)
 {
   build.s_nsbuildstep = nullptr;
@@ -587,7 +618,7 @@ ns_registry(nsbuild)
   ns_cmd(cmake_gen_dir);
   ns_cmd(frameworks_dir);
   ns_cmd(runtime_dir);
-  
+
   ns_scope_cust(preset, clear_presets)
   {
     ns_cmd(display_name);
@@ -603,7 +634,7 @@ ns_registry(nsbuild)
     ns_cmd(build_type);
     ns_cmd(static_libs);
   }
-  
+
   ns_cmd(excludes);
   ns_cmd(type);
   ns_cmd(include_when);
@@ -636,6 +667,14 @@ ns_registry(nsbuild)
   }
 
   ns_subalias_cust(postbuild, clear_buildstep, prebuild);
+
+  ns_scope_def(test_namespace) 
+  {
+    ns_scope_def(test_class) 
+    {
+      ns_cmd(test_name);
+    }
+  }
 
   ns_scope_auto(fetch)
   {

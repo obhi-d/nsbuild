@@ -243,3 +243,9 @@ std::string to_upper_camel_case(std::string const& s);
 std::string to_camel_case(std::string const& s);
 std::string to_snake_case(std::string const& s);
 bool        to_bool(std::string_view);
+
+
+struct module_regenerated : std::runtime_error
+{
+  inline module_regenerated() : std::runtime_error("Modules regenerated") {}
+};

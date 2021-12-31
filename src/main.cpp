@@ -135,6 +135,9 @@ int  main(int argc, char const* argv[])
       break;
     }
   }
+  catch (module_regenerated ex)
+  {
+  }
   catch (std::exception ex)
   {
     nslog::error(ex.what());
