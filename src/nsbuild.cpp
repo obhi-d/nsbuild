@@ -118,6 +118,12 @@ void nsbuild::before_all()
     nslog::print("******************************************\n");
     throw std::runtime_error("Modules regenerated");
   }
+  else
+  {
+    nslog::print("******************************************");
+    nslog::print("*** Check finished. Resuming cmake...  ***");
+    nslog::print("******************************************\n");
+  }
 }
 
 void nsbuild::check_modules()
@@ -272,6 +278,7 @@ void nsbuild::process_targets()
     process_target(targ.first, targ.second);
   
   write_include_modules();
+  nslog::print("Finished writing targets");
 }
 
 void nsbuild::process_target(std::string const& name, nstarget& targ)

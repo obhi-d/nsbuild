@@ -39,7 +39,7 @@ struct nsbuild : public neo::command_handler
   // path relative to runtime
   std::string plugin_dir = "media/Plugins/bin";
 
-  std::string ignore_media_from = "internal";
+  std::string ignore_media_from = "Internal";
 
   // Project name
   std::string project_name;
@@ -82,8 +82,7 @@ struct nsbuild : public neo::command_handler
   // Runtime options
   nsmetainfo  meta;
   nsmetastate state;
-
-  bool skip_fetch_builds = false;
+   
 
   //--------------------------------------
   // Fn

@@ -18,4 +18,5 @@ struct nscmakeinfo
   std::string              cmake_cppcompiler_version;
   std::string              cmake_build_dir; 
   bool                     cmake_is_multi_cfg = false;
+  bool                     cmake_skip_fetch_builds  = false;
 };

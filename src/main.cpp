@@ -48,6 +48,8 @@ nscmakeinfo read_config(char const* argv[], int i, int argc)
       cfg.cmake_is_multi_cfg = to_bool(arg.substr(3));
     else if (arg.starts_with("-P="))
       cfg.target_platform = arg.substr(3);
+    else if (arg.starts_with("--no-fetch-build"))
+      cfg.cmake_skip_fetch_builds = true;
   }
   return cfg;
 }

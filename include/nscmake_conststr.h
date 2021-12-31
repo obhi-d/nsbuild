@@ -126,7 +126,11 @@ static inline constexpr char k_rt_locations[] = R"_(
   RUNTIME_OUTPUT_DIRECTORY "${config_rt_dir}/bin"
 )_";
 
-static inline constexpr char k_plugin_locations[] = "RUNTIME_OUTPUT_DIRECTORY \"${{config_rt_dir}}/{}\"";
+static inline constexpr char k_plugin_locations[] = R"_(
+  ARCHIVE_OUTPUT_DIRECTORY "${{config_rt_dir}}/lib"
+  LIBRARY_OUTPUT_DIRECTORY "${{config_rt_dir}}/{0}"
+  RUNTIME_OUTPUT_DIRECTORY "${{config_rt_dir}}/{0}"
+)_";
 
 static inline constexpr char k_enums_json[] = R"_(
 

@@ -138,7 +138,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     cmd.msgs.push_back(fmt::format("Copying test config for {}", name));
     cmd.command = "${CMAKE_COMMAND}";
     cmd.params  = fmt::format("-E copy_if_different ${{module_dir}}/TestConfig.json "
-                             "${{config_rt_dir}}/TestConfigs/{0}.json",
+                             "${{config_rt_dir}}/tests/{0}.json",
                              name);
     step.steps.push_back(cmd);
     step.wd = bc.wd.generic_string();
@@ -272,7 +272,7 @@ void nsmodule::generate_plugin_manifest(nsbuild const& bc)
     << fmt::format(k_json_val, "compatibility", manifest.compatibility) << ", "
     << fmt::format(k_json_val, "context", manifest.context) << ", "
     << fmt::format(k_json_val, "desc", manifest.desc) << ", "
-    << fmt::format(k_json_val, "optional", manifest.optional) << ", "
+    << fmt::format(k_json_bool, "optional", manifest.optional) << ", "
     << fmt::format(k_json_obj, "services");
   bool first = true;
   for (auto const& s : manifest.services)
@@ -415,10 +415,18 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
 
 void nsmodule::fetch_content(nsbuild const& bc)
 {
-  std::string sha = "unknown";
-  if ((regenerate || force_rebuild) && !bc.skip_fetch_builds)
+  std::string sha;
+  
+  if ((regenerate || force_rebuild))
     sha = write_fetch_build(bc);
-  else
+  
+  if (bc.cmakeinfo.cmake_skip_fetch_builds)
+  {
+    write_fetch_meta(bc, sha);
+    return;
+  }
+
+  if (sha.empty())
     return;
 
   if (fetch_changed(bc, sha))
@@ -445,6 +453,8 @@ bool nsmodule::fetch_changed(nsbuild const& bc, std::string const& last_sha) con
 
 void nsmodule::write_fetch_meta(nsbuild const& bc, std::string const& last_sha) const 
 {
+  if (last_sha.empty())
+    return;
   auto          meta = bc.get_full_cache_dir() / fmt::format("{}.fetch", name);
   std::ofstream off{meta};
   if (off.is_open())
@@ -594,13 +604,13 @@ void nsmodule::write_postbuild_steps(std::ostream& ofs, nsbuild const& bc) const
   {
     cmake::line(ofs, "postbuild-steps");
     ofs << fmt::format("\nadd_custom_command(TARGET ${{module_target}} POST_BUILD ");
-    for (auto const& step : prebuild)
+    for (auto const& step : postbuild)
     {
       for (auto const& s : step.steps)
       {
-        ofs << "\n\tCOMMAND " << s.command << " " << s.params;
+        ofs << "\n  COMMAND " << s.command << " " << s.params;
         for (auto const& m : s.msgs)
-          ofs << "\n\tCOMMAND ${CMAKE_COMMAND} -E echo \"" << m << "\"";
+          ofs << "\n  COMMAND ${CMAKE_COMMAND} -E echo \"" << m << "\"";
       }
     }
     ofs << "\n\t)";
@@ -982,7 +992,7 @@ void nsmodule::write_final_config(std::ostream& ofs, nsbuild const& bc) const
   case nsmodule_type::test:
     cmake::line(ofs, "final-config");
     ofs << cmake::k_finale;
-    ofs << "\nadd_test(" << name << " COMMAND ${config_rt_dir}/bin/" << target_name << ")";
+    ofs << "\nadd_test(NAME " << name << " COMMAND  ./" << target_name << " WORKING_DIRECTORY ${config_rt_dir}/bin)";
     break;
   default:
     return;
