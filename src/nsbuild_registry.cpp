@@ -241,7 +241,6 @@ ns_cmd_handler(exports, build, state, cmd)
   build.s_nsvar = cmd_insert_with_filter(m, build, cmd);
   if (!build.s_nsvar)
     return neo::retcode::e_skip_block;
-  build.s_nsvar->prefix = "glob";
   return neo::retcode::e_success;
 }
 

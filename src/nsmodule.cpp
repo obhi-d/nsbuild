@@ -257,11 +257,12 @@ void nsmodule::generate_plugin_manifest(nsbuild const& bc)
   f << "{" 
     << fmt::format(k_json_val, "author", manifest.author) << ", "
     << fmt::format(k_json_val, "company", manifest.company) << ", "
+    << fmt::format(k_json_val, "binary", target_name) << ", "
     << fmt::format(k_json_val, "version", version.empty() ? bc.version : version) << ", "
     << fmt::format(k_json_val, "compatibility", manifest.compatibility) << ", "
     << fmt::format(k_json_val, "context", manifest.context) << ", "
     << fmt::format(k_json_val, "desc", manifest.desc) << ", "
-    << fmt::format(k_json_bool, "optional", manifest.optional) << ", "
+    << fmt::format(k_json_bool,"optional", manifest.optional) << ", "
     << fmt::format(k_json_obj, "services");
   bool first = true;
   for (auto const& s : manifest.services)
