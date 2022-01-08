@@ -993,7 +993,7 @@ void nsmodule::write_tests(std::ostream& ofs, nsbuild const& bc) const
 {
   for (auto const& t : tests)
   {
-    ofs << fmt::format("\nadd_test(NAME {}\n  COMMAND ${config_rt_dir}/bin/{} ", t.name, target_name);
+    ofs << fmt::format("\nadd_test(NAME {}\n  COMMAND ${{config_rt_dir}}/bin/{} ", t.name, target_name);
     ofs << fmt::format("--test=\"{}\" ", t.name);
     bool first = true;
     for (auto const& p : t.parameters)
