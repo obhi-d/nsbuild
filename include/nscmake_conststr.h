@@ -32,6 +32,8 @@ if (NOT DEFINED nsplatform)
 
 endif()
 
+## Compile commands
+
 include(TestBigEndian)
 TEST_BIG_ENDIAN(nsbuild_host_is_big_endian)
 
@@ -40,6 +42,7 @@ add_custom_target(nsbuild-check ALL
   COMMAND ${{nsbuild}} --check "${{__nsbuild_preset}}" "${{CMAKE_COMMAND}}" "${{CMAKE_BINARY_DIR}}" -B=${{CMAKE_BUILD_TYPE}} -X="${{CMAKE_CXX_COMPILER}}" -C="${{CMAKE_C_COMPILER}}" -V="${{CMAKE_CXX_COMPILER_VERSION}}" -G="${{CMAKE_GENERATOR}}" -I="${{CMAKE_GENERATOR_INSTANCE}}" -U="${{CMAKE_GENERATOR_PLATFORM}}" -H="${{CMAKE_GENERATOR_TOOLSET}}" -T="${{CMAKE_TOOLCHAIN}}"  -N=${{GENERATOR_IS_MULTI_CONFIG}} -P=${{nsplatform}}
   WORKING_DIRECTORY ${{__main_nsbuild_dir}}
 )
+
 
 # set_property(
 #   DIRECTORY
@@ -52,6 +55,12 @@ set(CMAKE_UNITY_BUILD ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include(CTest)
 add_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3} ${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3}/main)
+
+add_custom_target(nsbuild-copy-ccjson ALL
+  COMMAND ${{CMAKE_COMMAND}} -E create_symlink ${{CMAKE_BINARY_DIR}}/compile_commands.json ${{__main_nsbuild_dir}}/compile_commands.json 
+  DEPENDS nsbuild-check
+)
+
 
 )_";
 
