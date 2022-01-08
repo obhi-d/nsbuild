@@ -53,6 +53,7 @@ add_custom_target(nsbuild-check ALL
 
 set(CMAKE_UNITY_BUILD ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 include(CTest)
 add_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3} ${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3}/main)
 
