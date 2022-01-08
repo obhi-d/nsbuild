@@ -83,7 +83,8 @@ struct nsmodule
   bool disabled      = false;
   
   // .. Options
-  bool console_app              = false;
+  bool console_app       = false;
+  bool was_fetch_rebuilt = false;
 
   nsmodule()                    = default;
   nsmodule(nsmodule&&) noexcept = default;

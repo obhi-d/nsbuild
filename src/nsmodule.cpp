@@ -424,6 +424,7 @@ void nsmodule::fetch_content(nsbuild const& bc)
     nslog::print(fmt::format("Rebuilding {}..", name));
     build_fetched_content(bc);
     write_fetch_meta(bc, sha);
+    was_fetch_rebuilt = true;
   }
 }
 

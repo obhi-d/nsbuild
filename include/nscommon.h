@@ -233,6 +233,7 @@ struct nsmetastate
   bool        meta_missing       = false;
   bool        is_dirty           = false;
   bool        fail_with_rebuild  = false;
+  bool        exit_and_rebuild   = false;
   runas       ras                = runas::main;
 };
 

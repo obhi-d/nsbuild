@@ -137,6 +137,7 @@ int  main(int argc, char const* argv[])
   }
   catch (module_regenerated ex)
   {
+    return -30; // code -30 means rebuild
   }
   catch (std::exception ex)
   {

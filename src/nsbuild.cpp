@@ -112,7 +112,7 @@ void nsbuild::before_all()
   copy_installed_binaries();
   write_meta(get_full_cache_dir());
   
-  if (state.is_dirty)
+  if (state.is_dirty || state.exit_and_rebuild)
   {
     nslog::print("******************************************");
     nslog::print("*** Modules were regenerated, rebuild! ***");
@@ -310,6 +310,8 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
 
   sorted_targets.push_back(name);
   mod.process(*this, name, targ);
+  if (mod.was_fetch_rebuilt)
+    state.exit_and_rebuild = true;
 }
 
 void nsbuild::copy_installed_binaries() 
