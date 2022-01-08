@@ -41,6 +41,8 @@ struct nsbuild : public neo::command_handler
 
   std::string ignore_media_from = "Internal";
 
+  bool unity_build = false;
+
   // Project name
   std::string project_name;
 

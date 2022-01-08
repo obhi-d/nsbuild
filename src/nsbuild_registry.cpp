@@ -37,6 +37,12 @@ ns_cmd_handler(project_name, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(unity_build, build, state, cmd)
+{
+  build.unity_build = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(manifests_dir, build, state, cmd)
 {
   build.manifests_dir = get_idx_param(cmd, 0);
@@ -613,6 +619,7 @@ ns_registry(nsbuild)
 
   ns_cmd(project_name);
   ns_cmd(version);
+  ns_cmd(unity_build);
   ns_cmd(sdk_dir);
   ns_cmd(cmake_gen_dir);
   ns_cmd(frameworks_dir);

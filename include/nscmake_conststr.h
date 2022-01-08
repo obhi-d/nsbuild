@@ -43,7 +43,6 @@ add_custom_target(nsbuild-check ALL
   WORKING_DIRECTORY ${{__main_nsbuild_dir}}
 )
 
-
 # set_property(
 #   DIRECTORY
 #   APPEND
@@ -51,7 +50,7 @@ add_custom_target(nsbuild-check ALL
 #   {1}/CMakeLists.txt
 # )
 
-set(CMAKE_UNITY_BUILD ON)
+set(CMAKE_UNITY_BUILD {5})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 include(CTest)

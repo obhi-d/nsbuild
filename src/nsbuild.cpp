@@ -27,7 +27,8 @@ void nsbuild::main_project()
     std::ofstream ff{cml};
     ff << fmt::format(cmake::k_main_preamble, project_name, out_dir, cmake::path(nsprocess::get_nsbuild_path()),
                       cmake_gen_dir,
-                      version);
+                      version,
+                      unity_build ? "ON" : "OFF");
   }
 
   {
