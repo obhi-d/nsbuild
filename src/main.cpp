@@ -7,7 +7,7 @@
 #define NS_DLL_EXT "(\\.dll$)|(\\.json$)"
 #include <Windows.h>
 #else
-#define NS_DLL_EXT "(\\.so[\.0-9]*$)|(\\.json$)"
+#define NS_DLL_EXT "(\\.so[\\.0-9]*$)|(\\.json$)"
 #endif
 
 #include <nslog.h>

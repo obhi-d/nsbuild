@@ -15,7 +15,7 @@ public:
 
   static neo::retcode print_enter_scope(neo::command_handler* this_,
     neo::state_machine const& ctx,
-    neo::command const& cmd) noexcept {}
+    neo::command const& cmd) noexcept { return neo::retcode::e_success; }
 
   static void leave_scope(neo::command_handler* this_,
     neo::state_machine const& ctx,
@@ -23,7 +23,7 @@ public:
 
   static neo::retcode print_command(neo::command_handler* _,
     neo::state_machine const& ctx,
-    neo::command const& cmd) {}
+    neo::command const& cmd) { return neo::retcode::e_success; }
 
   std::ostream& out;
   help_type type;
