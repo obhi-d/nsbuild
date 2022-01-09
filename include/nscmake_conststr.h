@@ -81,7 +81,7 @@ find_program(CMAKE_CXX_CPPCHECK NAMES cppcheck)
   if (CMAKE_CXX_CPPCHECK)
     list(
         APPEND CMAKE_CXX_CPPCHECK 
-            "--enable=warning"
+            "--enable=all"
             "--inconclusive"
             "--inline-suppr"
             "--suppressions-list=${{CMAKE_CURRENT_LIST_DIR}}/CppCheckSuppressions.txt"
