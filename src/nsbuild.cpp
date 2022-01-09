@@ -429,7 +429,7 @@ void nsbuild::update_macros()
   macros["config_sdk_dir"]        = cmake::path(get_full_sdk_dir());
   macros["config_rt_dir"]         = cmake::path(get_full_rt_dir());
   macros["config_frameworks_dir"] = cmake::path((pwd / frameworks_dir));
-  macros["config_download_dir"]   = cmake::path((pwd / out_dir));
+  macros["config_dl_dir"]         = cmake::path(get_full_dl_dir());
   macros["config_preset_name"]    = cmakeinfo.cmake_preset_name;
   macros["config_type"]           = cmakeinfo.cmake_config;
   macros["config_platform"]       = cmakeinfo.target_platform;
