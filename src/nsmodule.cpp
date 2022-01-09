@@ -419,7 +419,7 @@ void nsmodule::fetch_content(nsbuild const& bc)
   if (sha.empty())
     return;
 
-  if (fetch_changed(bc, sha))
+  if (fetch_changed(bc, sha) || fetch->force_build)
   {
     nslog::print(fmt::format("Rebuilding {}..", name));
     build_fetched_content(bc);
@@ -1063,14 +1063,19 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
         if (!dir_entry.is_regular_file() && !dir_entry.is_symlink())
           continue;
         auto name = dir_entry.path().filename().generic_string();
-        nslog::print(fmt::format("Checking: {}", name));
+        if (bc.verbose)
+          nslog::print(fmt::format("File to copy : {}", name));
         bool copy = false;
 
         if (std::regex_search(name, bc.dll_ext))
         {
+          if (bc.verbose)
+            nslog::print(fmt::format("Copying : {}", name));
           std::filesystem::copy(dir_entry.path(), bc.get_full_rt_dir() / dir_entry.path().filename(), copy_options);
           continue;
         }
+        else if (bc.verbose)
+          nslog::print(fmt::format("Skipping copy of : {}", name));
 
         if (fetch->runtime_files.empty())
           continue;

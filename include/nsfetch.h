@@ -15,8 +15,8 @@ struct nsfetch
   std::string_view         version;
   std::vector<nsvars>      args;
   std::string_view         package;
-  std::string_view         extern_name;         
-  std::string_view         namespace_name;         
+  std::string_view         extern_name;
+  std::string_view         namespace_name;
   std::vector<std::string> components;
   std::vector<std::string> targets;
   std::vector<nsfilecopy>  runtime_install;
@@ -26,4 +26,5 @@ struct nsfetch
   bool                     skip_namespace = false;
   bool                     runtime_only   = false;
   bool                     fetch_content  = false;
+  bool                     force_build    = false;
 };

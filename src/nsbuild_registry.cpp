@@ -43,6 +43,12 @@ ns_cmd_handler(unity_build, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(verbose, build, state, cmd)
+{
+  build.verbose = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(manifests_dir, build, state, cmd)
 {
   build.manifests_dir = get_idx_param(cmd, 0);
@@ -383,6 +389,12 @@ ns_cmd_handler(license, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(force_build, build, state, cmd)
+{
+  build.s_nsfetch->force_build = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(commit, build, state, cmd)
 {
   build.s_nsfetch->commit = get_idx_param(cmd, 0);
@@ -620,6 +632,7 @@ ns_registry(nsbuild)
   ns_cmd(project_name);
   ns_cmd(version);
   ns_cmd(unity_build);
+  ns_cmd(verbose);
   ns_cmd(sdk_dir);
   ns_cmd(cmake_gen_dir);
   ns_cmd(frameworks_dir);
@@ -685,6 +698,7 @@ ns_registry(nsbuild)
   ns_scope_auto(fetch)
   {
     ns_cmd(license);
+    ns_cmd(force_build);
     ns_cmd(commit);
     ns_scope_def(args) { ns_star(var); }
     ns_cmd(package);
