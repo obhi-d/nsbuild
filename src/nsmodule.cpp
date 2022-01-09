@@ -1051,7 +1051,10 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
       auto path = get_full_sdk_dir(bc) / l;
 
       if (!fs::exists(path))
+      {
+        nslog::error(fmt::format("Path does not exist: {}", path.string()));
         continue;
+      }
 
       auto       it           = fs::directory_iterator{path};
       const auto copy_options = fs::copy_options::update_existing | fs::copy_options::recursive;
@@ -1060,6 +1063,7 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
         if (!dir_entry.is_regular_file() && !dir_entry.is_symlink())
           continue;
         auto name = dir_entry.path().filename().generic_string();
+        nslog::print(fmt::format("Checking: {}", name));
         bool copy = false;
 
         if (std::regex_search(name, bc.dll_ext))
