@@ -26,7 +26,10 @@ struct nspreset
 
   std::vector<cfg> configs;
 
-  bool             static_libs = false;
+  bool static_libs = false;
+  bool cppcheck    = false;
+
+  std::string cppcheck_suppression;
 
   static void write(std::ostream&, std::uint32_t options, nameval_list const& extras, nsbuild const&);
   // write current preset

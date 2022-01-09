@@ -52,14 +52,38 @@ add_custom_target(nsbuild-check ALL
 
 set(CMAKE_UNITY_BUILD {5})
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+## Tests
+
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
 include(CTest)
+
 add_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3} ${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3}/main)
 
 add_custom_target(nsbuild-copy-ccjson ALL
   COMMAND ${{CMAKE_COMMAND}} -E copy_if_different ${{CMAKE_BINARY_DIR}}/compile_commands.json ${{__main_nsbuild_dir}}/compile_commands.json 
   DEPENDS nsbuild-check
 )
+
+
+)_";
+
+static inline constexpr char k_include_mods_preamble[] = R"_(
+
+## Cppcheck setup
+set(__nsbuild_use_cppcheck {0})
+if (__nsbuild_use_cppcheck)
+find_program(CMAKE_CXX_CPPCHECK NAMES cppcheck)
+  if (CMAKE_CXX_CPPCHECK)
+    list(
+        APPEND CMAKE_CXX_CPPCHECK 
+            "--enable=warning"
+            "--inconclusive"
+            "--force" 
+            "--inline-suppr"
+            "--suppressions-list=${{CMAKE_CURRENT_LIST_DIR}}/CppCheckSuppressions.txt"
+    )
+  endif()
+endif()
 
 
 )_";

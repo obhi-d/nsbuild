@@ -449,6 +449,25 @@ void nsbuild::write_include_modules() const
     nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
     throw std::runtime_error("Could not create CMakeLists.txt");
   }
+
+  auto const& preset = *s_current_preset;
+  cmake::line(ofs, "Setup", '~', true);
+  ofs << fmt::format(cmake::k_include_mods_preamble, preset.cppcheck ? "ON" : "OFF");
+
+  if (preset.cppcheck)
+  {
+    auto supression_file_cpy = get_full_cfg_dir() / cmake_gen_dir / "CppCheckSuppressions.txt";
+    auto supression_file = get_full_scan_dir() / preset.cppcheck_suppression;
+    if (preset.cppcheck_suppression.empty() || !std::filesystem::exists(supression_file))
+    {
+      std::ofstream ofs{supression_file_cpy};
+    }
+    else
+    {
+      std::filesystem::copy_file(supression_file, supression_file_cpy, std::filesystem::copy_options::update_existing);
+    }
+  }
+
   macros.print(ofs);
   write_cxx_options(ofs);
 
@@ -465,8 +484,8 @@ void nsbuild::write_include_modules() const
 
 void nsbuild::write_cxx_options(std::ostream& ofs) const
 {
-  ofs << "\n# Compiler and Linker options"
-         "\nset(__module_cxx_compile_flags)"
+  cmake::line(ofs, "Compiler and Linker options", '*', true);
+  ofs << "\nset(__module_cxx_compile_flags)"
          "\nset(__module_cxx_linker_flags)";
 
   auto const& preset = *s_current_preset;

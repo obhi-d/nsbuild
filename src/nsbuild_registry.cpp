@@ -83,6 +83,18 @@ ns_cmd_handler(static_libs, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(cppcheck, build, state, cmd)
+{
+  build.s_nspreset->cppcheck = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(cppcheck_suppression, build, state, cmd)
+{
+  build.s_nspreset->cppcheck_suppression = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
 ns_star_handler(timestamps, build, state, cmd)
 {
   build.meta.timestamps[std::string{cmd.name()}] = get_idx_param(cmd, 0);
@@ -644,6 +656,8 @@ ns_registry(nsbuild)
     ns_cmd(description);
     ns_cmd(allow);
     ns_cmd(disallow);
+    ns_cmd(cppcheck);
+    ns_cmd(cppcheck_suppression);
     ns_scope_def(config)
     {
       ns_cmd(compiler_flags);
