@@ -1071,7 +1071,7 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
         {
           if (bc.verbose)
             nslog::print(fmt::format("Copying : {}", name));
-          std::filesystem::copy(dir_entry.path(), bc.get_full_rt_dir() / dir_entry.path().filename(), copy_options);
+          std::filesystem::copy(dir_entry.path(), bc.get_full_rt_dir() / "bin" / dir_entry.path().filename(), copy_options);
           continue;
         }
         else if (bc.verbose)
