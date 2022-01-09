@@ -1048,8 +1048,12 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
     for (auto const& l : fetch->runtime_loc)
     {
       namespace fs = std::filesystem;
+      auto path = get_full_sdk_dir(bc) / l;
 
-      auto       it           = fs::directory_iterator{get_full_sdk_dir(bc) / l};
+      if (!fs::exists(path))
+        continue;
+
+      auto       it           = fs::directory_iterator{path};
       const auto copy_options = fs::copy_options::update_existing | fs::copy_options::recursive;
       for (auto const& dir_entry : it)
       {
@@ -1057,16 +1061,22 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
           continue;
         auto name = dir_entry.path().filename().generic_string();
         bool copy = false;
+
         if (std::regex_search(name, bc.dll_ext))
+        {
           std::filesystem::copy(dir_entry.path(), bc.get_full_rt_dir() / dir_entry.path().filename(), copy_options);
+          continue;
+        }
 
         if (fetch->runtime_files.empty())
           continue;
+
         name = dir_entry.path().generic_string();
         for (auto const& rt : fetch->runtime_files)
         {
           std::smatch match;
-          if (!std::regex_search(name, match, bc.dll_ext))
+          std::regex rtregex = std::regex(rt, std::regex_constants::icase);
+          if (!std::regex_search(name, match, rtregex))
             continue;
           if (match.empty())
             continue;
