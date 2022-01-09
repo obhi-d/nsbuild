@@ -175,7 +175,10 @@ void nsbuild::read_meta(std::filesystem::path const& path)
   }
 }
 
-void nsbuild::act_meta() {}
+void nsbuild::act_meta() 
+{ 
+  meta.ordered_timestamps.emplace_back(fmt::format("\n  build_main : \"{}\";", build_ns_sha));
+}
 
 void nsbuild::write_meta(std::filesystem::path const& path)
 {
@@ -191,8 +194,7 @@ void nsbuild::write_meta(std::filesystem::path const& path)
   }
   {
     std::ofstream ofs{path / "module_info.ns"};
-    ofs << "meta {\n timestamps {"
-        << "\n  main_build: \"" << build_ns_sha << "\";\n";
+    ofs << "meta {\n timestamps {";
     for (auto& t : meta.ordered_timestamps)
     {
       ofs << t; // fmt::format("\n  {} : \"{}\";", t.first, t.second);

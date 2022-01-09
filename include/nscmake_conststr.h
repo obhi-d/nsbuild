@@ -77,7 +77,8 @@ set(CMAKE_UNITY_BUILD {1})
 ## Cppcheck setup
 set(__nsbuild_use_cppcheck {0})
 if (__nsbuild_use_cppcheck)
-find_program(CMAKE_CXX_CPPCHECK NAMES cppcheck)
+  message(" -- nsbuild: cppcheck is enabled")
+  find_program(CMAKE_CXX_CPPCHECK NAMES cppcheck)
   if (CMAKE_CXX_CPPCHECK)
     list(
         APPEND CMAKE_CXX_CPPCHECK 
@@ -87,6 +88,8 @@ find_program(CMAKE_CXX_CPPCHECK NAMES cppcheck)
             "--suppressions-list=${{CMAKE_CURRENT_LIST_DIR}}/CppCheckSuppressions.txt"
     )
   endif()
+else()
+  set(CMAKE_CXX_CPPCHECK "")
 endif()
 
 
