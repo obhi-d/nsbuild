@@ -41,7 +41,6 @@ struct nsbuild : public neo::command_handler
 
   std::string ignore_media_from = "Internal";
 
-  bool unity_build = false;
   bool verbose     = false;
   bool cppcheck    = false;
 

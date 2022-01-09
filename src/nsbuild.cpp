@@ -27,8 +27,7 @@ void nsbuild::main_project()
     std::ofstream ff{cml};
     ff << fmt::format(cmake::k_main_preamble, project_name, out_dir, cmake::path(nsprocess::get_nsbuild_path()),
                       cmake_gen_dir,
-                      version,
-                      unity_build ? "ON" : "OFF");
+                      version);
   }
 
   {
@@ -452,7 +451,7 @@ void nsbuild::write_include_modules() const
 
   auto const& preset = *s_current_preset;
   cmake::line(ofs, "Setup", '~', true);
-  ofs << fmt::format(cmake::k_include_mods_preamble, preset.cppcheck ? "ON" : "OFF");
+  ofs << fmt::format(cmake::k_include_mods_preamble, preset.cppcheck ? "ON" : "OFF", preset.unity_build ? "ON" : "OFF");
 
   if (preset.cppcheck)
   {

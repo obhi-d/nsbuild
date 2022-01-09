@@ -28,6 +28,7 @@ struct nspreset
 
   bool static_libs = false;
   bool cppcheck    = false;
+  bool unity_build = false;
 
   std::string cppcheck_suppression;
 

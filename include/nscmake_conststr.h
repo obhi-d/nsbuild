@@ -17,6 +17,7 @@ set(__nsbuild_app_options)
 set(__nsbuild_console_app_options)
 
 if (NOT DEFINED nsplatform)
+
   set(nsplatform)
   set(__main_nsbuild_dir "${{CMAKE_CURRENT_LIST_DIR}}")
 
@@ -32,12 +33,7 @@ if (NOT DEFINED nsplatform)
 
 endif()
 
-## Compile commands
 
-include(TestBigEndian)
-TEST_BIG_ENDIAN(nsbuild_host_is_big_endian)
-
-# file(GENERATE OUTPUT ${{CMAKE_BINARY_DIR}}/FetchBuild.txt CONTENT "$<...>")
 add_custom_target(nsbuild-check ALL
   COMMAND ${{nsbuild}} --check "${{__nsbuild_preset}}" "${{CMAKE_COMMAND}}" "${{CMAKE_BINARY_DIR}}" -B=${{CMAKE_BUILD_TYPE}} -X="${{CMAKE_CXX_COMPILER}}" -C="${{CMAKE_C_COMPILER}}" -V="${{CMAKE_CXX_COMPILER_VERSION}}" -G="${{CMAKE_GENERATOR}}" -I="${{CMAKE_GENERATOR_INSTANCE}}" -U="${{CMAKE_GENERATOR_PLATFORM}}" -H="${{CMAKE_GENERATOR_TOOLSET}}" -T="${{CMAKE_TOOLCHAIN}}"  -N=${{GENERATOR_IS_MULTI_CONFIG}} -P=${{nsplatform}}
   WORKING_DIRECTORY ${{__main_nsbuild_dir}}
@@ -50,8 +46,10 @@ add_custom_target(nsbuild-check ALL
 #   {1}/CMakeLists.txt
 # )
 
-set(CMAKE_UNITY_BUILD {5})
+## Compile commands
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 ## Tests
 
 set_property(GLOBAL PROPERTY CTEST_TARGETS_ADDED 1)
@@ -68,6 +66,13 @@ add_custom_target(nsbuild-copy-ccjson ALL
 )_";
 
 static inline constexpr char k_include_mods_preamble[] = R"_(
+
+## Setup endianness
+include(TestBigEndian)
+TEST_BIG_ENDIAN(nsbuild_host_is_big_endian)
+
+## Unity build setup
+set(CMAKE_UNITY_BUILD {1})
 
 ## Cppcheck setup
 set(__nsbuild_use_cppcheck {0})

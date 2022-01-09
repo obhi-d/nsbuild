@@ -37,12 +37,6 @@ ns_cmd_handler(project_name, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(unity_build, build, state, cmd)
-{
-  build.unity_build = to_bool(get_idx_param(cmd, 0));
-  return neo::retcode::e_success;
-}
-
 ns_cmd_handler(verbose, build, state, cmd)
 {
   build.verbose = to_bool(get_idx_param(cmd, 0));
@@ -76,6 +70,13 @@ ns_cmd_handler(compiler_name, build, state, cmd)
 }
 
 ns_cmd_handler(timestamps, build, state, cmd) { return neo::retcode::e_success; }
+
+
+ns_cmd_handler(unity_build, build, state, cmd)
+{
+  build.s_nspreset->unity_build = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
 
 ns_cmd_handler(static_libs, build, state, cmd)
 {
