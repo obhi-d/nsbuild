@@ -153,12 +153,20 @@ void nsbuild::read_meta(std::filesystem::path const& path)
     return;
   }
 
+  auto it = meta.timestamps.find("main_build");
+  if (it != meta.timestamps.end())
+  {
+    if (it->second != build_ns_sha)
+      state.is_dirty = true;
+  }
+
   if (meta.compiler_version != cmakeinfo.cmake_cppcompiler_version)
   {
     meta.compiler_version = cmakeinfo.cmake_cppcompiler_version;
     state.delete_builds   = true;
     state.is_dirty        = true;
   }
+
   if (meta.compiler_name != cmakeinfo.cmake_cppcompiler)
   {
     meta.compiler_name  = cmakeinfo.cmake_cppcompiler;
@@ -183,7 +191,8 @@ void nsbuild::write_meta(std::filesystem::path const& path)
   }
   {
     std::ofstream ofs{path / "module_info.ns"};
-    ofs << "meta {\n timestamps {";
+    ofs << "meta {\n timestamps {"
+        << "\n  main_build: " << build_ns_sha << "\n";
     for (auto& t : meta.ordered_timestamps)
     {
       ofs << t; // fmt::format("\n  {} : \"{}\";", t.first, t.second);
@@ -198,10 +207,10 @@ void nsbuild::scan_main(std::filesystem::path sp)
   {
     wd = sp;
     std::filesystem::current_path(wd);
-    scan_file("Build.ns", true);
+    scan_file("Build.ns", true, &build_ns_sha);
   }
   else
-    scan_file(sp / "Build.ns", true);
+    scan_file(sp / "Build.ns", true, &build_ns_sha);
 }
 
 void nsbuild::read_framework(std::filesystem::path sp)
