@@ -704,8 +704,16 @@ void nsmodule::write_find_package(std::ostream& ofs, nsbuild const& bc) const
     }
     else
     {
-      for (auto const& c : fetch->targets)
-        ofs << fmt::format("\n   {}::{}", namespace_name, c);
+      if (fetch->skip_namespace)
+      {
+        for (auto const& c : fetch->targets)
+          ofs << fmt::format("\n   {}", c);
+      }
+      else
+      {
+        for (auto const& c : fetch->targets)
+          ofs << fmt::format("\n   {}::{}", namespace_name, c);
+      }
     }
     ofs << "\n)";
   }
