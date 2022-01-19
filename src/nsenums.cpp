@@ -163,6 +163,8 @@ void nsenum_context::generate(std::string mod_name, nsmodule_type type,
 nsenum::nsenum(nsenum_context& ictx, nlohmann::json const& jv)
     : ctx{ictx}, jenum{jv}
 {
+  if (jenum.find("debug") != jenum.end())
+    halt();
   auto it = jenum.find("name");
   if (it != jenum.end())
     name = (*it).get<std::string>();
@@ -301,7 +303,7 @@ void nsenum_entry::fill_tuples(bool                     custom_strings,
                                std::vector<std::string> values)
 {
   tuple_values = std::move(values);
-  if (custom_strings && values.size() >= 2)
+  if (custom_strings && tuple_values.size() >= 2)
     string_value = tuple_values[1];
 }
 

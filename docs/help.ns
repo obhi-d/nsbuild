@@ -102,6 +102,7 @@ framework(about = "Framework level declaration, can exclude modules",
            "$fetch_sdk_dir : Directory where built repository is installed, this is not the same as interface.install unless specified"
          ])
   {
+    force_build (about = "Force build");
     license (about = "License file of the external module, this will be added to the generated external license file", params = ["License file"]);
     commit (about = "The commit hash to checkout", params = ["Commit sha256"]);
     args (about = "CMake args to pass to cmake build, should be a string list", 
