@@ -15,6 +15,7 @@ set(nsbuild "{2}")
 
 set(__nsbuild_app_options)
 set(__nsbuild_console_app_options)
+set(__nsbuild_root ${{CMAKE_CURRENT_LIST_DIR}})
 
 if (NOT DEFINED nsplatform)
 
@@ -92,6 +93,10 @@ else()
   set(CMAKE_CXX_CPPCHECK "")
 endif()
 
+set(__natvis_file {2})
+if (MSVC AND __natvis_file)
+  set(__natvis_file "${{__nsbuild_root}}/${{__natvis_file}}")
+endif()
 
 )_";
 
@@ -102,7 +107,7 @@ static inline constexpr char k_find_package[] =
     "\nfind_package({} {} REQUIRED PATHS ${{fetch_sdk_dir}} NO_DEFAULT_PATH)";
 
 static inline constexpr char k_find_package_comp_start[] = "\nfind_package({} {} REQUIRED COMPONENTS ";
-static inline constexpr char k_find_package_comp_end[] = "PATHS ${fetch_sdk_dir} NO_DEFAULT_PATH)";
+static inline constexpr char k_find_package_comp_end[]   = "PATHS ${fetch_sdk_dir} NO_DEFAULT_PATH)";
 
 static inline constexpr char k_write_dependency[] = R"_(
 
@@ -261,7 +266,6 @@ ExternalProject_Add(${fetch_extern_name}
     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
     -DCMAKE_INSTALL_PREFIX=${fetch_sdk_dir})_";
 
-
 static inline constexpr char k_ext_proj_custom[] = R"_(
 
 if (NOT __fetch_configure_cmd)
@@ -301,7 +305,6 @@ include(ExternalProject)
 
 
 )_";
-
 
 static inline constexpr char k_module_install_cfg_in[] = R"_(
 

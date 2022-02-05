@@ -55,6 +55,12 @@ ns_cmd_handler(plugin_dir, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(natvis, build, state, cmd)
+{
+  build.natvis = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(meta, build, state, cmd) { return neo::retcode::e_success; }
 
 ns_cmd_handler(compiler_version, build, state, cmd)
@@ -650,6 +656,7 @@ ns_registry(nsbuild)
   ns_cmd(cmake_gen_dir);
   ns_cmd(frameworks_dir);
   ns_cmd(runtime_dir);
+  ns_cmd(natvis);
 
   ns_scope_cust(preset, clear_presets)
   {

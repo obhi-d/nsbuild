@@ -462,7 +462,7 @@ void nsbuild::write_include_modules() const
 
   auto const& preset = *s_current_preset;
   cmake::line(ofs, "Setup", '~', true);
-  ofs << fmt::format(cmake::k_include_mods_preamble, preset.cppcheck ? "ON" : "OFF", preset.unity_build ? "ON" : "OFF");
+  ofs << fmt::format(cmake::k_include_mods_preamble, preset.cppcheck ? "ON" : "OFF", preset.unity_build ? "ON" : "OFF", natvis);
 
   if (preset.cppcheck)
   {

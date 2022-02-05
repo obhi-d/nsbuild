@@ -51,6 +51,8 @@ struct nsbuild : public neo::command_handler
 
   std::string build_ns_sha;
 
+  std::string natvis;
+
   std::regex dll_ext;
 
   nscmakeinfo cmakeinfo;

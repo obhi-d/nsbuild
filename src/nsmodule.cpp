@@ -534,7 +534,7 @@ void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string co
     ofs << fmt::format("\nadd_custom_target({} ALL SOURCES ${{data_group}})", name);
     break;
   case nsmodule_type::exe:
-    ofs << fmt::format("\nadd_executable({} {} ${{__module_sources}})", name,
+    ofs << fmt::format("\nadd_executable({} {} ${{__module_sources}} ${{__natvis_file}})", name,
                        console_app ? "${__nsbuild_console_app_options}" : "${__nsbuild_app_options}");
     break;
   case nsmodule_type::ref:
@@ -553,7 +553,7 @@ void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string co
     ofs << fmt::format("\nadd_library({} MODULE ${{__module_sources}})", name);
     break;
   case nsmodule_type::test:
-    ofs << fmt::format("\nadd_executable({} {} ${{__module_sources}})", name,
+    ofs << fmt::format("\nadd_executable({} {} ${{__module_sources}} ${{__natvis_file}})", name,
                        console_app ? "${__nsbuild_console_app_options}" : "${__nsbuild_app_options}");
     break;
   default:
