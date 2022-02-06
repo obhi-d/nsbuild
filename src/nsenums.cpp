@@ -340,7 +340,7 @@ void nsenum::parse_entries()
     else if (usage == nsenum_usage::as_flags)
     {
 
-      default_entry                 = nsenum_entry("None", "(utype)-1", true);
+      default_entry                 = nsenum_entry("None", "(" + type + ")-1", true);
       has_auto_default              = true;
       has_special_default_autoflags = true;
     }
