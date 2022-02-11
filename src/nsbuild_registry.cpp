@@ -77,7 +77,6 @@ ns_cmd_handler(compiler_name, build, state, cmd)
 
 ns_cmd_handler(timestamps, build, state, cmd) { return neo::retcode::e_success; }
 
-
 ns_cmd_handler(unity_build, build, state, cmd)
 {
   build.s_nspreset->unity_build = to_bool(get_idx_param(cmd, 0));
@@ -650,7 +649,6 @@ ns_registry(nsbuild)
 
   ns_cmd(project_name);
   ns_cmd(version);
-  ns_cmd(unity_build);
   ns_cmd(verbose);
   ns_cmd(sdk_dir);
   ns_cmd(cmake_gen_dir);
@@ -666,6 +664,7 @@ ns_registry(nsbuild)
     ns_cmd(disallow);
     ns_cmd(cppcheck);
     ns_cmd(cppcheck_suppression);
+    ns_cmd(unity_build);
     ns_scope_def(config)
     {
       ns_cmd(compiler_flags);
@@ -709,12 +708,9 @@ ns_registry(nsbuild)
 
   ns_subalias_cust(postbuild, clear_buildstep, prebuild);
 
-  ns_scope_def(test_namespace) 
+  ns_scope_def(test_namespace)
   {
-    ns_scope_def(test_class) 
-    {
-      ns_cmd(test_name);
-    }
+    ns_scope_def(test_class) { ns_cmd(test_name); }
   }
 
   ns_scope_auto(fetch)
