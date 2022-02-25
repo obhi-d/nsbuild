@@ -110,7 +110,7 @@ struct nsenum
   nsenum_context const& ctx;
   std::string           name;
   std::string           type           = "uint64";
-  std::string           namespace_name = "lumiere";
+  std::string           namespace_name = "lxe";
   std::string           comment;
   std::string           default_value;
   std::string_view      one;

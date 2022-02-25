@@ -21,8 +21,8 @@ void nsenum_context::start_namespace(std::ostream& ofs, std::string str)
     start_pos += to.length(); // ...
   }
   ofs << "\nnamespace " << str << "\n{";
-  if (str != "lumiere")
-    ofs << "\nusing namespace lumiere;";
+  if (str != "lxe")
+    ofs << "\nusing namespace lxe;";
 }
 
 void nsenum_context::end_namespace(std::ostream& ofs, std::string const& str)
@@ -82,8 +82,8 @@ void nsenum_context::parse(std::string const& mod_name, std::string const& heade
   nlohmann::json js;
   j >> js;
   nsenum_context ctx;
-  ctx.includes.emplace("FlagType.h");
-  ctx.includes.emplace("StringKey.h");
+  ctx.includes.emplace("FlagType.hpp");
+  ctx.includes.emplace("StringKey.hpp");
   std::vector<nsenum> enums;
   for (auto const& en : js)
     enums.emplace_back(ctx, en);
@@ -126,24 +126,24 @@ void nsenum_context::generate(std::string mod_name, nsmodule_type type, std::fil
   if (cpp.is_open())
   {
     write_file_header(cpp, false);
-    headers.emplace_back(fmt::format("Lum{}.h", mod_name));
+    headers.emplace_back(fmt::format("Lum{}.hpp", mod_name));
 
     if (has_enums_json)
     {
-      auto          hname  = fmt::format("Lum{}Enums.h", mod_name);
+      auto          hname  = fmt::format("Lum{}Enums.hpp", mod_name);
       auto          header = gen / hname;
       std::ofstream hpp{header};
       if (hpp.is_open())
       {
         write_file_header(hpp, true);
         parse(mod_name, hname, enums_json, cpp, hpp, headers, type == nsmodule_type::lib || type == nsmodule_type::ref);
-        headers.emplace_back(fmt::format("Lum{}Enums.h", mod_name));
+        headers.emplace_back(fmt::format("Lum{}Enums.hpp", mod_name));
       }
     }
 
     if (has_lenums_json)
     {
-      auto          hname  = fmt::format("Lum{}LocalEnums.h", mod_name);
+      auto          hname  = fmt::format("Lum{}LocalEnums.hpp", mod_name);
       auto          header = gen / "local" / hname;
       std::ofstream hpp{header};
       if (hpp.is_open())
@@ -188,7 +188,7 @@ nsenum::nsenum(nsenum_context& ictx, nlohmann::json const& jv) : ctx{ictx}, jenu
       if (opt == "string-key")
       {
         string_key = true;
-        ictx.includes.emplace("StringKey.h");
+        ictx.includes.emplace("StringKey.hpp");
       }
       if (opt == "custom-strings")
         custom_strings = true;
