@@ -59,8 +59,7 @@ bool has_headers(nsmodule_type t)
   }
 }
 
-bool is_executable(nsmodule_type t) 
-{ return t == nsmodule_type::exe || t == nsmodule_type::test; }
+bool is_executable(nsmodule_type t) { return t == nsmodule_type::exe || t == nsmodule_type::test; }
 
 void nsmodule::process(nsbuild const& bc, std::string const& targ_name, nstarget& targ)
 {
@@ -131,7 +130,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     prebuild.push_back(step);
   }
   else if (type == nsmodule_type::test)
-  {    
+  {
   }
 
   if (has_headers(type))
@@ -161,7 +160,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     if (type == nsmodule_type::test)
       intf[nsmodule::priv_intf].back().definitions.emplace_back("L_TEST_APP", fmt::format("\"{}\"", name));
   }
-  
+
   if (!bc.s_current_preset->static_libs)
   {
     if (intf[nsmodule::priv_intf].empty())
@@ -225,7 +224,7 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, ns
     macros["fetch_repo"]         = fetch->repo;
     macros["fetch_commit"]       = fetch->commit;
     macros["fetch_components"]   = components;
-    macros["fetch_extern_name"]   = fetch->extern_name;
+    macros["fetch_extern_name"]  = fetch->extern_name;
     // macros["fetch_ts_dir"]       = cmake::path(get_full_ts_dir(bc));
   }
 }
@@ -254,16 +253,12 @@ void nsmodule::generate_plugin_manifest(nsbuild const& bc)
     return;
 
   std::ofstream f{get_full_gen_dir(bc) / fmt::format("{0}Manifest.json", name)};
-  f << "{" 
-    << fmt::format(k_json_val, "author", manifest.author) << ", "
-    << fmt::format(k_json_val, "company", manifest.company) << ", "
-    << fmt::format(k_json_val, "binary", target_name) << ", "
-    << fmt::format(k_json_val, "version", version.empty() ? bc.version : version) << ", "
+  f << "{" << fmt::format(k_json_val, "author", manifest.author) << ", "
+    << fmt::format(k_json_val, "company", manifest.company) << ", " << fmt::format(k_json_val, "binary", target_name)
+    << ", " << fmt::format(k_json_val, "version", version.empty() ? bc.version : version) << ", "
     << fmt::format(k_json_val, "compatibility", manifest.compatibility) << ", "
-    << fmt::format(k_json_val, "context", manifest.context) << ", "
-    << fmt::format(k_json_val, "desc", manifest.desc) << ", "
-    << fmt::format(k_json_bool,"optional", manifest.optional) << ", "
-    << fmt::format(k_json_obj, "services");
+    << fmt::format(k_json_val, "context", manifest.context) << ", " << fmt::format(k_json_val, "desc", manifest.desc)
+    << ", " << fmt::format(k_json_bool, "optional", manifest.optional) << ", " << fmt::format(k_json_obj, "services");
   bool first = true;
   for (auto const& s : manifest.services)
   {
@@ -302,7 +297,7 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
 
     std::filesystem::path src = source_path;
 
-    // Do we have prepare 
+    // Do we have prepare
     auto prepare = src / "Prepare.cmake";
     if (std::filesystem::exists(prepare) || !fetch->prepare.fragments.empty())
     {
@@ -321,7 +316,7 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
     }
 
     // Do we have build
-    auto                  srccmk = src / "Build.cmake";
+    auto srccmk = src / "Build.cmake";
     if (fetch->fetch_content)
     {
       ofs << cmake::k_fetch_content;
@@ -337,13 +332,13 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
       if (std::filesystem::exists(srccmk))
       {
         std::ifstream t{srccmk};
-        std::string buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+        std::string   buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
         ofs << buffer;
       }
       ofs << cmake::k_ext_proj_custom;
     }
     else
-    { 
+    {
       ofs << cmake::k_ext_cmake_proj_start;
       for (auto const& a : fetch->args)
       {
@@ -381,7 +376,7 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
         std::string   buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
         ofs << buffer;
       }
-      
+
       if (!fetch->post_build_install.fragments.empty())
       {
         for (auto const& f : fetch->post_build_install.fragments)
@@ -406,10 +401,10 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
 void nsmodule::fetch_content(nsbuild const& bc)
 {
   std::string sha;
-  
+
   if ((regenerate || force_rebuild))
     sha = write_fetch_build(bc);
-  
+
   if (bc.cmakeinfo.cmake_skip_fetch_builds)
   {
     write_fetch_meta(bc, sha);
@@ -428,9 +423,9 @@ void nsmodule::fetch_content(nsbuild const& bc)
   }
 }
 
-bool nsmodule::fetch_changed(nsbuild const& bc, std::string const& last_sha) const 
+bool nsmodule::fetch_changed(nsbuild const& bc, std::string const& last_sha) const
 {
-  auto meta = bc.get_full_cache_dir() / fmt::format("{}.fetch", name);
+  auto          meta = bc.get_full_cache_dir() / fmt::format("{}.fetch", name);
   std::ifstream iff{meta};
   if (iff.is_open())
   {
@@ -442,7 +437,7 @@ bool nsmodule::fetch_changed(nsbuild const& bc, std::string const& last_sha) con
   return true;
 }
 
-void nsmodule::write_fetch_meta(nsbuild const& bc, std::string const& last_sha) const 
+void nsmodule::write_fetch_meta(nsbuild const& bc, std::string const& last_sha) const
 {
   if (last_sha.empty())
     return;
@@ -503,11 +498,10 @@ void nsmodule::write_sources(std::ostream& ofs, nsbuild const& bc) const
   if (has_runtime(type))
   {
     nsglob glob_sources;
-    glob_sources =
-        nsglob{.name        = "__module_sources",
-               .relative_to = {}, //"${CMAKE_CURRENT_LIST_DIR}",
-               .sub_paths   = {},
-               .recurse     = false};
+    glob_sources = nsglob{.name        = "__module_sources",
+                          .relative_to = {}, //"${CMAKE_CURRENT_LIST_DIR}",
+                          .sub_paths   = {},
+                          .recurse     = false};
     write_source_subpath(glob_sources, bc);
     glob_sources.print(ofs);
   }
@@ -516,6 +510,8 @@ void nsmodule::write_sources(std::ostream& ofs, nsbuild const& bc) const
 void nsmodule::write_source_subpath(nsglob& glob, nsbuild const& bc) const
 {
   glob.sub_paths.push_back(source_path + "/src/*.cpp");
+  for (auto const sub : source_sub_dirs)
+    glob.sub_paths.push_back(fmt::format("{}/src/{}/*.cpp", source_path, sub));
   glob.sub_paths.push_back(gen_path + "/*.cpp");
   glob.sub_paths.push_back(gen_path + "/local/*.cpp");
   for (auto const& r : references)
@@ -563,8 +559,8 @@ void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string co
     ofs << "\nunset(__module_sources)";
 }
 
-void nsmodule::write_enums_init(std::ostream& ofs, nsbuild const& bc) const 
-{ 
+void nsmodule::write_enums_init(std::ostream& ofs, nsbuild const& bc) const
+{
   if (!has_headers(type))
     return;
   cmake::line(ofs, "enums");
@@ -690,7 +686,7 @@ void nsmodule::write_find_package(std::ostream& ofs, nsbuild const& bc) const
       ofs << c << " ";
     ofs << cmake::k_find_package_comp_end;
   }
- 
+
   auto namespace_name = fetch->namespace_name.empty() ? fetch->package : fetch->namespace_name;
   if (!fetch->legacy_linking)
   {
@@ -1034,7 +1030,8 @@ void nsmodule::write_runtime_settings(std::ostream& ofs, nsbuild const& bc) cons
     break;
   case nsmodule_type::plugin:
     cmake::line(ofs, "runtime-settings");
-    ofs << "\nset_target_properties(" << target_name << " PROPERTIES " << fmt::format(cmake::k_plugin_locations, bc.plugin_dir) << ")";
+    ofs << "\nset_target_properties(" << target_name << " PROPERTIES "
+        << fmt::format(cmake::k_plugin_locations, bc.plugin_dir) << ")";
     break;
   default:
     return;
@@ -1056,7 +1053,7 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
     for (auto const& l : fetch->runtime_loc)
     {
       namespace fs = std::filesystem;
-      auto path = get_full_sdk_dir(bc) / l;
+      auto path    = get_full_sdk_dir(bc) / l;
 
       if (!fs::exists(path))
       {
@@ -1079,7 +1076,8 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
         {
           if (bc.verbose)
             nslog::print(fmt::format("Copying : {}", name));
-          std::filesystem::copy(dir_entry.path(), bc.get_full_rt_dir() / "bin" / dir_entry.path().filename(), copy_options);
+          std::filesystem::copy(dir_entry.path(), bc.get_full_rt_dir() / "bin" / dir_entry.path().filename(),
+                                copy_options);
           continue;
         }
         else if (bc.verbose)
@@ -1092,7 +1090,7 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
         for (auto const& rt : fetch->runtime_files)
         {
           std::smatch match;
-          std::regex rtregex = std::regex(rt, std::regex_constants::icase);
+          std::regex  rtregex = std::regex(rt, std::regex_constants::icase);
           if (!std::regex_search(name, match, rtregex))
             continue;
           if (match.empty())
@@ -1126,10 +1124,7 @@ std::filesystem::path nsmodule::get_full_ext_bld_dir(nsbuild const& bc) const
   return bc.get_full_build_dir() / fmt::format("{}.ext", name);
 }
 
-std::filesystem::path nsmodule::get_full_ext_dir(nsbuild const& bc) const
-{
-  return bc.get_full_cmake_gen_dir() / name;
-}
+std::filesystem::path nsmodule::get_full_ext_dir(nsbuild const& bc) const { return bc.get_full_cmake_gen_dir() / name; }
 
 std::filesystem::path nsmodule::get_full_gen_dir(nsbuild const& bc) const
 {

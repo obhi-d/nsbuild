@@ -225,6 +225,12 @@ ns_cmd_handler(type, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(sources, build, state, cmd)
+{
+  build.s_nsmodule->source_sub_dirs = get_first_list(cmd);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(console_app, build, state, cmd)
 {
   build.s_nsmodule->console_app = to_bool(get_idx_param(cmd, 0));
@@ -680,6 +686,7 @@ ns_registry(nsbuild)
   ns_cmd(include_when);
   ns_cmd(exclude_when);
   ns_cmd(console_app);
+  ns_cmd(sources);
 
   ns_scope_def(var)
   {

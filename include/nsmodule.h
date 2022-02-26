@@ -57,6 +57,7 @@ struct nsmodule
 
   std::vector<std::string> references;
 
+  std::vector<std::string>      source_sub_dirs;
   std::vector<std::string_view> unset;
 
   std::vector<nstest> tests;
@@ -67,7 +68,7 @@ struct nsmodule
 
   std::string   name;
   nsmodule_type type = nsmodule_type::none;
-  
+
   // deferred properties
   std::string_view framework_name;
   std::string_view framework_path;
@@ -81,7 +82,7 @@ struct nsmodule
   bool force_rebuild = false;
   bool has_confixx   = false;
   bool disabled      = false;
-  
+
   // .. Options
   bool console_app       = false;
   bool was_fetch_rebuilt = false;
@@ -135,7 +136,7 @@ struct nsmodule
   void write_source_subpath(nsglob& glob, nsbuild const& bc) const;
   void write_target(std::ostream&, nsbuild const& bc, std::string const& name) const;
   void write_enums_init(std::ostream&, nsbuild const& bc) const;
-  
+
   void write_prebuild_steps(std::ostream& ofs, nsbuild const& bc) const;
   void write_postbuild_steps(std::ostream& ofs, nsbuild const& bc) const;
 
