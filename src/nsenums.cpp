@@ -88,7 +88,7 @@ void nsenum_context::parse(std::string const& mod_name, std::string const& heade
   for (auto const& en : js)
     enums.emplace_back(ctx, en);
   if (exp)
-    ctx.export_api = fmt::format("Lum{0}API", mod_name);
+    ctx.export_api = fmt::format("Lxe{0}API", mod_name);
   for (auto const& in : incl)
     ctx.includes.emplace(in);
   begin_header(hpp, ctx.includes);
@@ -119,31 +119,31 @@ void nsenum_context::generate(std::string mod_name, nsmodule_type type, std::fil
     return;
   auto local_path = gen / "local";
   std::filesystem::create_directories(local_path);
-  auto                     source_file = gen / "local" / fmt::format("Lum{}Enums.cpp", mod_name);
+  auto                     source_file = gen / "local" / fmt::format("Lxe{}Enums.cpp", mod_name);
   std::ofstream            cpp{source_file};
   std::vector<std::string> headers;
 
   if (cpp.is_open())
   {
     write_file_header(cpp, false);
-    headers.emplace_back(fmt::format("Lum{}.hpp", mod_name));
+    headers.emplace_back(fmt::format("Lxe{}.hpp", mod_name));
 
     if (has_enums_json)
     {
-      auto          hname  = fmt::format("Lum{}Enums.hpp", mod_name);
+      auto          hname  = fmt::format("Lxe{}Enums.hpp", mod_name);
       auto          header = gen / hname;
       std::ofstream hpp{header};
       if (hpp.is_open())
       {
         write_file_header(hpp, true);
         parse(mod_name, hname, enums_json, cpp, hpp, headers, type == nsmodule_type::lib || type == nsmodule_type::ref);
-        headers.emplace_back(fmt::format("Lum{}Enums.hpp", mod_name));
+        headers.emplace_back(fmt::format("Lxe{}Enums.hpp", mod_name));
       }
     }
 
     if (has_lenums_json)
     {
-      auto          hname  = fmt::format("Lum{}LocalEnums.hpp", mod_name);
+      auto          hname  = fmt::format("Lxe{}LocalEnums.hpp", mod_name);
       auto          header = gen / "local" / hname;
       std::ofstream hpp{header};
       if (hpp.is_open())
