@@ -80,6 +80,7 @@ struct nsmodule
 
   bool regenerate    = false;
   bool force_rebuild = false;
+  bool force_build   = false;
   bool has_confixx   = false;
   bool disabled      = false;
 
@@ -87,11 +88,11 @@ struct nsmodule
   bool console_app       = false;
   bool was_fetch_rebuilt = false;
 
-  nsmodule()                    = default;
-  nsmodule(nsmodule&&) noexcept = default;
+  nsmodule()                               = default;
+  nsmodule(nsmodule&&) noexcept            = default;
   nsmodule& operator=(nsmodule&&) noexcept = default;
   nsmodule(nsmodule const&)                = delete;
-  nsmodule& operator=(nsmodule const&) = delete;
+  nsmodule& operator=(nsmodule const&)     = delete;
 
   template <typename Lambda>
   void foreach_dependency(Lambda&& l) const

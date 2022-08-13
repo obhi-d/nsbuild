@@ -80,6 +80,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
   p /= name;
 
   force_rebuild  = bc.state.delete_builds;
+  force_build    = bc.state.full_regenerate;
   framework_path = fw.source_path;
   framework_name = fw.name;
   source_path    = p.generic_string();
@@ -413,7 +414,7 @@ void nsmodule::fetch_content(nsbuild const& bc)
   if (sha.empty())
     return;
 
-  if (fetch_changed(bc, sha) || fetch->force_build || force_rebuild)
+  if (fetch_changed(bc, sha) || fetch->force_build || force_rebuild || force_build)
   {
     nslog::print(fmt::format("Rebuilding {}..", name));
     build_fetched_content(bc);

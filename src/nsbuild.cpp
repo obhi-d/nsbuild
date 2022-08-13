@@ -140,7 +140,6 @@ void nsbuild::read_meta(std::filesystem::path const& path)
     state.meta_missing    = true;
     state.is_dirty        = true;
     state.full_regenerate = true;
-    state.delete_builds   = true;
     return;
   }
 
