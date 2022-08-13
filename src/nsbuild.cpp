@@ -202,8 +202,8 @@ void nsbuild::write_meta(std::filesystem::path const& path)
   {
     std::ofstream ofs{path / "compiler.ns"};
     ofs << "meta {";
-    ofs << fmt::format("\n compiler_version \"{}\";", meta.compiler_version)
-        << fmt::format("\n compiler_name \"{}\";", meta.compiler_name);
+    ofs << fmt::format("\n compiler_version \"{}\";", cmakeinfo.cmake_cppcompiler_version)
+        << fmt::format("\n compiler_name \"{}\";", cmakeinfo.cmake_cppcompiler);
     ofs << "\n}";
   }
   {
