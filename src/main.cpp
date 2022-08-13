@@ -54,20 +54,20 @@ nscmakeinfo read_config(char const* argv[], int i, int argc)
   return cfg;
 }
 
-void halt() 
-{ 
+void halt()
+{
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-  MessageBoxA(0, "Halt here", "Captions", 0); 
+  MessageBoxA(0, "Halt here", "Captions", 0);
 #endif
 }
-int  main(int argc, char const* argv[])
+int main(int argc, char const* argv[])
 {
-  //MessageBoxA(0, "Halt here", "Captions", 0);
+  // MessageBoxA(0, "Halt here", "Captions", 0);
   std::string working_dir = ".";
   std::string target      = "";
   std::string preset      = "";
   nscmakeinfo nscfg;
-  runas       ras = runas::main;
+  runas       ras      = runas::main;
   nsprocess::s_nsbuild = argv[0];
   for (int i = 1; i < argc; ++i)
   {
@@ -75,6 +75,7 @@ int  main(int argc, char const* argv[])
 
     if (arg == "--check" || arg == "-c")
     {
+      halt();
       ras   = runas::check;
       nscfg = read_config(argv, i + 1, argc);
     }

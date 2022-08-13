@@ -1,4 +1,5 @@
 #include "nsbuild.h"
+
 #include "nscmake_conststr.h"
 #include "nsenums.h"
 #include "picosha2.h"
@@ -26,8 +27,7 @@ void nsbuild::main_project()
   {
     std::ofstream ff{cml};
     ff << fmt::format(cmake::k_main_preamble, project_name, out_dir, cmake::path(nsprocess::get_nsbuild_path()),
-                      cmake_gen_dir,
-                      version);
+                      cmake_gen_dir, version);
   }
 
   {
@@ -110,7 +110,7 @@ void nsbuild::before_all()
   process_targets();
   copy_installed_binaries();
   write_meta(get_full_cache_dir());
-  
+
   if (state.is_dirty || state.exit_and_rebuild)
   {
     nslog::print("******************************************");
@@ -175,8 +175,13 @@ void nsbuild::read_meta(std::filesystem::path const& path)
   }
 }
 
-void nsbuild::act_meta() 
-{ 
+void nsbuild::act_meta()
+{
+  if (state.delete_builds)
+  {
+    std::error_code ec;
+    std::filesystem::remove_all(get_full_build_dir() / "main" / "CMakeCache.txt", ec);
+  }
   meta.ordered_timestamps.emplace_back(fmt::format("\n  build_main : \"{}\";", build_ns_sha));
 }
 
@@ -287,7 +292,7 @@ void nsbuild::process_targets()
 {
   for (auto& targ : targets)
     process_target(targ.first, targ.second);
-  
+
   write_include_modules();
   nslog::print("Finished writing targets");
 }
@@ -324,7 +329,7 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
     state.exit_and_rebuild = true;
 }
 
-void nsbuild::copy_installed_binaries() 
+void nsbuild::copy_installed_binaries()
 {
   std::array<std::string_view, 2> runtime_loc = {"bin", "lib"};
   auto                            bin         = get_full_rt_dir() / "bin";
@@ -417,7 +422,7 @@ void nsbuild::compute_paths(std::string const& preset)
     paths.cache_dir     = (paths.cfg_dir / cache_dir);
     paths.build_dir     = (paths.cfg_dir / build_dir);
     paths.sdk_dir       = (paths.cfg_dir / sdk_dir);
-    paths.rt_dir       = (paths.cfg_dir / runtime_dir);
+    paths.rt_dir        = (paths.cfg_dir / runtime_dir);
     fs::create_directories(paths.cmake_gen_dir);
     fs::create_directories(paths.cache_dir);
     fs::create_directories(paths.build_dir);
@@ -462,12 +467,13 @@ void nsbuild::write_include_modules() const
 
   auto const& preset = *s_current_preset;
   cmake::line(ofs, "Setup", '~', true);
-  ofs << fmt::format(cmake::k_include_mods_preamble, preset.cppcheck ? "ON" : "OFF", preset.unity_build ? "ON" : "OFF", natvis);
+  ofs << fmt::format(cmake::k_include_mods_preamble, preset.cppcheck ? "ON" : "OFF", preset.unity_build ? "ON" : "OFF",
+                     natvis);
 
   if (preset.cppcheck)
   {
     auto supression_file_cpy = get_full_cfg_dir() / cmake_gen_dir / "CppCheckSuppressions.txt";
-    auto supression_file = get_full_scan_dir() / preset.cppcheck_suppression;
+    auto supression_file     = get_full_scan_dir() / preset.cppcheck_suppression;
     if (preset.cppcheck_suppression.empty() || !std::filesystem::exists(supression_file))
     {
       std::ofstream ofs{supression_file_cpy};
@@ -520,11 +526,11 @@ void nsbuild::write_cxx_options(std::ostream& ofs) const
         ofs << fmt::format("\nlist(APPEND __module_cxx_linker_flags $<{}:{}>)", value, flag);
     }
   }
-  
+
   ofs << "\n\n";
 }
 
-void nsbuild::write_install_configs(std::ofstream& ofs) const 
+void nsbuild::write_install_configs(std::ofstream& ofs) const
 {
   auto cmlf = get_full_build_dir() / fmt::format("{}Config.cmake", project_name);
   {
