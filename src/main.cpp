@@ -75,7 +75,6 @@ int main(int argc, char const* argv[])
 
     if (arg == "--check" || arg == "-c")
     {
-      halt();
       ras   = runas::check;
       nscfg = read_config(argv, i + 1, argc);
     }

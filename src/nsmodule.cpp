@@ -105,7 +105,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     cmd.msgs.push_back(fmt::format("Building data files for {}", name));
     cmd.command = "${nsbuild}";
     cmd.params  = "--copy-media ${module_dir}/media ${config_rt_dir}/media "
-                 "${config_ignored_media}";
+                  "${config_ignored_media}";
 
     step.steps.push_back(cmd);
     step.wd = bc.wd.generic_string();
@@ -123,15 +123,14 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     cmd.msgs.push_back(fmt::format("Copying plugin manifest for {}", name));
     cmd.command = "${CMAKE_COMMAND}";
     cmd.params  = fmt::format("-E copy_if_different ${{module_gen_dir}}/{0}Manifest.json "
-                             "${{config_rt_dir}}/{1}",
-                             name, bc.manifests_dir);
+                               "${{config_rt_dir}}/{1}",
+                              name, bc.manifests_dir);
     step.steps.push_back(cmd);
     step.wd = bc.wd.generic_string();
     prebuild.push_back(step);
   }
   else if (type == nsmodule_type::test)
-  {
-  }
+  {}
 
   if (has_headers(type))
   {
@@ -414,7 +413,7 @@ void nsmodule::fetch_content(nsbuild const& bc)
   if (sha.empty())
     return;
 
-  if (fetch_changed(bc, sha) || fetch->force_build)
+  if (fetch_changed(bc, sha) || fetch->force_build || force_rebuild)
   {
     nslog::print(fmt::format("Rebuilding {}..", name));
     build_fetched_content(bc);

@@ -179,8 +179,18 @@ void nsbuild::act_meta()
 {
   if (state.delete_builds)
   {
+    namespace fs = std::filesystem;
     std::error_code ec;
-    std::filesystem::remove_all(get_full_build_dir() / "main" / "CMakeCache.txt", ec);
+    auto            it = fs::directory_iterator(get_full_build_dir());
+    for (const fs::directory_entry& dir_entry : it)
+    {
+      if (dir_entry.is_directory())
+      {
+        auto cache = dir_entry.path() / "CMakeCache.txt";
+        if (fs::exists(cache))
+          std::filesystem::remove_all(cache, ec);
+      }
+    }
   }
   meta.ordered_timestamps.emplace_back(fmt::format("\n  build_main : \"{}\";", build_ns_sha));
 }
