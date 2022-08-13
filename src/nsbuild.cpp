@@ -181,7 +181,7 @@ void nsbuild::act_meta()
   {
     namespace fs = std::filesystem;
     std::error_code ec;
-    auto            it = fs::directory_iterator(get_full_build_dir());
+    auto            it = fs::recursive_directory_iterator(get_full_build_dir());
     for (const fs::directory_entry& dir_entry : it)
     {
       if (dir_entry.is_directory())
