@@ -209,6 +209,7 @@ static inline constexpr char k_media_commands[] = R"_(
   
   set(data_group_output ${__module_data})
   list(TRANSFORM data_group_output REPLACE ${module_dir}/media ${config_rt_dir}/media)
+  if(data_group_output)
 )_";
 
 static inline constexpr char k_finale[] = R"_(

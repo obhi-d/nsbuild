@@ -100,7 +100,8 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     step.artifacts.push_back("${data_group_output}");
     step.check = "data_group";
     step.dependencies.push_back("${data_group}");
-    step.injected_config.push_back(cmake::k_media_commands);
+    step.injected_config_body = cmake::k_media_commands;
+    step.injected_config_end  = "endif()";
     unset.emplace_back("data_group");
     unset.emplace_back("data_group_output");
     cmd.msgs.push_back(fmt::format("Building data files for {}", name));

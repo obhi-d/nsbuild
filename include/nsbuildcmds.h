@@ -17,7 +17,8 @@ struct nsbuildstep
 {
   std::vector<std::string> artifacts;
   std::vector<std::string> dependencies;
-  std::vector<std::string> injected_config;
+  std::string              injected_config_body;
+  std::string              injected_config_end;
 
   nsbuildcmdlist steps;
   std::string    check;

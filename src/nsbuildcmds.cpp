@@ -1,28 +1,25 @@
 
 #include <nsbuild.h>
 #include <nsbuildcmds.h>
-#include <nsmodule.h>
 #include <nscmake.h>
+#include <nsmodule.h>
 
-void nsbuildstep::print(std::ostream& ofs, nsbuild const& bc,
-                        nsmodule const& m) const
+void nsbuildstep::print(std::ostream& ofs, nsbuild const& bc, nsmodule const& m) const
 {
   std::string indent = "\n";
-  ofs <<  "\n#  -- build-step -- " << name;
+  ofs << "\n#  -- build-step -- " << name;
   if (!check.empty())
   {
-    ofs << "\nif(" << check << ")\n";
+    ofs << "\nif(" << check << ")";
     indent = "\n  ";
   }
 
-  for (auto const& c : injected_config)
-    ofs << indent << c;
+  ofs << indent << injected_config_body;
 
   ofs << indent << "add_custom_command(";
   indent.push_back(' ');
   indent.push_back(' ');
-  ofs << indent
-      << "OUTPUT ";
+  ofs << indent << "OUTPUT ";
   indent.push_back(' ');
   indent.push_back(' ');
   for (auto const& o : artifacts)
@@ -45,7 +42,8 @@ void nsbuildstep::print(std::ostream& ofs, nsbuild const& bc,
   if (!wd.empty())
     ofs << indent << "WORKING_DIRECTORY " << wd;
   indent.pop_back();
-  ofs << indent << ")\n";
+  ofs << indent << ")" << indent << injected_config_end;
+
   if (!check.empty())
     ofs << "\nendif()";
 }
