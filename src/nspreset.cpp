@@ -1,7 +1,9 @@
-#include <nlohmann/json.hpp>
-#include <fstream>
 #include "nspreset.h"
+
 #include "nsbuild.h"
+
+#include <fstream>
+#include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 
@@ -45,12 +47,10 @@ static void write_preset(nspreset const& cxx, std::uint32_t options, json& cache
   cache_vars["__nsbuild_preset"] = cxx.name;
 }
 
-
-void nspreset::write(std::ostream& ff, std::uint32_t options, nameval_list const& extras,
-                     nsbuild const& bc)
-{  
+void nspreset::write(std::ostream& ff, std::uint32_t options, nameval_list const& extras, nsbuild const& bc)
+{
   json j;
-  j["version"] = 3;
+  j["version"]              = 3;
   j["cmakeMinimumRequired"] = {{"major", 3}, {"minor", 20}, {"patch", 0}};
 
   // j["configurations"]
@@ -58,8 +58,8 @@ void nspreset::write(std::ostream& ff, std::uint32_t options, nameval_list const
   for (auto const& cxx : bc.presets)
   {
     // only write msvc
-    json cfg;
-    auto& cache_vars  = cfg["cacheVariables"];
+    json  cfg;
+    auto& cache_vars = cfg["cacheVariables"];
     write_preset(cxx, options, cache_vars, cfg, bc);
     cfg["binaryDir"] = fmt::format("${{sourceDir}}/{}/{}/{}/main", bc.out_dir, cxx.name, bc.build_dir);
     if (!cxx.architecture.empty())
@@ -69,24 +69,22 @@ void nspreset::write(std::ostream& ff, std::uint32_t options, nameval_list const
       cache_vars[d.first] = d.second;
     for (auto const& d : extras)
       cache_vars[d.first] = d.second;
-
     cfg["installDir"] = std::string{"${sourceDir}/"} + bc.out_dir + "/" + cxx.name + "/" + bc.sdk_dir;
     configurations.emplace_back(std::move(cfg));
   }
-  
+
   auto& builds = j["buildPresets"];
   for (auto const& cxx : bc.presets)
   {
     json bld;
-    bld["name"]        = cxx.name;
+    bld["name"]            = cxx.name;
     bld["displayName"]     = cxx.display_name;
     bld["configurePreset"] = cxx.name;
     builds.emplace_back(std::move(bld));
   }
-    
+
   ff << std::setw(2) << j << std::endl;
 }
-
 
 void nspreset::write(std::ostream& ff, std::uint32_t options, std::string_view bin_dir, nameval_list const& extras,
                      nsbuild const& bc)

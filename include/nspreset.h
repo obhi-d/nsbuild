@@ -1,18 +1,20 @@
 #pragma once
 #include "nscommon.h"
+
 #include <cstdint>
 
 struct nspreset
 {
-  static inline constexpr std::uint32_t use_cmake_config = 1;
+  static inline constexpr std::uint32_t use_cmake_config     = 1;
   static inline constexpr std::uint32_t write_compiler_paths = 3;
-  
-  std::string              name;
-  std::string              build_type;
-  std::string              display_name;
-  std::string              desc;
-  std::string              architecture;
-  nameval_list             definitions;
+
+  std::string  name;
+  std::string  build_type;
+  std::string  display_name;
+  std::string  naming;
+  std::string  desc;
+  std::string  architecture;
+  nameval_list definitions;
 
   std::vector<std::string> allowed_filters;
   std::vector<std::string> disallowed_filters;

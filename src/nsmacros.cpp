@@ -1,10 +1,9 @@
 
 #include <fmt/format.h>
-#include <nsmacros.h>
 #include <nscmake.h>
+#include <nsmacros.h>
 
-void nsmacros::im_print(std::ostream& ostr, std::string_view content,
-                        output_fmt) const
+void nsmacros::im_print(std::ostream& ostr, std::string_view content, output_fmt) const
 {
   foreach_variable(ostr, content,
                    [this](std::ostream& ostr, std::string_view sv)
@@ -16,7 +15,7 @@ void nsmacros::im_print(std::ostream& ostr, std::string_view content,
                      {
                        auto it = m->macros.find(wrapper);
                        if (it != m->macros.end())
-                         subs = it->second;
+                         subs = order[it->second].second;
                        m = m->fallback;
                      }
 
@@ -27,9 +26,9 @@ void nsmacros::im_print(std::ostream& ostr, std::string_view content,
 void nsmacros::print(std::ostream& os, output_fmt) const
 {
   os << "\n# Config variables";
-  for (auto const& v : macros)
+  for (auto const& v : order)
   {
-    os << "\nset(" << v.first << " \"";
+    os << "\nset(" << v.first.get() << " \"";
     cmake::print(os, v.second);
     os << "\")";
   }

@@ -41,8 +41,8 @@ struct nsbuild : public neo::command_handler
 
   std::string ignore_media_from = "Internal";
 
-  bool verbose     = false;
-  bool cppcheck    = false;
+  bool verbose  = false;
+  bool cppcheck = false;
 
   // Project name
   std::string project_name;
@@ -96,9 +96,9 @@ struct nsbuild : public neo::command_handler
   //--------------------------------------
   // Fn
   nsbuild();
-  nsbuild(nsbuild&&) = default;
-  nsbuild& operator=(nsbuild&&) = default;
-  nsbuild(nsbuild const&)       = delete;
+  nsbuild(nsbuild&&)                 = default;
+  nsbuild& operator=(nsbuild&&)      = default;
+  nsbuild(nsbuild const&)            = delete;
   nsbuild& operator=(nsbuild const&) = delete;
 
   void main_project();
@@ -135,6 +135,9 @@ struct nsbuild : public neo::command_handler
   /// @param from
   /// @param to
   static void copy_media(std::filesystem::path from, std::filesystem::path to, std::string ignore);
+
+  bool               has_naming() const { return s_current_preset && !s_current_preset->naming.empty(); }
+  std::string const& naming() const { return s_current_preset->naming; }
 
   modid get_modid(std::string_view from) const;
 

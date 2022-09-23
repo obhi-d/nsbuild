@@ -193,8 +193,8 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, ns
 {
   macros["framework_dir"]    = framework_path;
   macros["framework_name"]   = framework_name;
-  macros["module_dir"]       = source_path;
   macros["module_name"]      = name;
+  macros["module_dir"]       = source_path;
   macros["module_build_dir"] = cmake::path(get_full_bld_dir(bc));
   macros["module_gen_dir"]   = cmake::path(get_full_gen_dir(bc));
   macros["module_target"]    = targ_name;
@@ -227,6 +227,14 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, ns
     macros["fetch_components"]   = components;
     macros["fetch_extern_name"]  = fetch->extern_name;
     // macros["fetch_ts_dir"]       = cmake::path(get_full_ts_dir(bc));
+  }
+
+  if (bc.has_naming())
+  {
+    std::ostringstream ss;
+    macros.im_print(ss, bc.naming());
+    target_name             = std::move(ss.str());
+    macros["module_target"] = target_name;
   }
 }
 
@@ -524,6 +532,8 @@ void nsmodule::write_source_subpath(nsglob& glob, nsbuild const& bc) const
 
 void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string const& name) const
 {
+  if (disabled)
+    return;
   cmake::line(ofs, "target");
   switch (type)
   {
@@ -556,6 +566,7 @@ void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string co
   default:
     break;
   }
+
   if (has_runtime(type))
     ofs << "\nunset(__module_sources)";
 }
@@ -846,10 +857,12 @@ void nsmodule::write_dependencies(std::ostream& ofs, nsbuild const& bc, std::uin
     auto const& dep    = intf[type][i].dependencies;
     for (auto const& d : dep)
     {
-      write_dependency(ofs, d, type == pub_intf ? cmake::inheritance::pub : cmake::inheritance::priv, filter);
       auto const& mod = bc.get_module(d);
+      write_dependency(ofs, mod.target_name, type == pub_intf ? cmake::inheritance::pub : cmake::inheritance::priv,
+                       filter);
       if (mod.type == nsmodule_type::lib || mod.type == nsmodule_type::external || mod.type == nsmodule_type::ref)
-        write_target_link_libs(ofs, d, type == pub_intf ? cmake::inheritance::pub : cmake::inheritance::priv, filter);
+        write_target_link_libs(ofs, mod.target_name,
+                               type == pub_intf ? cmake::inheritance::pub : cmake::inheritance::priv, filter);
     }
   }
 }
@@ -877,7 +890,7 @@ void nsmodule::write_refs_dependencies(std::ostream& ofs, nsbuild const& bc, nsm
     auto const& m = bc.get_module(r);
     m.write_refs_dependencies(ofs, bc, target);
     m.write_dependencies_mod(ofs, bc);
-    ofs << fmt::format("\nlist(APPEND __module_ref_deps {})", r);
+    ofs << fmt::format("\nlist(APPEND __module_ref_deps {})", m.target_name);
   }
 }
 
@@ -1027,11 +1040,11 @@ void nsmodule::write_runtime_settings(std::ostream& ofs, nsbuild const& bc) cons
   case nsmodule_type::lib:
   case nsmodule_type::test:
     cmake::line(ofs, "runtime-settings");
-    ofs << "\nset_target_properties(" << target_name << " PROPERTIES " << cmake::k_rt_locations << ")";
+    ofs << "\nset_target_properties(${module_target} PROPERTIES " << cmake::k_rt_locations << ")";
     break;
   case nsmodule_type::plugin:
     cmake::line(ofs, "runtime-settings");
-    ofs << "\nset_target_properties(" << target_name << " PROPERTIES "
+    ofs << "\nset_target_properties(${module_target} PROPERTIES "
         << fmt::format(cmake::k_plugin_locations, bc.plugin_dir) << ")";
     break;
   default:

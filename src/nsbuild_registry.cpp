@@ -178,6 +178,12 @@ ns_cmd_handler(build_type, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(naming, build, state, cmd)
+{
+  build.s_nspreset->naming = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(display_name, build, state, cmd)
 {
   build.s_nspreset->display_name = get_idx_param(cmd, 0);
@@ -671,6 +677,7 @@ ns_registry(nsbuild)
     ns_cmd(cppcheck);
     ns_cmd(cppcheck_suppression);
     ns_cmd(unity_build);
+    ns_cmd(naming);
     ns_scope_def(config)
     {
       ns_cmd(compiler_flags);
