@@ -62,7 +62,7 @@ void halt()
 }
 int main(int argc, char const* argv[])
 {
-  halt();
+  // halt();
   // MessageBoxA(0, "Halt here", "Captions", 0);
   std::string working_dir = ".";
   std::string target      = "";
