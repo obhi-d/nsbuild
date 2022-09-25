@@ -320,16 +320,25 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
   }
   auto& mod = fw.modules[targ.mod_idx];
   mod.foreach_references(
-      [this](auto dep)
+      [this, &mod](auto dep)
       {
         std::string name{dep};
-        process_target(name, targets[name]);
+        auto        it = targets.find(name);
+        if (it != targets.end())
+          process_target(name, it->second);
+        else
+          throw std::runtime_error(
+              fmt::format("{} Not a module used as reference module for - {}", name, mod.target_name));
       });
   mod.foreach_dependency(
-      [this](auto dep)
+      [this, &mod](auto dep)
       {
         std::string name{dep};
-        process_target(name, targets[name]);
+        auto        it = targets.find(name);
+        if (it != targets.end())
+          process_target(name, it->second);
+        else
+          throw std::runtime_error(fmt::format("{} Not a module as dependent module for - {}", name, mod.target_name));
       });
 
   sorted_targets.push_back(name);
