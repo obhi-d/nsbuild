@@ -4,10 +4,10 @@
 #include <nsbuild.h>
 #include <nsprocess.h>
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
-#define NS_DLL_EXT "(\\.dll$)|(\\.json$)"
+#define NS_DLL_EXT "(\\.dll$)|(\\.json$)|(\\.conf)"
 #include <Windows.h>
 #else
-#define NS_DLL_EXT "(\\.so[\\.0-9]*$)|(\\.json$)"
+#define NS_DLL_EXT "(\\.so[\\.0-9]*$)|(\\.json$)|(\\.conf)"
 #endif
 
 #include <nslog.h>
@@ -62,6 +62,7 @@ void halt()
 }
 int main(int argc, char const* argv[])
 {
+  halt();
   // MessageBoxA(0, "Halt here", "Captions", 0);
   std::string working_dir = ".";
   std::string target      = "";

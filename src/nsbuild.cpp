@@ -355,8 +355,9 @@ void nsbuild::copy_installed_binaries()
   {
     namespace fs = std::filesystem;
 
-    auto       it           = fs::directory_iterator{get_full_sdk_dir() / l};
-    const auto copy_options = fs::copy_options::update_existing | fs::copy_options::recursive;
+    auto       top_path     = get_full_sdk_dir() / l;
+    auto       it           = fs::recursive_directory_iterator{get_full_sdk_dir() / l};
+    const auto copy_options = fs::copy_options::update_existing;
     for (auto const& dir_entry : it)
     {
       if (!dir_entry.is_regular_file() && !dir_entry.is_symlink())
@@ -364,7 +365,15 @@ void nsbuild::copy_installed_binaries()
       auto name = dir_entry.path().filename().generic_string();
       bool copy = false;
       if (std::regex_search(name, dll_ext))
-        std::filesystem::copy(dir_entry.path(), bin / dir_entry.path().filename(), copy_options);
+      {
+        std::error_code ec;
+        auto            path = dir_entry.path();
+        auto            rel  = fs::relative(path, top_path, ec);
+        auto            dest = bin / rel;
+
+        fs::create_directories(dest.parent_path(), ec);
+        std::filesystem::copy(path, dest, copy_options);
+      }
     }
   }
 }
