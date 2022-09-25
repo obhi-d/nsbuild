@@ -231,9 +231,21 @@ ns_cmd_handler(type, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(sources, build, state, cmd)
+ns_cmd_handler(source_paths, build, state, cmd)
 {
   build.s_nsmodule->source_sub_dirs = get_first_list(cmd);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(source_files, build, state, cmd)
+{
+  build.s_nsmodule->source_files = get_first_list(cmd);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(name, build, state, cmd)
+{
+  build.s_nsmodule->custom_target_name = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -693,7 +705,9 @@ ns_registry(nsbuild)
   ns_cmd(include_when);
   ns_cmd(exclude_when);
   ns_cmd(console_app);
-  ns_cmd(sources);
+  ns_cmd(source_paths);
+  ns_cmd(name);
+  ns_cmd(source_files);
 
   ns_scope_def(var)
   {

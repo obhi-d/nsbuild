@@ -228,8 +228,9 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, ns
     macros["fetch_extern_name"]  = fetch->extern_name;
     // macros["fetch_ts_dir"]       = cmake::path(get_full_ts_dir(bc));
   }
-
-  if (bc.has_naming())
+  if (!custom_target_name.empty())
+    target_name = custom_target_name;
+  else if (bc.has_naming())
   {
     std::ostringstream ss;
     macros.im_print(ss, bc.naming());
@@ -513,6 +514,8 @@ void nsmodule::write_sources(std::ostream& ofs, nsbuild const& bc) const
                           .recurse     = false};
     write_source_subpath(glob_sources, bc);
     glob_sources.print(ofs);
+    for (auto const& src : source_files)
+      ofs << fmt::format("\nlist(APPEND __module_sources \"{}\")", src);
   }
 }
 

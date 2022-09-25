@@ -58,6 +58,7 @@ struct nsmodule
   std::vector<std::string> references;
 
   std::vector<std::string>      source_sub_dirs;
+  std::vector<std::string>      source_files;
   std::vector<std::string_view> unset;
 
   std::vector<nstest> tests;
@@ -67,6 +68,7 @@ struct nsmodule
   std::unique_ptr<nsfetch> fetch;
 
   std::string   name;
+  std::string   custom_target_name;
   nsmodule_type type = nsmodule_type::none;
 
   // deferred properties
