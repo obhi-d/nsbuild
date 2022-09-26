@@ -265,7 +265,8 @@ ExternalProject_Add(${fetch_extern_name}
     -DCMAKE_GENERATOR_INSTANCE=${CMAKE_GENERATOR_INSTANCE}
     -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
     -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-    -DCMAKE_INSTALL_PREFIX=${fetch_sdk_dir})_";
+    -DCMAKE_INSTALL_PREFIX=${fetch_sdk_dir}
+    -DCMAKE_MODULE_PATH=${fetch_sdk_dir})_";
 
 static inline constexpr char k_ext_proj_custom[] = R"_(
 
