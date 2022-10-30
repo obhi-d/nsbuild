@@ -227,8 +227,10 @@ static inline constexpr char k_finale[] = R"_(
 configure_file("${__nsbuild_data}/ModuleConfig.hxx" "${module_gen_dir}/${module_name}ModuleConfig.hpp")
 if (EXISTS "${module_dir}/local_include/_Config.hxx")
 	configure_file("${module_dir}/local_include/_Config.hxx" "${module_gen_dir}/${module_name}InternalConfig.hpp")
-else
-  file(WRITE "${module_gen_dir}/${module_name}InternalConfig.hpp")
+else()
+  if (NOT EXISTS "${module_gen_dir}/${module_name}InternalConfig.hpp")
+    file(TOUCH "${module_gen_dir}/${module_name}InternalConfig.hpp")
+  endif()
 endif()
 add_dependencies(${module_target} nsbuild-check)
 	
