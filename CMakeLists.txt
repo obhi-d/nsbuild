@@ -74,6 +74,13 @@ add_executable(nsbuild
  "src/nsenums.cpp"  
  "src/nspreset.cpp")
 
+ add_custom_command(TARGET nsbuild POST_BUILD 
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different  
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/BuildConfig.hxx 
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/EnumStringHash.hxx 
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/FlagType.hxx
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/ModuleConfig.hxx    ${CMAKE_CURRENT_BINARY_DIR}
+ )
 
 target_include_directories(nsbuild PRIVATE 
 	"${PROJECT_SOURCE_DIR}/include")

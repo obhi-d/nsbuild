@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <tuple>
+#include <array>
 
 namespace enums
 {
@@ -117,14 +118,17 @@ private:
 
 struct Key
 {
+  inline constexpr Key() noexcept  = default;
   template <std::size_t N>
-  constexpr Key(char const (&a)[N]) noexcept : value(detail::enum_hash(a).hash())
+  inline constexpr Key(char const (&a)[N]) noexcept : value(detail::enum_hash(a).hash())
   {}
 
   constexpr Key(std::string_view view) noexcept : value(detail::enum_hash(view.data(), view.length()).hash()) {}
 
+  inline int compare(Key other) const { return (int)(value - other.value); }
+
   inline auto operator<=>(Key const&) const noexcept = default;
-  uint32_t    value;
+  uint32_t    value = 0;
 };
 
 // Returns the string fragment without the prefix

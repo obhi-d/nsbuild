@@ -33,4 +33,4 @@
 #define BC_PROJECT_VERSION_STRING     "v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@"
 #define BC_PROJECT_NAME               "@PROJECT_NAME@ v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@"
 
-#define BC_ENDIANNESS                 @nsbuild_host_is_big_endian @
+#define BC_ENDIANNESS                 @nsbuild_host_is_big_endian@

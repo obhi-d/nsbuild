@@ -503,8 +503,7 @@ void nsenum::write_header_alias(std::ostream& ofs) const
     ofs << fmt::format("\nusing {}Enum = {}::Enum;", name, enum_name());
   if (has_flags)
   {
-    ofs << fmt::format("\nusing {}Flags = MaskFlags<{}::Bit>;", name, name);
-    ofs << fmt::format("\nL_DECLARE_SCOPED_MASK_FLAGS({}, Bit);", name);
+    ofs << fmt::format("\nDECLARE_SCOPED_MASK_FLAGS({}, Bit);", name);
   }
 }
 
@@ -532,7 +531,7 @@ void nsenum::write_header_string_table(std::ostream& ofs) const
   if (auto_flags && has_enum && has_flags)
       ofs << fmt::format("\n  static Bit  ToBit(Enum iValue) {{ return static_cast<Bit>({} << iValue); }}"
                          "\n  static Bit  ToBit(std::string_view iValue) {{ return ToBit(FromString(iValue)); }}" 
-                         "\n  static Enum ToEnum(Bit iValue) {{ return static_cast<Enum>(vml::bit_count(iValue)); }}", one );
+                         "\n  static Enum ToEnum(Bit iValue) {{ return static_cast<Enum>(std::popcount(static_cast<utype>(iValue))); }}", one );
   // clang-format on
 }
 
@@ -548,7 +547,7 @@ void nsenum::write_header_string_key_table(std::ostream& ofs) const
 
   if (auto_flags && has_enum && has_flags)
     ofs << fmt::format("\n  static Bit ToFlag(enums::Key iValue) {{ return static_cast<Bit>({} << FromStringKey(iValue)); }}"
-                       "\n  static Enum ToEnum(Bit iValue)      {{ return static_cast<Enum>(vml::bit_count(iValue));     }}\n", one);
+                       "\n  static Enum ToEnum(Bit iValue)      {{ return static_cast<Enum>(std::popcount(static_cast<utype>(iValue))); }}\n", one);
   // clang-format on
 }
 
@@ -652,7 +651,7 @@ void nsenum::write_header_enum(std::ostream& ofs, bool write_value) const
 
 void nsenum::write_header_flags(std::ostream& ofs) const
 {
-  ofs << fmt::format("\n using utype=std::make_unsigned_t<{}>;", type) << fmt::format("\n  enum Bit : utype\n  {{");
+  ofs << fmt::format("\n  using utype = std::make_unsigned_t<{}>;", type) << fmt::format("\n  enum Bit : utype\n  {{");
   bool print_comma = false;
   for (auto const& entry : entries)
   {
@@ -669,7 +668,7 @@ void nsenum::write_header_flags(std::ostream& ofs) const
 
 void nsenum::write_header_auto_flags(std::ostream& ofs) const
 {
-  ofs << fmt::format("\n using utype=std::make_unsigned_t<{}>;", type) << fmt::format("\n  enum Bit : utype\n  {{");
+  ofs << fmt::format("\n  using utype = std::make_unsigned_t<{}>;", type) << fmt::format("\n  enum Bit : utype\n  {{");
   bool print_comma = false;
   for (auto const& entry : entries)
   {

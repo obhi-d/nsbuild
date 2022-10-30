@@ -1,5 +1,6 @@
 #include "nsbuild.h"
 
+#include "nscmake.h"
 #include "nscmake_conststr.h"
 #include "nsenums.h"
 #include "picosha2.h"
@@ -518,7 +519,7 @@ void nsbuild::write_include_modules() const
   auto const& preset = *s_current_preset;
   cmake::line(ofs, "Setup", '~', true);
   ofs << fmt::format(cmake::k_include_mods_preamble, preset.cppcheck ? "ON" : "OFF", preset.unity_build ? "ON" : "OFF",
-                     natvis, namespace_name, macro_prefix, paths.data_dir.string(), file_prefix);
+                     natvis, namespace_name, macro_prefix, cmake::path(paths.data_dir), file_prefix);
  
   if (preset.cppcheck)
   {

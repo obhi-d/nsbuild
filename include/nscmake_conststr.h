@@ -103,9 +103,9 @@ set(macro_prefix "{4}")
 set(file_prefix "{6}")
 set(__nsbuild_data "{5}")
 
-configure_file(${{__nsbuild_data}}/BuildConfig.hxx ${{CMAKE_CURRENT_LIST_DIR}}/BuildConfig.hxx)
-configure_file(${{__nsbuild_data}}/FlagType.hxx ${{CMAKE_CURRENT_LIST_DIR}}/FlagType.hxx)
-configure_file(${{__nsbuild_data}}/EnumStringHash.hxx ${{CMAKE_CURRENT_LIST_DIR}}/EnumStringHash.hxx)
+configure_file(${{__nsbuild_data}}/BuildConfig.hxx ${{CMAKE_CURRENT_LIST_DIR}}/BuildConfig.hpp)
+configure_file(${{__nsbuild_data}}/FlagType.hxx ${{CMAKE_CURRENT_LIST_DIR}}/FlagType.hpp)
+configure_file(${{__nsbuild_data}}/EnumStringHash.hxx ${{CMAKE_CURRENT_LIST_DIR}}/EnumStringHash.hpp)
 
 
 )_";
@@ -369,14 +369,5 @@ install(FILES "${module_build_dir}/${module_name}Config.cmake"
 
 )_";
 
-
-static inline constexpr char k_config_commons[] = R"_(
-
-if (EXISTS "${module_dir}/local_include/_Config.hxx")
-	configure_file("${module_dir}/local_include/_Config.hxx" "${module_gen_dir}/${module_name}ModuleConfig.h")
-endif()
-add_dependencies(${module_target} nsbuild-check)
-	
-)_";
 
 } // namespace cmake

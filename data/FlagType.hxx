@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <type_traits>
 #include <initializer_list>
-#include "BuildConfig.hxx"
+#include <compare>
+#include <bit>
+#include "BuildConfig.hpp"
 
 namespace @default_namespace_name@ // namespace
 {
@@ -118,12 +120,12 @@ public:
   template <typename... Enum2>
   inline constexpr bool anyOf(Enum2... iValue) const noexcept
   {
-    return (storage & ((toFlag(iValue)) | ...)) != 0;
+    return (value & ((toFlag(iValue)) | ...)) != 0;
   }
   template <typename... Enum2>
   inline constexpr bool allOff(Enum2... iValue) const noexcept
   {
-    return (storage & ((toFlag(iValue)) | ...)) != ((toFlag(iValue)) | ...);
+    return (value & ((toFlag(iValue)) | ...)) != ((toFlag(iValue)) | ...);
   }
 
   template <typename... Enum2>
@@ -187,11 +189,7 @@ private:
     using T = std::underlying_type_t<EnumClass>;                                                                       \
     return static_cast<T>(lhs) == 0;                                                                                   \
   }                                                                                                                    \
-  inline operator bool(EnumClass lhs)                                                                                  \
-  {                                                                                                                    \
-    using T = std::underlying_type_t<EnumClass>;                                                                       \
-    return static_cast<T>(lhs) != 0;                                                                                   \
-  }
+  
 
 template <int i, typename Int = std::uint32_t>
 constexpr static inline Int defineFlag(Int v)
@@ -202,8 +200,8 @@ constexpr static inline Int defineFlag(Int v)
 #define DEFINE_FLAG(Flag, Value) inline static constexpr auto BC_TOKEN_PASTE(f, Flag) = defineFlag(Value)
 
 // Prefer enum flags 
-#define DECLARE_SCOPED_MASK_FLAGS(Scope, Flags)       \
-   DECLARE_MASK_FLAGS(Scope::Flags)                   \
-   using BC_TOKEN_PASTE(Scope, Flags) = Scope::Flags 
+#define DECLARE_SCOPED_MASK_FLAGS(Scope, Type)       \
+   DECLARE_MASK_FLAGS(Scope::Type)                   \
+   using BC_TOKEN_PASTE(Scope, Flags) = Scope::Type 
 
 } // @default_namespace_name@
