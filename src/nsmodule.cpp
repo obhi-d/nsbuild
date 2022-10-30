@@ -144,7 +144,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     step.dependencies.push_back("${enums_json}");
     cmd.msgs.push_back(fmt::format("Generating enum for {}", name));
     cmd.command = "${nsbuild}";
-    cmd.params  = "--gen-enum ${module_dir} ${config_preset_name}";
+    cmd.params  = "--gen-enum ${module_dir} ${config_preset_name}  ${macro_prefix} ${file_prefix}";
     step.steps.push_back(cmd);
     step.wd = bc.wd.generic_string();
     unset.emplace_back("has_enums_json");
@@ -295,7 +295,7 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
       throw std::runtime_error("Could not create CMakeLists.txt");
     }
 
-    ofs << fmt::format(cmake::k_project_name, name, bc.version);
+    ofs << fmt::format(cmake::k_project_name, name, version.empty() ? bc.version : version);
     ofs << fmt::format("\nlist(PREPEND CMAKE_MODULE_PATH \"{}\")", cmake::path(get_full_sdk_dir(bc)));
     bc.macros.print(ofs);
     macros.print(ofs);
@@ -466,6 +466,9 @@ void nsmodule::write_main_build(std::ostream& ofs, nsbuild const& bc) const
     ofs << fmt::format("\nadd_library({} INTERFACE)", target_name);
     return;
   }
+
+  ofs << fmt::format("\nproject({} VERSION {} LANGUAGES C CXX)\n", name, version.empty() ? bc.version : version);
+
   cmake::line(ofs, "variables");
   macros.print(ofs);
   write_variables(ofs, bc);
@@ -645,6 +648,8 @@ void nsmodule::write_includes(std::ostream& ofs, nsbuild const& bc) const
   case nsmodule_type::lib:
   case nsmodule_type::plugin:
     cmake::line(ofs, "includes");
+    write_include(ofs, "${CMAKE_CURRENT_LIST_DIR}", "", cmake::inheritance::pub);
+    write_include(ofs, "${module_dir}", "include", cmake::inheritance::pub);
     write_include(ofs, "${module_dir}", "include", cmake::inheritance::pub);
     write_include(ofs, "${module_dir}", "local_include", cmake::inheritance::priv);
     write_include(ofs, "${module_gen_dir}", "", cmake::inheritance::pub);
@@ -775,7 +780,7 @@ void nsmodule::write_definitions_mod(std::ostream& ofs, nsbuild const& bc) const
   write_definitions(ofs, bc, 0);
   write_definitions(ofs, bc, 1);
   write_refs_definitions(ofs, bc, *this);
-  write_definitions(ofs, fmt::format("CurrentModule_{}", cmake::value(name)), cmake::inheritance::priv, "");
+  write_definitions(ofs, fmt::format("BC_MODULE_{}", cmake::value(name)), cmake::inheritance::priv, "");
 }
 
 void nsmodule::write_definitions(std::ostream& ofs, nsbuild const& bc, std::uint32_t type) const

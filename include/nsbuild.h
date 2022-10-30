@@ -41,6 +41,10 @@ struct nsbuild : public neo::command_handler
 
   std::string ignore_media_from = "Internal";
 
+  std::string namespace_name;
+  std::string macro_prefix;
+  std::string file_prefix;
+
   bool verbose  = false;
   bool cppcheck = false;
 
@@ -93,6 +97,9 @@ struct nsbuild : public neo::command_handler
   nsmetainfo  meta;
   nsmetastate state;
 
+  // Common file sha
+  string_map common_files_sha;
+
   //--------------------------------------
   // Fn
   nsbuild();
@@ -124,12 +131,15 @@ struct nsbuild : public neo::command_handler
   void write_include_modules() const;
   void write_install_configs(std::ofstream&) const;
   void check_modules();
+  void write_common_files(std::filesystem::path const&);
+
+  std::string gather_module_hash(std::filesystem::path const&);
 
   void write_cxx_options(std::ostream&) const;
 
   /// @brief Generates enum files
   /// @param target Should be FwName/ModName or full path to module directory
-  void generate_enum(std::string target, std::string preset);
+  void generate_enum(std::string filepfx, std::string apipfx, std::string target, std::string preset);
 
   /// @brief Copy media directories and files, ignores media/Internal directory
   /// @param from
@@ -180,6 +190,7 @@ struct nsbuild : public neo::command_handler
 
   struct fullpaths
   {
+    std::filesystem::path data_dir; 
     std::filesystem::path scan_dir;
     std::filesystem::path cfg_dir;
     std::filesystem::path cmake_gen_dir;
@@ -192,7 +203,6 @@ struct nsbuild : public neo::command_handler
   };
 
   fullpaths paths;
-
   void compute_paths(std::string const& preset);
 
   inline std::filesystem::path const& get_full_scan_dir() const { return paths.scan_dir; }

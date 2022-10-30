@@ -37,6 +37,18 @@ ns_cmd_handler(project_name, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(macro_prefix, build, state, cmd)
+{
+  build.macro_prefix = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(file_prefix, build, state, cmd)
+{
+  build.file_prefix = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(verbose, build, state, cmd)
 {
   build.verbose = to_bool(get_idx_param(cmd, 0));
@@ -391,7 +403,10 @@ ns_cmd_handler(runtime_only, build, state, cmd)
 
 ns_cmd_handler(namespace, build, state, cmd)
 {
-  build.s_nsfetch->namespace_name = get_idx_param(cmd, 0);
+  if (build.s_nsfetch)
+    build.s_nsfetch->namespace_name = get_idx_param(cmd, 0);
+  else
+    build.namespace_name = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -672,6 +687,9 @@ ns_registry(nsbuild)
   }
 
   ns_cmd(project_name);
+  ns_cmd(namespace);
+  ns_cmd(macro_prefix);
+  ns_cmd(file_prefix);
   ns_cmd(version);
   ns_cmd(verbose);
   ns_cmd(sdk_dir);

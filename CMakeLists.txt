@@ -74,6 +74,7 @@ add_executable(nsbuild
  "src/nsenums.cpp"  
  "src/nspreset.cpp")
 
+
 target_include_directories(nsbuild PRIVATE 
 	"${PROJECT_SOURCE_DIR}/include")
  
@@ -89,3 +90,9 @@ target_link_libraries(nsbuild PRIVATE neoscript)
 target_link_libraries(nsbuild PRIVATE nlohmann_json::nlohmann_json)
 
 install (TARGETS nsbuild RUNTIME DESTINATION ./)
+install (FILES 
+  "${CMAKE_CURRENT_LIST_DIR}/data/BuildConfig.hxx"
+  "${CMAKE_CURRENT_LIST_DIR}/data/FlagType.hxx"
+  "${CMAKE_CURRENT_LIST_DIR}/data/ModuleConfig.hxx" 
+  "${CMAKE_CURRENT_LIST_DIR}/data/EnumStringHash.hxx"
+  DESTINATION ./)

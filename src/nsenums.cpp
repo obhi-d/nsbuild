@@ -21,8 +21,6 @@ void nsenum_context::start_namespace(std::ostream& ofs, std::string str)
     start_pos += to.length(); // ...
   }
   ofs << "\nnamespace " << str << "\n{";
-  if (str != "lxe")
-    ofs << "\nusing namespace lxe;";
 }
 
 void nsenum_context::end_namespace(std::ostream& ofs, std::string const& str)
@@ -61,18 +59,19 @@ std::string nsenum_context::modify_search(std::string const& on, nsenum_modifier
 {
   // clang-format off
   if (modifier == nsenum_modifier::lower)
-    return "\n  String cpy {" + on + "};"
+    return "\n  std::string cpy {" + on + "};"
            "\n  std::transform(std::begin(cpy), std::end(cpy), std::begin(cpy), ::tolower);" 
            "\n  " + on + " = cpy;";
   else if (modifier == nsenum_modifier::upper)
-    return "\n  String cpy {" + on + "};"
+    return "\n  std::string cpy {" + on + "};"
            "\n  std::transform(std::begin(cpy), std::end(cpy), std::begin(cpy), ::toupper);" 
            "\n  " + on + " = cpy;";
   // clang-format on
   return std::string{};
 }
 
-void nsenum_context::parse(std::string const& mod_name, std::string const& header, std::filesystem::path const& lenumsj,
+void nsenum_context::parse(std::string const& pfx, std::string const& mod_name, std::string const& header,
+                           std::filesystem::path const& lenumsj,
                            std::ofstream& cpp, std::ofstream& hpp, std::vector<std::string> const& incl, bool exp)
 {
   // if (mod_name == "Graphics")
@@ -83,12 +82,12 @@ void nsenum_context::parse(std::string const& mod_name, std::string const& heade
   j >> js;
   nsenum_context ctx;
   ctx.includes.emplace("FlagType.hpp");
-  ctx.includes.emplace("StringKey.hpp");
+  ctx.includes.emplace("EnumStringHash.hpp");
   std::vector<nsenum> enums;
   for (auto const& en : js)
     enums.emplace_back(ctx, en);
   if (exp)
-    ctx.export_api = fmt::format("Lxe{0}API", mod_name);
+    ctx.export_api = fmt::format("{}{}API", pfx, mod_name);
   for (auto const& in : incl)
     ctx.includes.emplace(in);
   begin_header(hpp, ctx.includes);
@@ -108,7 +107,8 @@ void nsenum_context::write_file_header(std::ofstream& ofs, bool isheader)
   ofs << "\n\n";
 }
 
-void nsenum_context::generate(std::string mod_name, nsmodule_type type, std::filesystem::path source,
+void nsenum_context::generate(std::string const& filepfx, std::string const& apipfx, std::string mod_name,
+                              nsmodule_type type, std::filesystem::path source,
                               std::filesystem::path gen)
 {
   auto enums_json      = source / "include" / "Enums.json";
@@ -118,38 +118,39 @@ void nsenum_context::generate(std::string mod_name, nsmodule_type type, std::fil
   if (!has_enums_json && !has_lenums_json)
     return;
   auto local_path = gen / "local";
+  auto filePrefix = filepfx + mod_name;
   std::filesystem::create_directories(local_path);
-  auto                     source_file = gen / "local" / fmt::format("Lxe{}Enums.cpp", mod_name);
+  auto                     source_file = gen / "local" / fmt::format("{}Enums.cpp", filePrefix);
   std::ofstream            cpp{source_file};
   std::vector<std::string> headers;
 
   if (cpp.is_open())
   {
     write_file_header(cpp, false);
-    headers.emplace_back(fmt::format("Lxe{}.hpp", mod_name));
+    headers.emplace_back(fmt::format("{}ModuleConfig.hpp", mod_name));
 
     if (has_enums_json)
     {
-      auto          hname  = fmt::format("Lxe{}Enums.hpp", mod_name);
+      auto          hname  = fmt::format("{}Enums.hpp", filePrefix);
       auto          header = gen / hname;
       std::ofstream hpp{header};
       if (hpp.is_open())
       {
         write_file_header(hpp, true);
-        parse(mod_name, hname, enums_json, cpp, hpp, headers, type == nsmodule_type::lib || type == nsmodule_type::ref);
-        headers.emplace_back(fmt::format("Lxe{}Enums.hpp", mod_name));
+        parse(apipfx, mod_name, hname, enums_json, cpp, hpp, headers, type == nsmodule_type::lib || type == nsmodule_type::ref);
+        headers.emplace_back(fmt::format("{}Enums.hpp", filePrefix));
       }
     }
 
     if (has_lenums_json)
     {
-      auto          hname  = fmt::format("Lxe{}LocalEnums.hpp", mod_name);
+      auto          hname  = fmt::format("LocalEnums.hpp", filePrefix);
       auto          header = gen / "local" / hname;
       std::ofstream hpp{header};
       if (hpp.is_open())
       {
         write_file_header(hpp, true);
-        parse(mod_name, hname, lenums_json, cpp, hpp, headers, false);
+        parse("", mod_name, hname, lenums_json, cpp, hpp, headers, false);
       }
     }
   }
@@ -188,7 +189,6 @@ nsenum::nsenum(nsenum_context& ictx, nlohmann::json const& jv) : ctx{ictx}, jenu
       if (opt == "string-key")
       {
         string_key = true;
-        ictx.includes.emplace("StringKey.hpp");
       }
       if (opt == "custom-strings")
         custom_strings = true;
@@ -302,9 +302,9 @@ void nsenum::parse_associations()
   if (string_table)
   {
     if (string_key)
-      tuple_types.emplace_back("", "", "StringKey");
+      tuple_types.emplace_back("", "", "enums::Key");
     else
-      tuple_types.emplace_back("", "", "StringView");
+      tuple_types.emplace_back("", "", "std::string_view");
   }
   auto it = jenum.find("associations");
   if (it != jenum.end())
@@ -511,27 +511,27 @@ void nsenum::write_header_alias(std::ostream& ofs) const
 void nsenum::write_header_string_table(std::ostream& ofs) const
 {
   auto value_type = default_value_type();
-  ofs << fmt::format("\n  using Tuple = std::tuple<StringView, {}>;", value_type)
+  ofs << fmt::format("\n  using Tuple = std::tuple<std::string_view, {}>;", value_type)
       << fmt::format("\n  static const std::array<Tuple, {}>& Table();", entries.size());
   if (suffix_match || prefix_match)
   {
     if (prefix_match)
-      ofs << fmt::format("\n  static std::tuple<{}, StringView> "
-                         "StartsWith(StringView iParam);",
+      ofs << fmt::format("\n  static std::tuple<{}, std::string_view> "
+                         "StartsWith(std::string_view iParam);",
                          value_type);
     if (suffix_match)
-      ofs << fmt::format("\n  static std::tuple<{}, StringView> EndsWith(StringView iParam);", value_type);
+      ofs << fmt::format("\n  static std::tuple<{}, std::string_view> EndsWith(std::string_view iParam);", value_type);
   }
   // clang-format off
   else
   {
-    ofs << fmt::format("\n  static {0} FromString(StringView iParam);"
-                       "\n  static inline {0} To{0}(StringView iParam) {{ return FromString(iParam); }}",
+    ofs << fmt::format("\n  static {0} FromString(std::string_view iParam);"
+                       "\n  static inline {0} To{0}(std::string_view iParam) {{ return FromString(iParam); }}",
                        value_type);
   }
   if (auto_flags && has_enum && has_flags)
       ofs << fmt::format("\n  static Bit  ToBit(Enum iValue) {{ return static_cast<Bit>({} << iValue); }}"
-                         "\n  static Bit  ToBit(StringView iValue) {{ return ToBit(FromString(iValue)); }}" 
+                         "\n  static Bit  ToBit(std::string_view iValue) {{ return ToBit(FromString(iValue)); }}" 
                          "\n  static Enum ToEnum(Bit iValue) {{ return static_cast<Enum>(vml::bit_count(iValue)); }}", one );
   // clang-format on
 }
@@ -541,13 +541,13 @@ void nsenum::write_header_string_key_table(std::ostream& ofs) const
   auto value_type = default_value_type();
   // clang-format off
   // value_type str(len(self.entries))
-  ofs << fmt::format("\n  using Tuple = std::tuple<StringKey, {0}>;\n" 
+  ofs << fmt::format("\n  using Tuple = std::tuple<enums::Key, {0}>;\n" 
                      "\n  static const std::array<Tuple, {1}>& Table();"
-                     "\n  static {0} FromStringKey(StringKey iParam);" 
-                     "\n  static inline {0} To{0}(StringKey iParam) {{ return FromStringKey(iParam); }}", value_type, entries.size());
+                     "\n  static {0} FromStringKey(enums::Key iParam);" 
+                     "\n  static inline {0} To{0}(enums::Key iParam) {{ return FromStringKey(iParam); }}", value_type, entries.size());
 
   if (auto_flags && has_enum && has_flags)
-    ofs << fmt::format("\n  static Bit ToFlag(StringKey iValue) {{ return static_cast<Bit>({} << FromStringKey(iValue)); }}"
+    ofs << fmt::format("\n  static Bit ToFlag(enums::Key iValue) {{ return static_cast<Bit>({} << FromStringKey(iValue)); }}"
                        "\n  static Enum ToEnum(Bit iValue)      {{ return static_cast<Enum>(vml::bit_count(iValue));     }}\n", one);
   // clang-format on
 }
@@ -557,11 +557,11 @@ void nsenum::write_header_value_functions(std::ostream& ofs) const
   auto value_type = default_value_type();
   ofs << fmt::format("\n  static Value ToValue({} iFrom);", value_type);
   if (string_key)
-    ofs << fmt::format("\n  static StringKey ToStringKey({} iFrom) {{ return "
+    ofs << fmt::format("\n  static enums::Key ToStringKey({} iFrom) {{ return "
                        "std::get<0>(ToValue(iFrom)); }}",
                        value_type);
   else
-    ofs << fmt::format("\n  static StringView ToString({} iFrom) {{ return "
+    ofs << fmt::format("\n  static std::string_view ToString({} iFrom) {{ return "
                        "std::get<0>(ToValue(iFrom)); }}",
                        value_type);
   auto it = jenum.find("declarations");
@@ -777,7 +777,7 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
   auto table_type = fmt::format("std::array<{}Tuple, {}>", name, item_count);
 
   if (string_key)
-    ofs << fmt::format("\n{0} k{1}StringTable = SortTuple<{0}, 0>({0}{{\n",
+    ofs << fmt::format("\n{0} k{1}StringTable = enums::SortTuple<{0}, 0>({0}{{\n",
                        table_type, name);
   else
     ofs << fmt::format("\n{0} k{1}StringTable = {{\n", table_type, name);
@@ -830,8 +830,8 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
   if (string_key)
   {
     ofs << fmt::format(
-        "\n{0}::{1} {0}::FromStringKey(StringKey iValue) \n{{\n  return "
-        "EnumFromString(k{0}StringTable, iValue, {0}::{1}",
+        "\n{0}::{1} {0}::FromStringKey(enums::Key iValue) \n{{\n  return "
+        "enums::FromString(k{0}StringTable, iValue, {0}::{1}",
         enum_name, def_value_type);
     finish_with();
   }
@@ -840,39 +840,39 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
 
     if (prefix_match)
     {
-      ofs << fmt::format("\nstd::tuple<{0}::{1}, StringView> "
-                         "{0}::StartsWith(StringView iValue) \n{{\n",
+      ofs << fmt::format("\nstd::tuple<{0}::{1}, std::string_view> "
+                         "{0}::StartsWith(std::string_view iValue) \n{{\n",
                          enum_name, def_value_type);
       if (search_modifier != nsenum_modifier::none)
         ofs << nsenum_context::modify_search("iValue", search_modifier);
       ofs << fmt::format(
-          "\n  return EnumStringStartsWith(k{0}StringTable, iValue, {0}::{1}",
+          "\n  return enums::StringStartsWith(k{0}StringTable, iValue, {0}::{1}",
           enum_name, def_value_type);
       finish_with();
     }
     if (suffix_match)
     {
 
-      ofs << fmt::format("\nstd::tuple<{0}::{1}, StringView> "
-                         "{0}::EndsWith(StringView iValue) \n{{\n",
+      ofs << fmt::format("\nstd::tuple<{0}::{1}, std::string_view> "
+                         "{0}::EndsWith(std::string_view iValue) \n{{\n",
                          enum_name, def_value_type);
       if (search_modifier != nsenum_modifier::none)
         ofs << nsenum_context::modify_search("iValue", search_modifier);
       ofs << fmt::format(
-          "\n  return EnumStringEndsWith(k{0}StringTable, iValue, {0}::{1}",
+          "\n  return enums::StringEndsWith(k{0}StringTable, iValue, {0}::{1}",
           enum_name, def_value_type);
       finish_with();
     }
   }
   else
   {
-    ofs << fmt::format("\n{0}::{1} {0}::FromString(StringView iValue) \n{{\n",
+    ofs << fmt::format("\n{0}::{1} {0}::FromString(std::string_view iValue) \n{{\n",
                        enum_name, def_value_type);
 
     if (search_modifier != nsenum_modifier::none)
       ofs << nsenum_context::modify_search("iValue", search_modifier);
     ofs << fmt::format(
-        "\n  return EnumFromString(k{0}StringTable, iValue, {0}::{1}",
+        "\n  return enums::FromString(k{0}StringTable, iValue, {0}::{1}",
         enum_name, def_value_type);
     finish_with();
   }

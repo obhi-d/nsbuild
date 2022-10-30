@@ -67,6 +67,8 @@ int main(int argc, char const* argv[])
   std::string working_dir = ".";
   std::string target      = "";
   std::string preset      = "";
+  std::string filepfx      = "";
+  std::string apipfx      = "";
   nscmakeinfo nscfg;
   runas       ras      = runas::main;
   nsprocess::s_nsbuild = argv[0];
@@ -89,11 +91,25 @@ int main(int argc, char const* argv[])
     {
       ras = runas::generate_enum;
       if (i + 1 < argc)
+      {
         target = argv[i + 1];
-      i++;
+        i++;
+      }
       if (i + 1 < argc)
+      {
         preset = argv[i + 1];
-      i++;
+        i++;
+      }
+      if (i + 1 < argc)
+      {
+        apipfx = argv[i + 1];
+        i++;
+      }
+      if (i + 1 < argc)
+      {
+        filepfx = argv[i + 1];
+        i++;
+      }
     }
     else if (arg == "--copy-media" || arg == "-e")
     {
@@ -127,7 +143,7 @@ int main(int argc, char const* argv[])
       build.main_project();
       break;
     case runas::generate_enum:
-      build.generate_enum(target, preset);
+      build.generate_enum(filepfx, apipfx, target, preset);
       break;
     case runas::check:
       build.dll_ext   = std::regex(NS_DLL_EXT, std::regex_constants::icase);

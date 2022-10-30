@@ -98,6 +98,16 @@ if (MSVC AND __natvis_file)
   set(__natvis_file "${{__nsbuild_root}}/${{__natvis_file}}")
 endif()
 
+set(default_namespace_name {3})
+set(macro_prefix {4})
+set(file_prefix {6})
+set(__nsbuild_data {5})
+
+configure_file(${{__nsbuild_data}}/BuildConfig.hxx ${{CMAKE_CURRENT_LIST_DIR}}/BuildConfig.hxx)
+configure_file(${{__nsbuild_data}}/FlagType.hxx ${{CMAKE_CURRENT_LIST_DIR}}/FlagType.hxx)
+configure_file(${{__nsbuild_data}}/EnumStringHash.hxx ${{CMAKE_CURRENT_LIST_DIR}}/EnumStringHash.hxx)
+
+
 )_";
 
 static inline constexpr char k_target_include_directories[] =
@@ -214,8 +224,11 @@ static inline constexpr char k_media_commands[] = R"_(
 
 static inline constexpr char k_finale[] = R"_(
 
+configure_file("${__nsbuild_data}/ModuleConfig.hxx" "${module_gen_dir}/${module_name}ModuleConfig.hpp")
 if (EXISTS "${module_dir}/local_include/_Config.hxx")
-	configure_file("${module_dir}/local_include/_Config.hxx" "${module_gen_dir}/${module_name}ModuleConfig.h")
+	configure_file("${module_dir}/local_include/_Config.hxx" "${module_gen_dir}/${module_name}InternalConfig.hpp")
+else
+  file(WRITE "${module_gen_dir}/${module_name}InternalConfig.hpp")
 endif()
 add_dependencies(${module_target} nsbuild-check)
 	
@@ -352,6 +365,16 @@ install(FILES "${module_build_dir}/${module_name}Config.cmake"
               "${module_build_dir}/${module_name}ConfigVersion.cmake"
         DESTINATION lib/cmake)
 
+)_";
+
+
+static inline constexpr char k_config_commons[] = R"_(
+
+if (EXISTS "${module_dir}/local_include/_Config.hxx")
+	configure_file("${module_dir}/local_include/_Config.hxx" "${module_gen_dir}/${module_name}ModuleConfig.h")
+endif()
+add_dependencies(${module_target} nsbuild-check)
+	
 )_";
 
 } // namespace cmake

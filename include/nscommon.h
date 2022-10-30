@@ -250,3 +250,23 @@ struct module_regenerated : std::runtime_error
 {
   inline module_regenerated() : std::runtime_error("Modules regenerated") {}
 };
+
+struct nsversion
+{
+  int maj;
+  int min;
+  int rev;
+
+  inline auto operator<=>(nsversion const&) const noexcept = default;
+
+  std::string to_string() const
+  {
+    std::string v = "v";
+    v += std::to_string(maj);
+    v += '.';
+    v += std::to_string(min);
+    v += '.';
+    v += std::to_string(rev);
+    return v;
+  }
+};

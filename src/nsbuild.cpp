@@ -246,8 +246,8 @@ void nsbuild::read_module(std::filesystem::path sp)
   if (!frameworks.back().excludes.contains(mod_name))
   {
     std::string hash_hex_str;
-    scan_file(sp / "Module.ns", true, &hash_hex_str);
-
+    scan_file(sp / "Module.ns", true, nullptr);
+    hash_hex_str = gather_module_hash(sp);
     // Check if timestamp has changed
     auto ts = meta.timestamps.find(targ_name);
     if (ts == meta.timestamps.end() || ts->second != hash_hex_str || state.full_regenerate)
@@ -266,6 +266,26 @@ void nsbuild::read_module(std::filesystem::path sp)
   }
   else
     s_nsmodule->disabled = true;
+}
+
+std::string nsbuild::gather_module_hash(std::filesystem::path const& path)
+{ 
+  std::stringstream buffer;
+  buffer << contents.back();
+  auto others = std::array{"Prepare.cmake", "Build.cmake", "PackageInstall.cmake", "PostBuildInstall.cmake"};
+  for (auto const& o : others)
+  {
+    auto prepare = path / o;
+    if (std::filesystem::exists(prepare))
+    {
+      std::ifstream iff(path);
+      buffer << iff.rdbuf();
+    }
+  }
+  auto content = buffer.str();
+  std::string sha;
+  picosha2::hash256_hex_string(content, sha);
+  return sha;
 }
 
 template <typename L>
@@ -378,7 +398,7 @@ void nsbuild::copy_installed_binaries()
   }
 }
 
-void nsbuild::generate_enum(std::string from, std::string preset)
+void nsbuild::generate_enum(std::string filepfx, std::string apipfx, std::string from, std::string preset)
 {
   compute_paths(preset);
   auto spwd         = get_full_scan_dir();
@@ -389,7 +409,7 @@ void nsbuild::generate_enum(std::string from, std::string preset)
   scan_file(mod_src_path / "Module.ns", true);
 
   auto gen_path = s_nsmodule->get_full_gen_dir(*this);
-  nsenum_context::generate(std::string{mod}, s_nsmodule->type, mod_src_path, gen_path);
+  nsenum_context::generate(filepfx, apipfx, std::string{mod}, s_nsmodule->type, mod_src_path, gen_path);
 }
 
 void nsbuild::copy_media(std::filesystem::path from, std::filesystem::path to, std::string ignore)
@@ -427,6 +447,9 @@ modid nsbuild::get_modid(std::string_view path) const
 void nsbuild::compute_paths(std::string const& preset)
 {
   namespace fs            = std::filesystem;
+
+  paths.data_dir = nsprocess::get_nsbuild_path().parent_path();
+
   auto const& preset_name = preset;
   paths.scan_dir          = fs::canonical(wd / scan_dir);
   paths.out_dir           = (paths.scan_dir / out_dir);
@@ -495,8 +518,8 @@ void nsbuild::write_include_modules() const
   auto const& preset = *s_current_preset;
   cmake::line(ofs, "Setup", '~', true);
   ofs << fmt::format(cmake::k_include_mods_preamble, preset.cppcheck ? "ON" : "OFF", preset.unity_build ? "ON" : "OFF",
-                     natvis);
-
+                     natvis, namespace_name, macro_prefix, paths.data_dir.string(), file_prefix);
+ 
   if (preset.cppcheck)
   {
     auto supression_file_cpy = get_full_cfg_dir() / cmake_gen_dir / "CppCheckSuppressions.txt";
