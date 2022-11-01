@@ -183,22 +183,11 @@ inline EnumType FromString(ArrayType const& iList, StringType iValue, EnumType d
 template <typename Array, unsigned kTupleIndex>
 inline constexpr auto SortTuple(Array arr)
 {
-  auto        result  = arr;
-  std::size_t n       = arr.size();
-  bool        swapped = false;
-  do
-  {
-    for (std::size_t i = 1; i < n; ++i)
-    {
-      if (std::get<kTupleIndex>(result[i - 1]) > std::get<kTupleIndex>(result[i]))
-      {
-        auto t        = result[i - 1];
-        result[i - 1] = result[i];
-        result[i]     = t;
-        swapped       = true;
-      }
-    }
-  } while (!swapped);
+  auto result = arr;
+  std::sort(
+      std::begin(result), std::end(result), [](auto const& first, auto const& second) constexpr {
+        return std::get<kTupleIndex>(first) < std::get<kTupleIndex>(second);
+      });
   return result;
 }
 
