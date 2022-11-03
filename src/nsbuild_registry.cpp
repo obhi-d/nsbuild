@@ -18,7 +18,7 @@ ns_text_handler(custom_cmake, build, state, type, name, content)
     }
     else if (name == "post_build_install" && mod.fetch)
     {
-      mod.fetch->custom_build = content;
+      mod.fetch->post_build_install = content;
     }
     else if (name == "package_install" && mod.fetch)
     {
