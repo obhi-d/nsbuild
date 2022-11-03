@@ -607,6 +607,8 @@ void nsmodule::write_includes(std::ostream& ofs, nsbuild const& bc) const
     write_include(ofs, "${module_dir}", "src", cmake::inheritance::priv);
     write_include(ofs, "${module_gen_dir}", "", cmake::inheritance::pub);
     write_include(ofs, "${module_gen_dir}", "local", cmake::inheritance::priv);
+    for(auto const& s : source_sub_dirs)
+      write_include(ofs, "${module_dir}", "src/" + s, cmake::inheritance::priv);
     write_refs_includes(ofs, bc, *this);
   default:
     break;
@@ -639,6 +641,8 @@ void nsmodule::write_refs_includes(std::ostream& ofs, nsbuild const& bc, nsmodul
                          target.type == nsmodule_type::plugin ? cmake::inheritance::priv : cmake::inheritance::pub);
     target.write_include(ofs, m.source_path, "local_include", cmake::inheritance::priv);
     target.write_include(ofs, m.source_path, "src", cmake::inheritance::priv);
+    for(auto const& s : m.source_sub_dirs)
+      target.write_include(ofs, m.source_path, "src/" + s, cmake::inheritance::priv);
     target.write_include(ofs, m.gen_path, "",
                          target.type == nsmodule_type::plugin ? cmake::inheritance::priv : cmake::inheritance::pub);
     target.write_include(ofs, m.gen_path, "local", cmake::inheritance::priv);
