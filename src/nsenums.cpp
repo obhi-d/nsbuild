@@ -13,6 +13,8 @@ void nsenum_context::begin_header(std::ostream& ofs, std::unordered_set<std::str
 
 void nsenum_context::start_namespace(std::ostream& ofs, std::string str)
 {
+  if (str.empty())
+    return;
   const std::string_view to        = "{ \nnamespace ";
   std::size_t            start_pos = 0;
   while ((start_pos = str.find("::", start_pos)) != std::string::npos)
@@ -25,6 +27,8 @@ void nsenum_context::start_namespace(std::ostream& ofs, std::string str)
 
 void nsenum_context::end_namespace(std::ostream& ofs, std::string const& str)
 {
+  if (str.empty())
+    return;
   std::size_t start_pos = 0;
   ofs << "\n}";
   while ((start_pos = str.find("::", start_pos)) != std::string::npos)
