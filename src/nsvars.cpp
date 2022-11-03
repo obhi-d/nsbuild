@@ -23,9 +23,8 @@ void nsvars::print(std::ostream& os, output_fmt f, bool ignore_unfiltered, char 
     }
     else
     {
-      os << "\nset(" << prefix << v.name << " \"";
+      os << "\nset(" << prefix << v.name << " ";
       cmake::print(os, cmake::value(v.params, sep));
-      os << "\" ";
       if (f == output_fmt::set_cache)
         os << " CACHE INTERNAL \"\"";
       os << ")";
