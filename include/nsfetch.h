@@ -5,9 +5,7 @@
 
 struct nsfetch
 {
-  neo::text_content        custom_build;
-  neo::text_content        post_build_install;
-  neo::text_content        package_install;
+  neo::text_content        finalize;
   neo::text_content        prepare;
   std::string_view         repo;
   std::string_view         license;

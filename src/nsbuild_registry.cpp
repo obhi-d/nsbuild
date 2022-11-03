@@ -12,17 +12,9 @@ ns_text_handler(custom_cmake, build, state, type, name, content)
     if (build.frameworks.back().modules.empty())
       return;
     auto& mod = build.frameworks.back().modules.back();
-    if (name == "build" && mod.fetch)
+    if (name == "finalize" && mod.fetch)
     {
-      mod.fetch->custom_build = content;
-    }
-    else if (name == "post_build_install" && mod.fetch)
-    {
-      mod.fetch->post_build_install = content;
-    }
-    else if (name == "package_install" && mod.fetch)
-    {
-      mod.fetch->package_install = content;
+      mod.fetch->finalize = content;
     }
     else if (name == "prepare" && mod.fetch)
     {

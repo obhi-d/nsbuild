@@ -287,102 +287,65 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
   std::stringstream ofs;
 
   std::filesystem::create_directories(ext_dir);
+  
+  if (!ofs)
   {
+    nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
+    throw std::runtime_error("Could not create CMakeLists.txt");
+  }
 
-    if (!ofs)
+  ofs << fmt::format(cmake::k_project_name, name, version.empty() ? bc.version : version);
+  ofs << fmt::format("\nlist(PREPEND CMAKE_MODULE_PATH \"{}\")", cmake::path(get_full_sdk_dir(bc)));
+  bc.macros.print(ofs);
+  macros.print(ofs);
+  // write_variables(ofs, bc);
+  for (auto const& a : fetch->args)
+  {
+    a.print(ofs, output_fmt::cmake_def, false);
+  }
+
+  std::filesystem::path src = source_path;
+
+  bc.write_cxx_options(ofs);
+
+  // Do we have prepare
+  auto prepare = src / "Prepare.cmake";
+  if (std::filesystem::exists(prepare) || !fetch->prepare.fragments.empty())
+  {
+    if (std::filesystem::exists(prepare))
     {
-      nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
-      throw std::runtime_error("Could not create CMakeLists.txt");
+      std::ifstream t{prepare};
+      std::string   buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+      ofs << buffer;
     }
 
-    ofs << fmt::format(cmake::k_project_name, name, version.empty() ? bc.version : version);
-    ofs << fmt::format("\nlist(PREPEND CMAKE_MODULE_PATH \"{}\")", cmake::path(get_full_sdk_dir(bc)));
-    bc.macros.print(ofs);
-    macros.print(ofs);
-    // write_variables(ofs, bc);
-    for (auto const& a : fetch->args)
+    if (!fetch->prepare.fragments.empty())
     {
-      a.print(ofs, output_fmt::cmake_def, false);
-    }
-
-    std::filesystem::path src = source_path;
-
-    bc.write_cxx_options(ofs);
-
-    // Do we have prepare
-    auto prepare = src / "Prepare.cmake";
-    if (std::filesystem::exists(prepare) || !fetch->prepare.fragments.empty())
-    {
-      if (std::filesystem::exists(prepare))
-      {
-        std::ifstream t{prepare};
-        std::string   buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-        ofs << buffer;
-      }
-
-      if (!fetch->prepare.fragments.empty())
-      {
-        for (auto const& f : fetch->prepare.fragments)
-          ofs << f << "\n";
-      }
-    }
-
-    ofs << cmake::k_fetch_content;
-
-    // Do we have build
-    auto srccmk = src / "Build.cmake";
-    if (!fetch->custom_build.fragments.empty() || std::filesystem::exists(srccmk))
-    {
-      if (!fetch->custom_build.fragments.empty())
-      {
-        for (auto const& f : fetch->custom_build.fragments)
-          ofs << f << "\n";
-      }
-
-      if (std::filesystem::exists(srccmk))
-      {
-        std::ifstream t{srccmk};
-        std::string   buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-        ofs << buffer;
-      }
-    }
-    
-    // Do we have install
-    auto packageinstall = src / "PackageInstall.cmake";
-    if (std::filesystem::exists(packageinstall) || !fetch->package_install.fragments.empty())
-    {
-      if (std::filesystem::exists(packageinstall))
-      {
-        std::ifstream t{packageinstall};
-        std::string   buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-        ofs << buffer;
-      }
-
-      if (!fetch->package_install.fragments.empty())
-      {
-        for (auto const& f : fetch->package_install.fragments)
-          ofs << f << "\n";
-      }
-    }
-
-    // Do we have post build install
-    auto postinstall = src / "PostBuildInstall.cmake";
-    if (std::filesystem::exists(postinstall) || !fetch->post_build_install.fragments.empty())
-    {
-      if (std::filesystem::exists(postinstall))
-      {
-        std::ifstream t{postinstall};
-        std::string   buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-        ofs << buffer;
-      }
-
-      if (!fetch->post_build_install.fragments.empty())
-      {
-        for (auto const& f : fetch->post_build_install.fragments)
-          ofs << f << "\n";
-      }
+      for (auto const& f : fetch->prepare.fragments)
+        ofs << f << "\n";
     }
   }
+
+  ofs << cmake::k_fetch_content;
+
+  // Do we have build
+  auto srccmk = src / "Finalize.cmake";
+  if (!fetch->finalize.fragments.empty() || std::filesystem::exists(srccmk))
+  {
+    if (!fetch->finalize.fragments.empty())
+    {
+      for (auto const& f : fetch->finalize.fragments)
+        ofs << f << "\n";
+    }
+
+    if (std::filesystem::exists(srccmk))
+    {
+      std::ifstream t{srccmk};
+      std::string   buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
+      ofs << buffer;
+    }
+  }
+     
   {
     auto          content = ofs.str();
     std::ofstream ffs{cmlf};
