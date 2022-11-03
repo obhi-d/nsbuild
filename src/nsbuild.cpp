@@ -578,6 +578,9 @@ void nsbuild::write_cxx_options(std::ostream& ofs) const
     }
   }
 
+  ofs << "\nadd_compile_options(${__module_cxx_compile_flags})"
+         "\nadd_link_options(${__module_cxx_linker_flags})";
+
   ofs << "\n\n";
 }
 

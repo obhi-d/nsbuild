@@ -389,12 +389,6 @@ ns_cmd_handler(fetch, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(fetch_content, build, state, cmd)
-{
-  build.s_nsfetch->fetch_content = to_bool(get_idx_param(cmd, 0));
-  return neo::retcode::e_success;
-}
-
 ns_cmd_handler(runtime_only, build, state, cmd)
 {
   build.s_nsfetch->runtime_only = to_bool(get_idx_param(cmd, 0));
@@ -775,7 +769,6 @@ ns_registry(nsbuild)
     ns_cmd(namespace);
     ns_cmd(skip_namespace);
     ns_cmd(runtime_only);
-    ns_cmd(fetch_content);
   }
 
   ns_scope_cust(public, clear_interface)

@@ -25,6 +25,5 @@ struct nsfetch
   bool                     legacy_linking = false;
   bool                     skip_namespace = false;
   bool                     runtime_only   = false;
-  bool                     fetch_content  = false;
   bool                     force_build    = false;
 };

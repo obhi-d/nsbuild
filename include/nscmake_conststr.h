@@ -265,51 +265,6 @@ FetchContent_MakeAvailable(${fetch_extern_name})
 
 )_";
 
-static inline constexpr char k_ext_cmake_proj_start[] = R"_(
-
-
-ExternalProject_Add(${fetch_extern_name}
-  GIT_REPOSITORY ${fetch_repo}
-  GIT_TAG  ${fetch_commit}
-  SOURCE_DIR ${fetch_src_dir}
-  BINARY_DIR ${fetch_bulid_dir}
-  INSTALL_DIR ${fetch_sdk_dir}
-  CMAKE_ARGS
-    -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
-    -DCMAKE_GENERATOR_PLATFORM=${CMAKE_GENERATOR_PLATFORM}
-    -DCMAKE_GENERATOR_INSTANCE=${CMAKE_GENERATOR_INSTANCE}
-    -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-    -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
-    -DCMAKE_INSTALL_PREFIX=${fetch_sdk_dir}
-    -DCMAKE_MODULE_PATH=${fetch_sdk_dir})_";
-
-static inline constexpr char k_ext_proj_custom[] = R"_(
-
-if (NOT __fetch_configure_cmd)
-  set(__fetch_configure_cmd ${CMAKE_COMMAND} -E echo " -- Fake Configuring ${module_name}")
-endif()
-if (NOT __fetch_build_cmd)
-  set(__fetch_build_cmd ${CMAKE_COMMAND} -E echo " -- Fake Building ${module_name}")
-endif()
-if (NOT __fetch_install_cmd)
-  set(__fetch_install_cmd ${CMAKE_COMMAND} -E echo " -- Fake Installing ${module_name}")
-endif()
-
-if (NOT __fetch_is_custom_build)
-  ExternalProject_Add(${fetch_extern_name}
-    GIT_REPOSITORY ${fetch_repo}
-    GIT_TAG  ${fetch_commit}
-    SOURCE_DIR ${fetch_src_dir}
-    BINARY_DIR ${fetch_bulid_dir}
-    INSTALL_DIR ${fetch_sdk_dir}
-    CONFIGURE_COMMAND ${__fetch_configure_cmd}
-    BUILD_COMMAND ${__fetch_configure_cmd}
-    INSTALL_COMMAND ${__fetch_install_cmd}
-  )
-endif()
-
-)_";
-
 static inline constexpr char k_project_name[] = R"_(
 
 if (POLICY CMP0048)

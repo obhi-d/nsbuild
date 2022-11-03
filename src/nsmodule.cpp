@@ -307,6 +307,8 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
 
     std::filesystem::path src = source_path;
 
+    bc.write_cxx_options(ofs);
+
     // Do we have prepare
     auto prepare = src / "Prepare.cmake";
     if (std::filesystem::exists(prepare) || !fetch->prepare.fragments.empty())
@@ -325,13 +327,11 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
       }
     }
 
+    ofs << cmake::k_fetch_content;
+
     // Do we have build
     auto srccmk = src / "Build.cmake";
-    if (fetch->fetch_content)
-    {
-      ofs << cmake::k_fetch_content;
-    }
-    else if (!fetch->custom_build.fragments.empty() || std::filesystem::exists(srccmk))
+    if (!fetch->custom_build.fragments.empty() || std::filesystem::exists(srccmk))
     {
       if (!fetch->custom_build.fragments.empty())
       {
@@ -345,19 +345,8 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
         std::string   buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
         ofs << buffer;
       }
-      ofs << cmake::k_ext_proj_custom;
     }
-    else
-    {
-      ofs << cmake::k_ext_cmake_proj_start;
-      for (auto const& a : fetch->args)
-      {
-        for (auto const& v : a.params)
-          ofs << fmt::format("\n    -D{0}=${{{0}}}", v.name);
-      }
-      ofs << "\n)\n";
-    }
-
+    
     // Do we have install
     auto packageinstall = src / "PackageInstall.cmake";
     if (std::filesystem::exists(packageinstall) || !fetch->package_install.fragments.empty())
@@ -626,11 +615,11 @@ void nsmodule::write_cxx_options(std::ostream& ofs, nsbuild const& bc) const
 {
   if (!has_runtime(type))
     return;
-  cmake::line(ofs, "cxx-options");
-  ofs << "\ntarget_compile_options(${module_target} PRIVATE "
-         "${__module_cxx_compile_flags})";
-  ofs << "\ntarget_link_options(${module_target} PRIVATE "
-         "${__module_cxx_linker_flags})";
+ // cmake::line(ofs, "cxx-options");
+ // ofs << "\ntarget_compile_options(${module_target} PRIVATE "
+ //        "${__module_cxx_compile_flags})";
+ // ofs << "\ntarget_link_options(${module_target} PRIVATE "
+ //        "${__module_cxx_linker_flags})";
 }
 
 void nsmodule::write_includes(std::ostream& ofs, nsbuild const& bc) const
