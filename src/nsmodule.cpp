@@ -301,7 +301,7 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
   // write_variables(ofs, bc);
   for (auto const& a : fetch->args)
   {
-    a.print(ofs, output_fmt::cmake_def, false);
+    a.print(ofs, output_fmt::set_cache, false);
   }
 
   std::filesystem::path src = source_path;
