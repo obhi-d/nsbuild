@@ -2,29 +2,51 @@ type = extern;
 
 fetch "https://github.com/boostorg/boost.git"
 {
-  license = "LICENSE_1_0.txt";
-  commit  = "ecb35096bc1cb37ba62d9cb93a344b76ea4943ce";
-  package = Boost;
-  components = ["system", "container", "date_time"];
-  args
-  {
-    BOOST_EXCEPTION_DISABLE = OFF;
-    BOOST_INCLUDE_LIBRARIES = "system;container;date_time";
-    BUILD_TESTING = OFF;
-    BUILD_SHARED_LIBS = ON;
-  }
+  license        : "LICENSE_1_0.txt";
+  commit         : "32da69a36f84c5255af8a994951918c258bac601";
+  package        : Boost;
+  components     : ["headers", "container", "exception", "graph", "json", "program_options", "date_time"];
 }
 
-{{cmake:custom_build}}
+{{cmake:finalize}}
+
+set(bootstrap)
+set(b2)
+set(with_lbs)
+
 
 if (${config_platform} STREQUAL "windows")
   set(bootstrap "bootstrap.bat")
-  set(b2 b2 --with-system --with-container --with-program_options --with-json --with-date_time)
+  set(b2 "b2")
 else()
-  set(bootstrap "./bootstrap.sh" "--with-libraries=system,container,program_options,json,date_time")
+  set(bootstrap "./bootstrap.sh")
   set(b2 "./b2")
 endif()
 
+# set(boost_build_libs "container;contract;date_time;graph;exception;json;program_options;serialization;system")
+
+## -------------------------------------------------------
+## Append boost components
+## -------------------------------------------------------
+function(append_boost_component component_name)
+
+  if (${config_platform} STREQUAL "windows")
+    list(APPEND b2 "--with-${component_name}")
+    set(b2 ${b2} PARENT_SCOPE)
+  else()
+    if (with_lbs)
+      set(with_libs "${with_libs},${component_name}" PARENT_SCOPE)
+    else()
+      set(with_libs "${component_name}" PARENT_SCOPE)
+    endif()
+  endif()
+
+endfunction()
+## -------------------------------------------------------
+if (${config_platform} STREQUAL "windows")
+else()
+  list(APPEND bootstrap "--with-libraries=${with_libs}" )
+endif()
 
 if (${config_type} STREQUAL "Debug")
   set(variant "debug")
@@ -32,8 +54,11 @@ else()
   set(variant "release")
 endif()
 
+foreach(co ${fetch_components})
+  append_boost_component(${co})
+endforeach()
 
 set(__fetch_configure_cmd "${CMAKE_COMMAND}" -E chdir "${fetch_src_dir}" "${bootstrap}")
-set(__fetch_build_cmd "${CMAKE_COMMAND}" -E chdir "${fetch_src_dir}" ${b2} "--build-dir${fetch_build_dir}" "--prefix=${fetch_sdk_dir}" "address-model=64" "variant=${variant}" "define=BOOST_ALL_DYN_LINK" "link=shared")
-set(__fetch_install_cmd "${CMAKE_COMMAND}" -E chdir "${fetch_src_dir}" ${b2} install "--build-dir=${fetch_build_dir}" "--prefix=${fetch_sdk_dir}" "address-model=64" "variant=${variant}" "define=BOOST_ALL_DYN_LINK" "link=shared")
+set(__fetch_build_cmd     "${CMAKE_COMMAND}" -E chdir "${fetch_src_dir}" ${b2} "--build-dir${fetch_build_dir}" "--prefix=${fetch_sdk_dir}" "address-model=64" "variant=${variant}" "define=BOOST_ALL_DYN_LINK" "define=BUILD_TESTING=OFF" "define=BOOST_EXCEPTION_DISABLE=ON" "link=shared")
+set(__fetch_install_cmd   "${CMAKE_COMMAND}" -E chdir "${fetch_src_dir}" ${b2} install "--build-dir=${fetch_build_dir}" "--prefix=${fetch_sdk_dir}" "address-model=64" "variant=${variant}" "define=BOOST_ALL_DYN_LINK" "define=BUILD_TESTING=OFF" "define=BOOST_EXCEPTION_DISABLE=ON" "link=shared")
 
