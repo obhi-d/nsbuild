@@ -195,12 +195,12 @@ set(has_enums_json FALSE)
 
 if (EXISTS "${module_dir}/include/Enums.json")
   list(APPEND enums_json "${module_dir}/include/Enums.json")
-  list(APPEND enums_json_output "${module_gen_dir}/${file_prefix}${module_name}Enums.h")
+  list(APPEND enums_json_output "${module_gen_dir}/${file_prefix}${module_name}Enums.hpp")
   set(has_enums_json TRUE)
 endif()
 if (EXISTS "${module_dir}/local_include/Enums.json")
   list(APPEND enums_json "${module_dir}/local_include/Enums.json")
-  list(APPEND enums_json_output "${module_gen_dir}/local/${file_prefix}${module_name}LocalEnums.h")
+  list(APPEND enums_json_output "${module_gen_dir}/local/${file_prefix}${module_name}LocalEnums.hpp")
   set(has_enums_json TRUE)
 endif()
 if(has_enums_json)
@@ -323,6 +323,5 @@ install(FILES "${module_build_dir}/${module_name}Config.cmake"
         DESTINATION lib/cmake)
 
 )_";
-
 
 } // namespace cmake

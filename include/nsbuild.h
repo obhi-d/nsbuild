@@ -51,6 +51,8 @@ struct nsbuild : public neo::command_handler
   // Project name
   std::string project_name;
 
+  coding_style style = coding_style::UpperCamelCase;
+
   std::string test_ref = "";
 
   std::string build_ns_sha;
@@ -190,7 +192,7 @@ struct nsbuild : public neo::command_handler
 
   struct fullpaths
   {
-    std::filesystem::path data_dir; 
+    std::filesystem::path data_dir;
     std::filesystem::path scan_dir;
     std::filesystem::path cfg_dir;
     std::filesystem::path cmake_gen_dir;
@@ -203,7 +205,7 @@ struct nsbuild : public neo::command_handler
   };
 
   fullpaths paths;
-  void compute_paths(std::string const& preset);
+  void      compute_paths(std::string const& preset);
 
   inline std::filesystem::path const& get_full_scan_dir() const { return paths.scan_dir; }
   inline std::filesystem::path const& get_full_cfg_dir() const { return paths.cfg_dir; }

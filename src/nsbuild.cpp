@@ -270,7 +270,7 @@ void nsbuild::read_module(std::filesystem::path sp)
 }
 
 std::string nsbuild::gather_module_hash(std::filesystem::path const& path)
-{ 
+{
   std::stringstream buffer;
   buffer << contents.back();
   auto others = std::array{"Prepare.cmake", "Build.cmake", "PackageInstall.cmake", "PostBuildInstall.cmake"};
@@ -283,7 +283,7 @@ std::string nsbuild::gather_module_hash(std::filesystem::path const& path)
       buffer << iff.rdbuf();
     }
   }
-  auto content = buffer.str();
+  auto        content = buffer.str();
   std::string sha;
   picosha2::hash256_hex_string(content, sha);
   return sha;
@@ -410,7 +410,7 @@ void nsbuild::generate_enum(std::string filepfx, std::string apipfx, std::string
   scan_file(mod_src_path / "Module.ns", true);
 
   auto gen_path = s_nsmodule->get_full_gen_dir(*this);
-  nsenum_context::generate(filepfx, apipfx, std::string{mod}, s_nsmodule->type, mod_src_path, gen_path);
+  nsenum_context::generate(filepfx, apipfx, std::string{mod}, s_nsmodule->type, mod_src_path, gen_path, style);
 }
 
 void nsbuild::copy_media(std::filesystem::path from, std::filesystem::path to, std::string ignore)
@@ -447,7 +447,7 @@ modid nsbuild::get_modid(std::string_view path) const
 
 void nsbuild::compute_paths(std::string const& preset)
 {
-  namespace fs            = std::filesystem;
+  namespace fs = std::filesystem;
 
   paths.data_dir = nsprocess::get_nsbuild_path().parent_path();
 
@@ -520,7 +520,7 @@ void nsbuild::write_include_modules() const
   cmake::line(ofs, "Setup", '~', true);
   ofs << fmt::format(cmake::k_include_mods_preamble, preset.cppcheck ? "ON" : "OFF", preset.unity_build ? "ON" : "OFF",
                      natvis, namespace_name, macro_prefix, cmake::path(paths.data_dir), file_prefix);
- 
+
   if (preset.cppcheck)
   {
     auto supression_file_cpy = get_full_cfg_dir() / cmake_gen_dir / "CppCheckSuppressions.txt";

@@ -90,6 +90,7 @@ struct nsenum_context
 {
   std::string                     export_api;
   std::unordered_set<std::string> includes;
+  coding_style                    style;
 
   static void        begin_header(std::ostream& ofs, std::unordered_set<std::string> const&);
   static void        start_namespace(std::ostream& ofs, std::string);
@@ -99,12 +100,11 @@ struct nsenum_context
   static std::string modify_search(std::string const& on, nsenum_modifier modifier);
 
   static void parse(std::string const& pfx, std::string const& mod, std::string const& header,
-                    std::filesystem::path const&, std::ofstream& cpp,
-                    std::ofstream& hpp, std::vector<std::string> const&, bool exp);
+                    std::filesystem::path const&, std::ofstream& cpp, std::ofstream& hpp,
+                    std::vector<std::string> const&, bool exp, coding_style);
   static void write_file_header(std::ofstream& ofs, bool isheader);
   static void generate(std::string const& filepfx, std::string const& apipfx, std::string mod_name, nsmodule_type type,
-                       std::filesystem::path source,
-                       std::filesystem::path gen);
+                       std::filesystem::path source, std::filesystem::path gen, coding_style);
 };
 
 struct nsenum
@@ -123,19 +123,20 @@ struct nsenum
   nsenum_usage          usage           = nsenum_usage::as_enum;
   nsenum_entry_list     entries;
   nsenum_entry          default_entry;
-  bool                  auto_flags                    = false;
-  bool                  string_table                  = true;
-  bool                  skip_last_element             = false;
-  bool                  auto_default                  = true;
-  bool                  suffix_match                  = false;
-  bool                  prefix_match                  = false;
-  bool                  string_key                    = false;
-  bool                  custom_strings                = false;
-  bool                  has_enum                      = false;
-  bool                  has_flags                     = false;
-  bool                  has_consts                    = false;
-  bool                  has_auto_default              = false;
-  bool                  has_special_default_autoflags = false;
+
+  bool auto_flags                    = false;
+  bool string_table                  = true;
+  bool skip_last_element             = false;
+  bool auto_default                  = true;
+  bool suffix_match                  = false;
+  bool prefix_match                  = false;
+  bool string_key                    = false;
+  bool custom_strings                = false;
+  bool has_enum                      = false;
+  bool has_flags                     = false;
+  bool has_consts                    = false;
+  bool has_auto_default              = false;
+  bool has_special_default_autoflags = false;
 
   nsenum(nsenum_context& ctx, nlohmann::json const&);
 

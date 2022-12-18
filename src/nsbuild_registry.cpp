@@ -23,6 +23,18 @@ ns_text_handler(custom_cmake, build, state, type, name, content)
   }
 }
 
+ns_cmd_handler(style, build, state, cmd)
+{
+  auto val = get_idx_param(cmd, 0);
+  if (val == "upper_camel_case")
+    build.style = coding_style::UpperCamelCase;
+  else if (val == "lower_camel_case")
+    build.style = coding_style::LowerCamelCase;
+  else if (val == "SnakeCase")
+    build.style = coding_style::SnakeCase;
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(project_name, build, state, cmd)
 {
   build.project_name = get_idx_param(cmd, 0);
@@ -683,6 +695,7 @@ ns_registry(nsbuild)
   ns_cmd(frameworks_dir);
   ns_cmd(runtime_dir);
   ns_cmd(natvis);
+  ns_cmd(style);
 
   ns_scope_cust(preset, clear_presets)
   {
