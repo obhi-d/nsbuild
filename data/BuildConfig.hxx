@@ -38,6 +38,6 @@ namespace BuildConfig
     constexpr unsigned int     Revision      = @PROJECT_VERSION_PATCH@;
     constexpr std::string_view ProjectName   = "@PROJECT_NAME@ v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@";
     constexpr std::string_view VersionString = "v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@";
-    constexpr bool             Endianness    = @nsbuild_host_is_big_endian@;
+    constexpr bool             IsBigEndian   = @nsbuild_host_is_big_endian@;
   }
 }
