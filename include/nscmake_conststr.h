@@ -58,11 +58,6 @@ include(CTest)
 
 add_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3} ${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3}/main)
 
-add_custom_target(nsbuild-copy-ccjson ALL
-  COMMAND ${{CMAKE_COMMAND}} -E copy_if_different ${{CMAKE_BINARY_DIR}}/compile_commands.json ${{__main_nsbuild_dir}}/compile_commands.json 
-  DEPENDS nsbuild-check
-)
-
 
 )_";
 

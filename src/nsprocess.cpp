@@ -79,8 +79,6 @@ void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::pa
   if (rc || status != 0)
   {
     nslog::error("Build failed.");
-    if (!msg.empty())
-      nslog::error(msg);
     if (rc)
       throw std::system_error(rc);
     else

@@ -16,6 +16,8 @@
 #include <nslog.h>
 #include <nsprocess.h>
 #include <stdexcept>
+#include <unordered_set>
+#include <string>
 
 extern void halt();
 nsbuild::nsbuild() { wd = std::filesystem::current_path(); }
@@ -107,8 +109,21 @@ void nsbuild::before_all()
   act_meta();
   foreach_framework([this](std::filesystem::path p) { read_framework(p); });
   check_modules();
+  delete_builds_if_required();
   update_macros();
-  process_targets();
+  try
+  {
+    process_targets();
+  }
+  catch (std::exception& ex)
+  {
+    nslog::print("******************************************");
+    nslog::print("*** Module failed to build!            ***");
+    nslog::print("******************************************\n");
+    // Still write out meta
+    write_meta(get_full_cache_dir());
+    throw;
+  }
   copy_installed_binaries();
   write_meta(get_full_cache_dir());
 
@@ -125,6 +140,16 @@ void nsbuild::before_all()
     nslog::print("*** Check finished. Resuming cmake...  ***");
     nslog::print("******************************************\n");
   }
+}
+
+void nsbuild::delete_builds_if_required()
+{
+  if (!state.delete_builds)
+    return;
+  foreach_module([this](auto& m) 
+    { 
+      m.delete_build(*this);
+    });
 }
 
 void nsbuild::check_modules()
@@ -258,7 +283,6 @@ void nsbuild::read_module(std::filesystem::path sp)
       state.is_dirty             = true;
       meta.timestamps[targ_name] = hash_hex_str;
     }
-    meta.ordered_timestamps.emplace_back(fmt::format("\n  {} : \"{}\";", targ_name, hash_hex_str));
     // Add a target
     auto t                  = targets.emplace(targ_name, nstarget{});
     t.first->second.sha256  = hash_hex_str;
@@ -273,13 +297,13 @@ std::string nsbuild::gather_module_hash(std::filesystem::path const& path)
 {
   std::stringstream buffer;
   buffer << contents.back();
-  auto others = std::array{"Prepare.cmake", "Build.cmake", "PackageInstall.cmake", "PostBuildInstall.cmake"};
+  auto others = std::array{"Prepare.cmake", "Finalize.cmake"};
   for (auto const& o : others)
   {
     auto prepare = path / o;
     if (std::filesystem::exists(prepare))
     {
-      std::ifstream iff(path);
+      std::ifstream iff(prepare);
       buffer << iff.rdbuf();
     }
   }
@@ -366,6 +390,7 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
   mod.process(*this, name, targ);
   if (mod.was_fetch_rebuilt)
     state.exit_and_rebuild = true;
+  meta.ordered_timestamps.emplace_back(fmt::format("\n  {} : \"{}\";", name, targ.sha256));
 }
 
 void nsbuild::copy_installed_binaries()
@@ -413,20 +438,62 @@ void nsbuild::generate_enum(std::string filepfx, std::string apipfx, std::string
   nsenum_context::generate(filepfx, apipfx, std::string{mod}, s_nsmodule->type, mod_src_path, gen_path, style);
 }
 
-void nsbuild::copy_media(std::filesystem::path from, std::filesystem::path to, std::string ignore)
+void nsbuild::copy_media(std::filesystem::path from, std::filesystem::path to, std::filesystem::path artefacts,
+                         std::string ignore)
 {
   if (!std::filesystem::exists(from))
     return;
   std::filesystem::create_directories(to);
+  
   namespace fs            = std::filesystem;
-  auto       it           = std::filesystem::directory_iterator{from};
-  const auto copy_options = fs::copy_options::update_existing | fs::copy_options::recursive;
+  auto       it           = fs::recursive_directory_iterator{from};
+  const auto copy_options = fs::copy_options::update_existing;
+
+  std::unordered_set<fs::path> touched;
+  std::unordered_set<fs::path> added;
+  
+  if (fs::exists(artefacts))
+  {
+    std::string   spath;
+    std::ifstream ff{artefacts};
+
+    while (!ff.eof())
+    {
+      std::getline(ff, spath);
+      touched.emplace(spath);
+    }
+  }
+
   for (auto const& dir_entry : it)
   {
-    if (dir_entry.is_directory() && dir_entry.path().filename() == ignore)
-      continue;
-    std::filesystem::copy(dir_entry.path(), to / dir_entry.path().filename(), copy_options);
+    if (dir_entry.is_directory() && (dir_entry.path().filename() == ignore))
+        continue;
+
+    std::error_code ec       = {};
+    auto const& path     = dir_entry.path();
+    auto        rel_path = path.lexically_relative(from);
+    auto        dest     = to / rel_path;
+
+    if (dir_entry.is_directory())
+        fs::create_directories(dest, ec);
+    else
+    {
+        fs::copy(path, dest, copy_options);
+        added.emplace(rel_path);
+        touched.erase(rel_path);
+    }
   }
+
+  for (auto const& file : touched)
+  {
+    std::error_code ec = {};
+    fs::remove(to / file, ec);
+  }
+
+  std::ofstream ff{artefacts};
+  for (auto const& file : added)
+    ff << file << std::endl;
+  
 }
 
 modid nsbuild::get_modid(std::string_view path) const

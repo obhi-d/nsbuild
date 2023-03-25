@@ -79,7 +79,6 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
   std::filesystem::path p = fw.source_path;
   p /= name;
 
-  force_rebuild  = bc.state.delete_builds;
   force_build    = bc.state.full_regenerate;
   framework_path = fw.source_path;
   framework_name = fw.name;
@@ -106,7 +105,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     unset.emplace_back("data_group_output");
     cmd.msgs.push_back(fmt::format("Building data files for {}", name));
     cmd.command = "${nsbuild}";
-    cmd.params  = "--copy-media ${module_dir}/media ${config_rt_dir}/media "
+    cmd.params  = "--copy-media ${module_dir}/media ${config_rt_dir}/media ${module_build_dir}/media.files "
                   "${config_ignored_media}";
 
     step.steps.push_back(cmd);
@@ -239,21 +238,22 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, ns
   }
 }
 
+void nsmodule::delete_build(nsbuild const& bc) 
+{
+  nslog::print(fmt::format("Deleting : {}", name));
+  std::error_code ec;
+  std::filesystem::remove_all(get_full_fetch_bld_dir(bc), ec);
+  std::filesystem::remove_all(get_full_fetch_sbld_dir(bc), ec);
+  std::filesystem::remove_all(get_full_bld_dir(bc), ec);
+  regenerate = true;
+  force_build = true;
+}
+
 void nsmodule::update_fetch(nsbuild const& bc)
 {
   if (!fetch)
     return;
   std::error_code ec;
-
-  if (force_rebuild)
-  {
-    // remove bld/module directory
-    std::filesystem::remove_all(get_full_fetch_bld_dir(bc), ec);
-    std::filesystem::remove_all(get_full_fetch_sbld_dir(bc), ec);
-    std::filesystem::remove_all(get_full_bld_dir(bc), ec);
-    // std::filesystem::remove_all(get_full_sdk_dir(bc), ec);
-  }
-
   fetch_content(bc);
 }
 
@@ -280,20 +280,29 @@ void nsmodule::generate_plugin_manifest(nsbuild const& bc)
   f << "\n}\n}";
 }
 
-std::string nsmodule::write_fetch_build(nsbuild const& bc) const
-{
-  auto              ext_dir = get_full_ext_dir(bc);
-  auto              cmlf    = ext_dir / "CMakeLists.txt";
-  std::stringstream ofs;
+void nsmodule::write_fetch_build_content(nsbuild const& bc, content const& cc) const
+{ 
+  auto ext_dir = get_full_ext_dir(bc);
 
   std::filesystem::create_directories(ext_dir);
-  
-  if (!ofs)
+
   {
-    nslog::error(fmt::format("Failed to write to : {}", cmlf.generic_string()));
-    throw std::runtime_error("Could not create CMakeLists.txt");
+    auto          cmlf = ext_dir / "CMakeLists.txt";
+    std::ofstream ffs{cmlf};
+    ffs << cc.data;
   }
 
+  {
+    auto          cmlf = ext_dir / "CMakePresets.json";
+    std::ofstream ofs{cmlf};
+    nspreset::write(ofs, nspreset::write_compiler_paths, cmake::path(get_full_ext_bld_dir(bc)), {}, bc);
+  }
+}
+
+nsmodule::content nsmodule::make_fetch_build_content(nsbuild const& bc) const
+{
+  std::stringstream ofs;
+    
   ofs << fmt::format(cmake::k_project_name, name, version.empty() ? bc.version : version);
   ofs << fmt::format("\nlist(PREPEND CMAKE_MODULE_PATH \"{}\")", cmake::path(get_full_sdk_dir(bc)));
   bc.macros.print(ofs);
@@ -345,27 +354,26 @@ std::string nsmodule::write_fetch_build(nsbuild const& bc) const
       ofs << buffer;
     }
   }
-     
-  {
-    auto          content = ofs.str();
-    std::ofstream ffs{cmlf};
-    ffs << content;
-    std::string sha;
-    picosha2::hash256_hex_string(content, sha);
 
-    auto          cmlf = ext_dir / "CMakePresets.json";
-    std::ofstream ofs{cmlf};
-    nspreset::write(ofs, nspreset::write_compiler_paths, cmake::path(get_full_ext_bld_dir(bc)), {}, bc);
-    return sha;
-  }
+  content cc;
+  cc.data = ofs.str();
+  
+  picosha2::hash256_hex_string(cc.data, cc.sha);
+  return cc;
 }
 
 void nsmodule::fetch_content(nsbuild const& bc)
 {
   std::string sha;
-
-  if ((regenerate || force_rebuild))
-    sha = write_fetch_build(bc);
+  bool        change = false;
+  
+  if (regenerate)
+  {
+    auto cc = make_fetch_build_content(bc);
+    write_fetch_build_content(bc, cc);
+    sha = cc.sha;
+    change = fetch_changed(bc, sha);
+  }
 
   if (bc.cmakeinfo.cmake_skip_fetch_builds)
   {
@@ -373,16 +381,18 @@ void nsmodule::fetch_content(nsbuild const& bc)
     return;
   }
 
-  if (sha.empty())
-    return;
-
-  if (fetch_changed(bc, sha) || fetch->force_build || force_rebuild || force_build)
+  if (change || fetch->force_build || force_build)
   {
-    nslog::print(fmt::format("Rebuilding {}..", name));
+    nslog::print(fmt::format("Rebuilding : {}..", name));
     build_fetched_content(bc);
     write_fetch_meta(bc, sha);
     was_fetch_rebuilt = true;
   }
+  else
+  {
+    nslog::print(fmt::format("Already Built : {}..", name));
+  }
+
 }
 
 bool nsmodule::fetch_changed(nsbuild const& bc, std::string const& last_sha) const
@@ -1018,7 +1028,7 @@ void nsmodule::write_runtime_settings(std::ostream& ofs, nsbuild const& bc) cons
   }
 }
 
-void nsmodule::build_fetched_content(nsbuild const& bc) const
+void nsmodule::build_fetched_content(nsbuild const& bc)
 {
   auto src  = get_full_ext_dir(bc);
   auto xpb  = get_full_ext_bld_dir(bc);
@@ -1027,6 +1037,7 @@ void nsmodule::build_fetched_content(nsbuild const& bc) const
   nsprocess::cmake_config(bc, {}, cmake::path(src), xpb);
   nsprocess::cmake_build(bc, "", xpb);
   nsprocess::cmake_install(bc, cmake::path(dsdk), xpb);
+  
   // custom location copy
   if (!fetch->runtime_loc.empty())
   {

@@ -134,6 +134,7 @@ struct nsbuild : public neo::command_handler
   void write_install_configs(std::ofstream&) const;
   void check_modules();
   void write_common_files(std::filesystem::path const&);
+  void delete_builds_if_required();
 
   std::string gather_module_hash(std::filesystem::path const&);
 
@@ -146,7 +147,8 @@ struct nsbuild : public neo::command_handler
   /// @brief Copy media directories and files, ignores media/Internal directory
   /// @param from
   /// @param to
-  static void copy_media(std::filesystem::path from, std::filesystem::path to, std::string ignore);
+  static void copy_media(std::filesystem::path from, std::filesystem::path to,
+                         std::filesystem::path artefacts, std::string ignore);
 
   bool               has_naming() const { return s_current_preset && !s_current_preset->naming.empty(); }
   std::string const& naming() const { return s_current_preset->naming; }

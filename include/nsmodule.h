@@ -81,7 +81,6 @@ struct nsmodule
   nsplugin_manifest manifest;
 
   bool regenerate    = false;
-  bool force_rebuild = false;
   bool force_build   = false;
   bool has_confixx   = false;
   bool disabled      = false;
@@ -117,6 +116,12 @@ struct nsmodule
     }
   }
 
+  struct content
+  {
+    std::string data;
+    std::string sha;
+  };
+
   /// @brief Called in a thread to generate CMakeLists.txt
   /// @param bc Config
   /// @param name Name of this target
@@ -127,7 +132,8 @@ struct nsmodule
   void update_fetch(nsbuild const& bc);
   void generate_plugin_manifest(nsbuild const& bc);
 
-  std::string write_fetch_build(nsbuild const& bc) const;
+  content     make_fetch_build_content(nsbuild const& bc) const;
+  void        write_fetch_build_content(nsbuild const& bc, content const&) const;
   void        fetch_content(nsbuild const& bc);
   bool        fetch_changed(nsbuild const& bc, std::string const& last_sha) const;
   void        write_fetch_meta(nsbuild const& bc, std::string const& last_sha) const;
@@ -179,7 +185,8 @@ struct nsmodule
   void write_tests(std::ostream&, nsbuild const& bc) const;
   void write_runtime_settings(std::ostream&, nsbuild const& bc) const;
 
-  void build_fetched_content(nsbuild const& bc) const;
+  void build_fetched_content(nsbuild const& bc);
+  void delete_build(nsbuild const& bc);
 
   std::filesystem::path get_full_bld_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_fetch_bld_dir(nsbuild const& bc) const;

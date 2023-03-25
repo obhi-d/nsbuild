@@ -115,6 +115,7 @@ int main(int argc, char const* argv[])
     {
       std::string from   = "";
       std::string to     = "";
+      std::string artef  = "";
       std::string ignore = "";
       ras                = runas::copy_media;
       if (i + 1 < argc)
@@ -122,8 +123,10 @@ int main(int argc, char const* argv[])
       if (i + 1 < argc)
         to = argv[++i];
       if (i + 1 < argc)
+        artef = argv[++i];
+      if (i + 1 < argc)
         ignore = argv[++i];
-      nsbuild::copy_media(from, to, ignore);
+      nsbuild::copy_media(from, to, artef, ignore);
       std::cout << std::endl;
       return 0;
     }
@@ -158,9 +161,7 @@ int main(int argc, char const* argv[])
   }
   catch (std::exception ex)
   {
-    nslog::error(ex.what());
-    std::cout << std::endl;
-    return -1;
+    return -1; // A step failed
   }
 
   return 0;
