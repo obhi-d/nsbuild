@@ -11,7 +11,7 @@
 #define BC_EXPORT_TEMPLATE
 #elif defined(__MINGW32__)
 #define BC_EXPORT_SYM  __attribute__((visibility("default")))
-#define BuildImportSym __attribute__((visibility("default")))
+#define BC_IMPORT_SYM  __attribute__((visibility("default")))
 #define BC_EXPORT_TEMPLATE
 #else
 #define BC_EXPORT_SYM      __attribute__((visibility("default")))
@@ -27,10 +27,17 @@
 #define BC_LIB_IMPORT
 #endif
 
-#define BC_PROJECT_VERSION_MAJOR      @PROJECT_VERSION_MAJOR@
-#define BC_PROJECT_VERSION_MINOR      @PROJECT_VERSION_MINOR@
-#define BC_PROJECT_VERSION_REVISION   @PROJECT_VERSION_PATCH@
-#define BC_PROJECT_VERSION_STRING     "v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@"
-#define BC_PROJECT_NAME               "@PROJECT_NAME@ v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@"
+#include <string_view>
 
-#define BC_ENDIANNESS                 @nsbuild_host_is_big_endian@
+namespace BuildConfig
+{
+  namespace @PROJECT_NAME@
+  {
+    constexpr unsigned int     Major         = @PROJECT_VERSION_MAJOR@;
+    constexpr unsigned int     Minor         = @PROJECT_VERSION_MINOR@;
+    constexpr unsigned int     Revision      = @PROJECT_VERSION_PATCH@;
+    constexpr std::string_view ProjectName   = "@PROJECT_NAME@ v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@";
+    constexpr std::string_view VersionString = "v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@";
+    constexpr bool             Endianness    = @nsbuild_host_is_big_endian@;
+  }
+}
