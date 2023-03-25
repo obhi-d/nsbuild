@@ -10,9 +10,14 @@
   #define @macro_prefix@@PROJECT_NAME@API BC_LIB_IMPORT
 #endif
 
-
-#define BC_MODULE_VERSION_MAJOR     @PROJECT_VERSION_MAJOR@
-#define BC_MODULE_VERSION_MINOR     @PROJECT_VERSION_MINOR@
-#define BC_MODULE_VERSION_REVISION  @PROJECT_VERSION_PATCH@
-#define BC_MODULE_VERSION_STRING    "v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@"
-#define BC_MODULE_NAME              "@PROJECT_NAME@ v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@"
+namespace BuildConfig
+{
+  namespace @PROJECT_NAME@
+  {
+    constexpr unsigned int     Major         = @PROJECT_VERSION_MAJOR@;
+    constexpr unsigned int     Minor         = @PROJECT_VERSION_MINOR@;
+    constexpr unsigned int     Revision      = @PROJECT_VERSION_PATCH@;
+    constexpr std::string_view ModuleName    = "@PROJECT_NAME@ v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@";
+    constexpr std::string_view VersionString = "v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@";
+  }
+}
