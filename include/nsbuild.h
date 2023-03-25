@@ -132,7 +132,6 @@ struct nsbuild : public neo::command_handler
   void read_module(std::filesystem::path);
   void write_include_modules() const;
   void write_install_configs(std::ofstream&) const;
-  void check_modules();
   void write_common_files(std::filesystem::path const&);
   void delete_builds_if_required();
 

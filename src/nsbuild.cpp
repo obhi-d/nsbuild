@@ -108,7 +108,6 @@ void nsbuild::before_all()
   read_meta(get_full_cache_dir());
   act_meta();
   foreach_framework([this](std::filesystem::path p) { read_framework(p); });
-  check_modules();
   delete_builds_if_required();
   update_macros();
   try
@@ -152,11 +151,6 @@ void nsbuild::delete_builds_if_required()
     });
 }
 
-void nsbuild::check_modules()
-{
-  if (meta.ordered_timestamps.size() != meta.timestamps.size())
-    state.is_dirty = true;
-}
 
 void nsbuild::read_meta(std::filesystem::path const& path)
 {
