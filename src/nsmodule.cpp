@@ -611,9 +611,8 @@ void nsmodule::write_includes(std::ostream& ofs, nsbuild const& bc) const
   case nsmodule_type::plugin:
     cmake::line(ofs, "includes");
     write_include(ofs, "${CMAKE_CURRENT_LIST_DIR}", "", cmake::inheritance::pub);
-    write_include(ofs, "${module_dir}", "include", cmake::inheritance::pub);
-    write_include(ofs, "${module_dir}", "include", cmake::inheritance::pub);
-    write_include(ofs, "${module_dir}", "local_include", cmake::inheritance::priv);
+    write_include(ofs, "${module_dir}", "public", cmake::inheritance::pub);
+    write_include(ofs, "${module_dir}", "private", cmake::inheritance::priv);
     write_include(ofs, "${module_dir}", "src", cmake::inheritance::priv);
     write_include(ofs, "${module_gen_dir}", "", cmake::inheritance::pub);
     write_include(ofs, "${module_gen_dir}", "local", cmake::inheritance::priv);
@@ -647,9 +646,9 @@ void nsmodule::write_refs_includes(std::ostream& ofs, nsbuild const& bc, nsmodul
   {
     auto const& m = bc.get_module(r);
     m.write_refs_includes(ofs, bc, target);
-    target.write_include(ofs, m.source_path, "include",
+    target.write_include(ofs, m.source_path, "public",
                          target.type == nsmodule_type::plugin ? cmake::inheritance::priv : cmake::inheritance::pub);
-    target.write_include(ofs, m.source_path, "local_include", cmake::inheritance::priv);
+    target.write_include(ofs, m.source_path, "private", cmake::inheritance::priv);
     target.write_include(ofs, m.source_path, "src", cmake::inheritance::priv);
     for(auto const& s : m.source_sub_dirs)
       target.write_include(ofs, m.source_path, "src/" + s, cmake::inheritance::priv);

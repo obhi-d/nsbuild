@@ -188,13 +188,13 @@ set(enums_json)
 set(enums_json_output)
 set(has_enums_json FALSE)
 
-if (EXISTS "${module_dir}/include/Enums.json")
-  list(APPEND enums_json "${module_dir}/include/Enums.json")
+if (EXISTS "${module_dir}/public/Enums.json")
+  list(APPEND enums_json "${module_dir}/public/Enums.json")
   list(APPEND enums_json_output "${module_gen_dir}/${file_prefix}${module_name}Enums.hpp")
   set(has_enums_json TRUE)
 endif()
-if (EXISTS "${module_dir}/local_include/Enums.json")
-  list(APPEND enums_json "${module_dir}/local_include/Enums.json")
+if (EXISTS "${module_dir}/private/Enums.json")
+  list(APPEND enums_json "${module_dir}/private/Enums.json")
   list(APPEND enums_json_output "${module_gen_dir}/local/${file_prefix}${module_name}LocalEnums.hpp")
   set(has_enums_json TRUE)
 endif()
@@ -220,8 +220,8 @@ static inline constexpr char k_media_commands[] = R"_(
 static inline constexpr char k_finale[] = R"_(
 
 configure_file("${__nsbuild_data}/ModuleConfig.hxx" "${module_gen_dir}/${module_name}ModuleConfig.hpp")
-if (EXISTS "${module_dir}/local_include/_Config.hxx")
-	configure_file("${module_dir}/local_include/_Config.hxx" "${module_gen_dir}/${module_name}InternalConfig.hpp")
+if (EXISTS "${module_dir}/private/_Config.hxx")
+	configure_file("${module_dir}/private/_Config.hxx" "${module_gen_dir}/${module_name}InternalConfig.hpp")
 else()
   if (NOT EXISTS "${module_gen_dir}/${module_name}InternalConfig.hpp")
     file(TOUCH "${module_gen_dir}/${module_name}InternalConfig.hpp")
@@ -288,7 +288,7 @@ include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
 # include files are installed in sdk/include/Module directory
-install(DIRECTORY ${fetch_src_dir}/include/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
+install(DIRECTORY ${module_src_dir}/public/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME})
 
 # include files are installed in sdk/include/Module directory
 install(TARGETS ${module_target}

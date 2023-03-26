@@ -133,8 +133,8 @@ void nsenum_context::generate(std::string const& filepfx, std::string const& api
                               nsmodule_type type, std::filesystem::path source, std::filesystem::path gen,
                               coding_style style)
 {
-  auto enums_json      = source / "include" / "Enums.json";
-  auto lenums_json     = source / "local_include" / "Enums.json";
+  auto enums_json      = source / "public" / "Enums.json";
+  auto lenums_json     = source / "private" / "Enums.json";
   bool has_enums_json  = std::filesystem::exists(enums_json);
   bool has_lenums_json = std::filesystem::exists(lenums_json);
   if (!has_enums_json && !has_lenums_json)

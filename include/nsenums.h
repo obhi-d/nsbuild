@@ -28,13 +28,13 @@ inline nsenum_modifier get_modifier(std::string n)
     return nsenum_modifier::lower;
   else if (n == "upper")
     return nsenum_modifier::upper;
-  else if (n == "lowerCamelCase")
+  else if (n == "lower-camel-case")
     return nsenum_modifier::lower_camel_case;
-  else if (n == "upperCamelCase")
+  else if (n == "upper-camel-case")
     return nsenum_modifier::upper_camel_case;
-  else if (n == "camelCase")
+  else if (n == "camel-case")
     return nsenum_modifier::camel_case;
-  else if (n == "snakeCase")
+  else if (n == "snake-case")
     return nsenum_modifier::snake_case;
   return nsenum_modifier::none;
 }
