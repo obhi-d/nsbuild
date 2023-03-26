@@ -144,7 +144,7 @@ public:
     set(false, iValue...);
   }
 
-  inline constexpr bool operator<=>(EnumFlags const& other) const noexcept = default;
+  inline constexpr auto operator<=>(EnumFlags const& other) const noexcept = default;
 
   inline constexpr StorageType get() const noexcept { return value.value(); }
 
