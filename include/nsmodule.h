@@ -157,6 +157,7 @@ struct nsmodule
   void write_find_package(std::ostream& ofs, nsbuild const& bc) const;
 
   void write_definitions(std::ostream&, nsbuild const& bc) const;
+  void write_definitions_itf(std::ostream&, nsbuild const& bc) const;
   void write_definitions_mod(std::ostream&, nsbuild const& bc) const;
   void write_definitions(std::ostream&, nsbuild const& bc, std::uint32_t type) const;
   void write_definitions(std::ostream&, std::string_view def, cmake::inheritance, std::string_view filter) const;

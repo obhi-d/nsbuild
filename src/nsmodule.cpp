@@ -730,14 +730,32 @@ void nsmodule::write_definitions(std::ostream& ofs, nsbuild const& bc) const
   case nsmodule_type::lib:
   case nsmodule_type::exe:
   case nsmodule_type::test:
-  case nsmodule_type::external:
     cmake::line(ofs, "definitions");
     write_definitions_mod(ofs, bc);
     break;
   case nsmodule_type::ref:
     break;
+  case nsmodule_type::external:
+    cmake::line(ofs, "definitions");
+    write_definitions_itf(ofs, bc);
+    break;
   default:
     break;
+  }
+}
+
+void nsmodule::write_definitions_itf(std::ostream& ofs, nsbuild const& bc) const
+{
+  constexpr uint32_t type = pub_intf;
+  for (std::size_t i = 0; i < intf[type].size(); ++i)
+  {
+    auto        filter = intf[type][i].filters;
+    auto const& dep    = intf[type][i].definitions;
+    for (auto const& d : dep)
+    {
+      auto def = fmt::format("{}={}", d.first, d.second);
+      write_definitions(ofs, def, cmake::inheritance::intf, filter);
+    }
   }
 }
 
