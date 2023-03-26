@@ -110,6 +110,7 @@ Purpose of each file/directory is described hereunder.
 ### Module.ns
 
 - `type`
+    - *extern*
 - `include_when`
 - `exclude_when`
 - `console_app`

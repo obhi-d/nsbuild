@@ -791,6 +791,7 @@ void nsmodule::write_dependencies(std::ostream& ofs, nsbuild const& bc) const
   case nsmodule_type::lib:
   case nsmodule_type::exe:
   case nsmodule_type::test:
+  case nsmodule_type::external:
     cmake::line(ofs, "dependencies");
     write_dependencies_begin(ofs, bc);
     write_dependencies_mod(ofs, bc);
@@ -798,8 +799,6 @@ void nsmodule::write_dependencies(std::ostream& ofs, nsbuild const& bc) const
     ///
     break;
   case nsmodule_type::ref:
-    break;
-  case nsmodule_type::external:
     break;
   default:
     break;
