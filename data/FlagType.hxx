@@ -103,9 +103,9 @@ public:
     f |= iValue;
     return f;
   }
-  inline constexpr EnumFlags operator|(EnumFlags iValue) const noexcept { return EnumFlags(value | iValue.value); }
-  inline constexpr EnumFlags operator&(EnumFlags iValue) const noexcept { return EnumFlags(value & iValue.value); }
-  inline constexpr EnumFlags operator~() const noexcept { return EnumFlags{~value}; }
+  inline constexpr EnumFlags operator|(EnumFlags iValue) const noexcept { return (EnumFlags)(value | iValue.value); }
+  inline constexpr EnumFlags operator&(EnumFlags iValue) const noexcept { return (EnumFlags)(value & iValue.value); }
+  inline constexpr EnumFlags operator~() const noexcept {return (EnumFlags)(~value); }
   inline constexpr           operator bool() const noexcept { return value != 0; }
   template <typename Enum2>
   inline constexpr bool operator()(Enum2 iValue) const noexcept
