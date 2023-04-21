@@ -111,6 +111,12 @@ Purpose of each file/directory is described hereunder.
 
 - `type`
     - *extern*
+    - *plugin*
+    - *ref*
+    - *data*
+    - *exe*
+    - *lib*
+    - *test*
 - `include_when`
 - `exclude_when`
 - `console_app`
