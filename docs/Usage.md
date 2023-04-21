@@ -156,17 +156,17 @@ Purpose of each file/directory is described hereunder.
   - `namespace`
   - `skip_namespace`
   - `runtime_only`
-  - `public`, `private`
-    - `dependencies`
-    - `libraries`
-    - `define`
-  - `plugin`
-    - `description`
-    - `company`
-    - `author`
-    - `type_id`
-    - `compatibility`
-    - `context`
-    - `optional`
-    - `service`
+- `public`, `private`
+  - `dependencies`
+  - `libraries`
+  - `define`
+- `plugin`
+  - `description`
+  - `company`
+  - `author`
+  - `type_id`
+  - `compatibility`
+  - `context`
+  - `optional`
+  - `service`
   
