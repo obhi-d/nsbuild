@@ -251,6 +251,7 @@ FetchContent_Declare(
   ${fetch_extern_name}
   GIT_REPOSITORY ${fetch_repo}
   GIT_TAG ${fetch_commit}
+  GIT_SHALLOW 1
   SOURCE_DIR ${fetch_src_dir}
   SUBBUILD_DIR ${fetch_subbulid_dir}
   BINARY_DIR ${fetch_bulid_dir}
