@@ -71,7 +71,8 @@ int main(int argc, char const* argv[])
   std::string apipfx      = "";
   nscmakeinfo nscfg;
   runas       ras      = runas::main;
-  nsprocess::s_nsbuild = argv[0];
+  nsprocess::s_nsbuild = std::filesystem::absolute(argv[0]);
+  
   for (int i = 1; i < argc; ++i)
   {
     std::string_view arg = argv[i];

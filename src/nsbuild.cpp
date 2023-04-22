@@ -114,7 +114,7 @@ void nsbuild::before_all()
   {
     process_targets();
   }
-  catch (std::exception& ex)
+  catch (std::exception& )
   {
     nslog::print("******************************************");
     nslog::print("*** Module failed to build!            ***");
