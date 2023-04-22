@@ -367,7 +367,7 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
           process_target(name, it->second);
         else
           throw std::runtime_error(
-              fmt::format("{} Not a module used as reference module for - {}", name, mod.target_name));
+              fmt::format("{} Is not a valid module. Used as reference module for - {}", name, mod.target_name));
       });
   mod.foreach_dependency(
       [this, &mod](auto dep)
@@ -377,7 +377,7 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
         if (it != targets.end())
           process_target(name, it->second);
         else
-          throw std::runtime_error(fmt::format("{} Not a module as dependent module for - {}", name, mod.target_name));
+          throw std::runtime_error(fmt::format("{} Is not a valid module. Seen as a dependent module for {}", name, mod.name));
       });
 
   sorted_targets.push_back(name);

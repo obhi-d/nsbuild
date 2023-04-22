@@ -62,7 +62,9 @@ void halt()
 }
 int main(int argc, char const* argv[])
 {
-  //halt();
+  #ifndef NDEBUG
+  halt();
+  #endif
   
   std::string working_dir = ".";
   std::string target      = "";
@@ -162,6 +164,9 @@ int main(int argc, char const* argv[])
   }
   catch (std::exception ex)
   {
+    nslog::print("******************************************");
+    nslog::print(fmt::format("*** Build failure: {}            ***", ex.what()));
+    nslog::print("******************************************\n");
     return -1; // A step failed
   }
 
