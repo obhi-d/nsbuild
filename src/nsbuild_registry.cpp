@@ -138,6 +138,24 @@ ns_cmd_handler(sdk_dir, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(out_dir, build, state, cmd)
+{
+  build.out_dir = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(build_dir, build, state, cmd)
+{
+  build.build_dir = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(download_dir, build, state, cmd)
+{
+  build.download_dir = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(cmake_gen_dir, build, state, cmd)
 {
   build.cmake_gen_dir = get_idx_param(cmd, 0);
@@ -696,6 +714,11 @@ ns_registry(nsbuild)
   ns_cmd(runtime_dir);
   ns_cmd(natvis);
   ns_cmd(style);
+  ns_cmd(out_dir);
+  ns_cmd(build_dir);
+  ns_cmd(download_dir);
+  ns_cmd(manifests_dir);
+  ns_cmd(plugin_dir);
 
   ns_scope_cust(preset, clear_presets)
   {

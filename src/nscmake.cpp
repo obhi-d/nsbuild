@@ -21,14 +21,20 @@ void value(std::string& result, neo::list::vector::const_iterator b,
   for (auto it = b; it != e; ++it)
   {
     auto const& p = *it;
-    if (p.index() == neo::command::k_param_single)
+    switch (p.index())
+    {
+    case neo::command::param_esq_string:
+    case neo::command::param_single:
     {
       append(result, neo::command::as_string(p), sep);
     }
-    else if (p.index() == neo::command::k_param_list)
+    break;
+    case neo::command::param_list:
     {
       auto const& l = std::get<neo::list>(p);
       value(result, l.begin(), l.end(), sep);
+    }
+    break;
     }
   }
 }

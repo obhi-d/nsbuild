@@ -181,11 +181,6 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
       fetch->extern_name = fetch->package;
     if (fetch->targets.empty())
       fetch->targets = fetch->components;
-
-    std::filesystem::path src     = source_path;
-    auto                  prepare = src / "Prepare.cmake";
-    auto                  srccmk  = src / "Finalize.cmake";
-        
   }
 
   std::filesystem::create_directories(get_full_bld_dir(bc));

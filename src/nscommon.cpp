@@ -38,15 +38,21 @@ nsfilters get_filters(neo::command::param_t const& p)
       flags.known.set(static_cast<unsigned>(filter), true);
   };
 
-  if (p.index() == neo::command::k_param_single)
+  switch (p.index())
   {
-    lamda( neo::command::as_string(p) );
+  case neo::command::param_esq_string:
+  case neo::command::param_single:
+  {
+    lamda(neo::command::as_string(p));
   }
-  else if (p.index() == neo::command::k_param_list)
+  break;
+  case neo::command::param_list:
   {
     auto const& l = std::get<neo::list>(p);
     for (auto const& v : l)
       lamda(neo::command::as_string(v));
+  }
+  break;
   }
   return flags;
 }

@@ -66,12 +66,13 @@ nspath cmd_parse_nspath(nspath_type default_type, neo::command const& cmd)
   {
     switch (p.index())
     {
-    case neo::command::k_param_list:
+    case neo::command::param_list:
     {
       auto const& l = std::get<neo::list>(p);
     }
     break;
-    case neo::command::k_param_single:
+    case neo::command::param_esq_string:
+    case neo::command::param_single:
 
       break;
     }

@@ -59,15 +59,16 @@ void git_clone(nsbuild const& bc, std::filesystem::path const& dl, std::string_v
   std::error_code ec;
   if (!std::filesystem::exists(dl) || std::filesystem::is_empty(dl, ec))
   {
-    git(bc, {"clone", std::string{repo}, "--branch", std::string{tag}, "--depth=1", "."}, dl);
+    git(bc, {"clone", std::string{repo}, "--recurse-submodules", "--shallow-submodules", "--branch", std::string{tag}, "--depth=1", "."}, dl);
   }
   else
   {
     try
     {
       git(bc, {"remote", "set-url", "origin", std::string{repo}}, dl);
-      git(bc, {"fetch", "--depth=1", "origin", std::string{tag}}, dl);
+      git(bc, {"fetch", "--depth=1", "origin", "--recurse-submodules=yes", std::string{tag}}, dl);
       git(bc, {"reset", "--hard", "FETCH_HEAD"}, dl);
+      git(bc, {"submodule", "update"}, dl);
       git(bc, {"clean", "-dfx"}, dl);
     }
     catch (std::exception&)
