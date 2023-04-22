@@ -109,6 +109,8 @@ Purpose of each file/directory is described hereunder.
 
 ### Module.ns
 
+Module ns can inject cmake code using a `{{cmake:prepare}}` and `{{cmake:finalize}}` section.
+
 - `type`
     - *extern*
     - *plugin*
