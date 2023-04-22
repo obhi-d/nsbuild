@@ -24,7 +24,7 @@ struct nsmacros
   void im_print(std::ostream& ostr, std::string_view content, output_fmt = output_fmt::cmake_def) const;
 
   void print(std::ostream&, output_fmt = output_fmt::cmake_def) const;
-
+  
   inline value& operator[](std::string const& name)
   {
     auto it = macros.find(name);

@@ -54,6 +54,31 @@ void cmake_install(nsbuild const& bc, std::string_view prefix, std::filesystem::
   cmake(bc, std::move(args), wd);
 }
 
+void git_clone(nsbuild const& bc, std::filesystem::path const& dl, std::string_view const& repo, std::string_view tag)
+{
+  std::error_code ec;
+  if (!std::filesystem::exists(dl) || std::filesystem::is_empty(dl, ec))
+  {
+    git(bc, {"clone", std::string{repo}, "--branch", std::string{tag}, "--depth=1", "."}, dl);
+  }
+  else
+  {
+    try
+    {
+      git(bc, {"remote", "set-url", "origin", std::string{repo}}, dl);
+      git(bc, {"fetch", "--depth=1", "origin", std::string{tag}}, dl);
+      git(bc, {"reset", "--hard", "FETCH_HEAD"}, dl);
+      git(bc, {"clean", "-dfx"}, dl);
+    }
+    catch (std::exception&)
+    {
+      // try another way
+      std::filesystem::remove_all(dl);
+      git_clone(bc, dl, repo, tag);
+    }
+  }
+}
+
 void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::path wd)
 {
   std::vector<char const*> sargs;
@@ -70,6 +95,38 @@ void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::pa
   reproc::process   proc;
   reproc::options   default_opt;
  
+  default_opt.redirect.parent = true;
+
+  auto [status, rc] = reproc::run(pargs);
+  std::filesystem::current_path(save);
+
+  std::string msg = rc.message();
+  if (rc || status != 0)
+  {
+    nslog::error("Build failed.");
+    if (rc)
+      throw std::system_error(rc);
+    else
+      throw std::runtime_error(fmt::format("Command returned : {}", status));
+  }
+}
+
+void git(nsbuild const& bc, std::vector<std::string> args, std::filesystem::path wd)
+{
+  std::vector<char const*> sargs;
+  sargs.reserve(args.size() + 1);
+  sargs.emplace_back("git");
+  for (auto const& a : args)
+    sargs.emplace_back(a.c_str());
+  sargs.emplace_back(nullptr);
+  auto save = std::filesystem::current_path();
+  std::filesystem::create_directories(wd);
+  std::filesystem::current_path(wd);
+
+  reproc::arguments pargs{sargs.data()};
+  reproc::process   proc;
+  reproc::options   default_opt;
+
   default_opt.redirect.parent = true;
 
   auto [status, rc] = reproc::run(pargs);

@@ -72,7 +72,7 @@ add_executable(nsbuild
  "src/nsbuildcmds.cpp" 
  "src/nsmedia.cpp" 
  "src/nsenums.cpp"  
- "src/nspreset.cpp")
+ "src/nspreset.cpp"  )
 
  add_custom_command(TARGET nsbuild POST_BUILD 
   COMMAND ${CMAKE_COMMAND} -E copy_if_different  

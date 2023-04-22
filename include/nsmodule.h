@@ -84,6 +84,7 @@ struct nsmodule
   bool force_build   = false;
   bool has_confixx   = false;
   bool disabled      = false;
+  bool direct_build  = false;
 
   // .. Options
   bool console_app       = false;
@@ -133,7 +134,9 @@ struct nsmodule
   void generate_plugin_manifest(nsbuild const& bc);
 
   content     make_fetch_build_content(nsbuild const& bc) const;
+  void        backup_fetch_lists(nsbuild const& bc) const;
   void        write_fetch_build_content(nsbuild const& bc, content const&) const;
+  void        restore_fetch_lists(nsbuild const& bc) const;
   void        fetch_content(nsbuild const& bc);
   bool        fetch_changed(nsbuild const& bc, std::string const& last_sha) const;
   void        write_fetch_meta(nsbuild const& bc, std::string const& last_sha) const;
@@ -188,13 +191,10 @@ struct nsmodule
 
   void build_fetched_content(nsbuild const& bc);
   void delete_build(nsbuild const& bc);
+  void download(nsbuild const& bc);
 
   std::filesystem::path get_full_bld_dir(nsbuild const& bc) const;
-  std::filesystem::path get_full_fetch_bld_dir(nsbuild const& bc) const;
-  std::filesystem::path get_full_ext_bld_dir(nsbuild const& bc) const;
-  std::filesystem::path get_full_fetch_sbld_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_sdk_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_dl_dir(nsbuild const& bc) const;
-  std::filesystem::path get_full_ext_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_gen_dir(nsbuild const& bc) const;
 };

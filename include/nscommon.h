@@ -41,7 +41,7 @@ enum class runas
 enum class output_fmt
 {
   cmake_def,
-  pipe_list_sep,
+  cache_entry,
   set_cache,
 };
 

@@ -3,7 +3,7 @@ type = extern;
 fetch "https://github.com/boostorg/boost.git"
 {
   license        : "LICENSE_1_0.txt";
-  commit         : "32da69a36f84c5255af8a994951918c258bac601";
+  tag         : "32da69a36f84c5255af8a994951918c258bac601";
   package        : Boost;
   components     : ["headers", "container", "exception", "graph", "json", "program_options", "date_time"];
 }

@@ -450,9 +450,9 @@ ns_cmd_handler(force_build, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(commit, build, state, cmd)
+ns_cmd_handler(tag, build, state, cmd)
 {
-  build.s_nsfetch->commit = get_idx_param(cmd, 0);
+  build.s_nsfetch->tag = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -762,7 +762,7 @@ ns_registry(nsbuild)
   {
     ns_cmd(license);
     ns_cmd(force_build);
-    ns_cmd(commit);
+    ns_cmd(tag);
     ns_scope_def(args) { ns_star(var); }
     ns_cmd(package);
     ns_cmd(components);

@@ -143,7 +143,7 @@ Purpose of each file/directory is described hereunder.
 - `fetch` - *git repo*
   - `license`
   - `force_build`
-  - `commit`
+  - `tag`
   - `args`
     - `var` 
   - `package`

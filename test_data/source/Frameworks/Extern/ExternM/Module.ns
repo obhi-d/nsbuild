@@ -4,7 +4,7 @@ type = extern;
 fetch "https://github.com/obhi-d/neoscript.git"
 {
   license = "LICENSE";
-  commit  = "2f201c644f07ab6233fd8fb729403e56ae7c1087";
+  tag  = "2f201c644f07ab6233fd8fb729403e56ae7c1087";
   package = neoscript;
   args
   {
