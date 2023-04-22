@@ -48,12 +48,6 @@ void nsbuild::main_project()
     }
     std::ofstream ff{path};
     ff << "\nmessage(\"-- Run build for the first time to generate project files.\")\n";
-    path = get_full_out_dir() / preset.name / cache_dir / "module_info.ns";
-    if (std::filesystem::exists(path))
-    {
-      std::ofstream ff{path};
-      ff << "";
-    }
   }
 }
 
