@@ -137,6 +137,7 @@ struct nsmodule
   void update_fetch(nsbuild const& bc);
   void generate_plugin_manifest(nsbuild const& bc);
   void gather_sources(nsglob& glob, nsbuild const& bc) const;
+  void check_enums(nsbuild const& bc) const;
 
   content     make_fetch_build_content(nsbuild const& bc) const;
   void        backup_fetch_lists(nsbuild const& bc) const;
@@ -197,8 +198,8 @@ struct nsmodule
   void delete_build(nsbuild const& bc);
   bool download(nsbuild const& bc);
 
-  bool glob_changed(nsbuild const& bc, std::string_view name, nsglob const&);
-  void write_glob_changed(nsbuild const& bc, std::string_view name, nsglob const&);
+  bool sha_changed(nsbuild const& bc, std::string_view name, std::string_view sha) const;
+  void write_sha_changed(nsbuild const& bc, std::string_view name, std::string_view sha) const;
 
   std::filesystem::path get_full_bld_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_sdk_dir(nsbuild const& bc) const;

@@ -90,30 +90,6 @@ int main(int argc, char const* argv[])
         working_dir = argv[i + 1];
       i++;
     }
-    else if (arg == "--gen-enum")
-    {
-      ras = runas::generate_enum;
-      if (i + 1 < argc)
-      {
-        target = argv[i + 1];
-        i++;
-      }
-      if (i + 1 < argc)
-      {
-        preset = argv[i + 1];
-        i++;
-      }
-      if (i + 1 < argc)
-      {
-        apipfx = argv[i + 1];
-        i++;
-      }
-      if (i + 1 < argc)
-      {
-        filepfx = argv[i + 1];
-        i++;
-      }
-    }
     else if (arg == "--copy-media" || arg == "-e")
     {
       std::string from   = "";
@@ -147,9 +123,6 @@ int main(int argc, char const* argv[])
     {
     case runas::main:
       build.main_project();
-      break;
-    case runas::generate_enum:
-      build.generate_enum(filepfx, apipfx, target, preset);
       break;
     case runas::check:
       build.dll_ext   = std::regex(NS_DLL_EXT, std::regex_constants::icase);

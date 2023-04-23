@@ -8,6 +8,7 @@
 #include "nsprocess.h"
 #include "nstarget.h"
 #include "picosha2.h"
+#include "nsenums.h"
 
 #include <exception>
 #include <fstream>
@@ -71,6 +72,55 @@ void nsmodule::process(nsbuild const& bc, std::string const& targ_name, nstarget
   generate_plugin_manifest(bc);
 }
 
+void nsmodule::check_enums(nsbuild const& bc) const 
+{ 
+  auto lenums = std::filesystem::path(source_path) / "private" / "Enums.json"; 
+  auto enums = std::filesystem::path(source_path) / "public" / "Enums.json";
+
+  std::string content;
+  size_t      lenums_size = std::filesystem::exists(lenums) ? std::filesystem::file_size(lenums) : 0;
+  size_t      enums_size = std::filesystem::exists(enums) ? std::filesystem::file_size(enums) : 0;
+
+  if (!lenums_size && !enums_size)
+  {
+    if (sha_changed(bc, "enums", ""))
+    {
+      nsenum_context::clean(*this, bc);
+      write_sha_changed(bc, "enums", "");
+    }
+  }
+  content.resize(lenums_size + enums_size, ' ');
+  if (std::filesystem::exists(lenums))
+  {
+    std::ifstream iff{lenums};
+    if (iff.is_open())
+      iff.read(content.data(), lenums_size);    
+  }
+   
+  if (std::filesystem::exists(enums))
+  {
+    std::ifstream iff{enums};
+    if (iff.is_open())
+      iff.read(content.data() + lenums_size, enums_size);
+  }
+   
+  std::string sha;
+  picosha2::hash256_hex_string(content, sha);
+  if (sha_changed(bc, "enums", sha))
+  {
+    nsenum_context::clean(*this, bc);
+    write_sha_changed(bc, "enums", sha);
+
+    nsenum_context ctx;
+    
+    ctx.local_enums_json = std::string_view(content.data(), lenums_size);
+    ctx.enums_json = std::string_view(content.data() + lenums_size, enums_size);
+
+    ctx.generate(*this, bc);
+  }
+  
+}
+
 void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name, nstarget& targ)
 {
   target_name = targ_name;
@@ -91,8 +141,8 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     glob_media.recurse = true;
     glob_media.path_exclude_filters = bc.media_exclude_filter;
     glob_media.accumulate();
-    if(has_globs_changed |= glob_changed(bc, "data_group", glob_media))
-      write_glob_changed(bc, "data_group", glob_media);
+    if(has_globs_changed |= sha_changed(bc, "data_group", glob_media.sha))
+      write_sha_changed(bc, "data_group", glob_media.sha);
   }
   
   if (has_data(type))
@@ -137,33 +187,17 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
   else if (type == nsmodule_type::test)
   {}
 
+  if (has_headers(type))
+    check_enums(bc);
+    
   if (has_runtime(type))
   {
     static std::unordered_set<std::string> cpp_filters = {".cpp", ".cxx"};
     glob_sources.file_filters                          = &cpp_filters;
     gather_sources(glob_sources, bc);
     glob_sources.accumulate();
-    if (has_globs_changed |= glob_changed(bc, "src", glob_media))
-      write_glob_changed(bc, "src", glob_media);
-  }
-
-  if (has_headers(type))
-  {
-    nsbuildstep step;
-    nsbuildcmds cmd;
-    step.name = "enums generation";
-    step.artifacts.push_back("${enums_json_output}");
-    step.check = "has_enums_json";
-    step.dependencies.push_back("${enums_json}");
-    cmd.msgs.push_back(fmt::format("Generating enum for {}", name));
-    cmd.command = "${nsbuild}";
-    cmd.params  = "--gen-enum ${module_dir} ${config_preset_name}  ${macro_prefix} ${file_prefix}";
-    step.steps.push_back(cmd);
-    step.wd = bc.wd.generic_string();
-    unset.emplace_back("has_enums_json");
-    unset.emplace_back("enums_json_output");
-    unset.emplace_back("enums_json");
-    prebuild.push_back(step);
+    if (has_globs_changed |= sha_changed(bc, "src", glob_media.sha))
+      write_sha_changed(bc, "src", glob_media.sha);
   }
 
   if (is_executable(type))
@@ -1173,7 +1207,7 @@ bool nsmodule::download(nsbuild const& bc)
   return true;
 }
 
-bool nsmodule::glob_changed(nsbuild const& bc, std::string_view name, nsglob const& glob)
+bool nsmodule::sha_changed(nsbuild const& bc, std::string_view name, std::string_view isha) const
 {
   auto meta = bc.get_full_cache_dir() / fmt::format("{}.{}.glob", this->name, name);
   std::ifstream iff{meta};
@@ -1181,16 +1215,16 @@ bool nsmodule::glob_changed(nsbuild const& bc, std::string_view name, nsglob con
   {
     std::string sha;
     iff >> sha;
-    if (sha == glob.sha)
+    if (sha == isha)
       return false;
   }
   return true;
 }
 
-void nsmodule::write_glob_changed(nsbuild const& bc, std::string_view name, nsglob const& glob)
+void nsmodule::write_sha_changed(nsbuild const& bc, std::string_view name, std::string_view isha) const
 {
   auto          meta = bc.get_full_cache_dir() / fmt::format("{}.{}.glob", this->name, name);
   std::ofstream off{meta};
   if (off.is_open())
-    off << glob.sha;
+    off << isha;
 }

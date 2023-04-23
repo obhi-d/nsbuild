@@ -65,8 +65,12 @@ bool nsbuild::scan_file(std::filesystem::path path, bool store, std::string* sha
 {
   std::ifstream iff(path);
   if (iff.is_open())
-  {
-    std::string f1_str((std::istreambuf_iterator<char>(iff)), std::istreambuf_iterator<char>());
+  {    
+    std::string f1_str;
+    auto        size = std::filesystem::file_size(path);
+    f1_str.resize(size, ' ');
+    iff.read(f1_str.data(), size);
+
     contents.emplace_back(std::move(f1_str));
 
     neo::state_machine sm{reg, this};
@@ -429,6 +433,8 @@ void nsbuild::copy_installed_binaries()
 
 void nsbuild::generate_enum(std::string filepfx, std::string apipfx, std::string from, std::string preset)
 {
+  throw std::runtime_error("Not implemented");
+  /*
   compute_paths(preset);
   auto spwd         = get_full_scan_dir();
   auto [fw, mod]    = get_modid(from);
@@ -438,7 +444,8 @@ void nsbuild::generate_enum(std::string filepfx, std::string apipfx, std::string
   scan_file(mod_src_path / "Module.ns", true);
 
   auto gen_path = s_nsmodule->get_full_gen_dir(*this);
-  nsenum_context::generate(filepfx, apipfx, std::string{mod}, s_nsmodule->type, mod_src_path, gen_path, style);
+  // nsenum_context::generate(filepfx, apipfx, std::string{mod}, s_nsmodule->type, mod_src_path, gen_path, style);
+  */
 }
 
 void nsbuild::copy_media(std::filesystem::path from, std::filesystem::path to, std::filesystem::path artefacts,

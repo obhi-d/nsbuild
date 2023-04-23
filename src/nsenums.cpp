@@ -91,28 +91,71 @@ std::string nsenum_context::modify_search(std::string const& on, nsenum_modifier
   return std::string{};
 }
 
-void nsenum_context::parse(std::string const& pfx, std::string const& mod_name, std::string const& header,
-                           std::filesystem::path const& lenumsj, std::ofstream& cpp, std::ofstream& hpp,
-                           std::vector<std::string> const& incl, bool exp, coding_style style)
+void nsenum_context::generate(nsmodule const& m, nsbuild const& bc)
+{
+  f_prefix             = bc.macro_prefix + m.name;
+  f_style              = bc.style;
+  bool has_enums_json  = !enums_json.empty();
+  bool has_lenums_json = !local_enums_json.empty();
+  if (!has_enums_json && !has_lenums_json)
+    return;
+  auto gen        = m.get_full_gen_dir(bc);
+  auto local_path = gen / "local";
+
+  std::filesystem::create_directories(local_path);
+  auto                     source_file = gen / "local" / fmt::format("{}Enums.cpp", f_prefix);
+  std::ofstream            cpp{source_file};
+  std::vector<std::string> headers;
+
+  if (cpp.is_open())
+  {
+    write_file_header(cpp, false);
+    headers.emplace_back(fmt::format("{}ModuleConfig.hpp", m.name));
+
+    if (has_enums_json)
+    {
+      auto          hname  = fmt::format("{}Enums.hpp", f_prefix);
+      auto          header = gen / hname;
+      std::ofstream hpp{header};
+      if (hpp.is_open())
+      {
+        write_file_header(hpp, true);
+        parse(m, bc, hname, enums_json, cpp, hpp, headers,
+              m.type == nsmodule_type::lib || m.type == nsmodule_type::ref);
+        headers.emplace_back(fmt::format("{}Enums.hpp", f_prefix));
+      }
+    }
+
+    if (has_lenums_json)
+    {
+      auto          hname  = fmt::format("{}LocalEnums.hpp", f_prefix);
+      auto          header = gen / "local" / hname;
+      std::ofstream hpp{header};
+      if (hpp.is_open())
+      {
+        write_file_header(hpp, true);
+        includes.clear();
+        parse(m, bc, hname, local_enums_json, cpp, hpp, headers, false);
+      }
+    }
+  }
+}
+
+void nsenum_context::parse(nsmodule const& m, nsbuild const& bc, std::string const& header, std::string_view lenumsj,
+                           std::ofstream& cpp, std::ofstream& hpp, std::vector<std::string> const& incl, bool exp)
 {
   // if (mod_name == "Graphics")
   //   halt();
-
-  std::ifstream  j{lenumsj};
-  nlohmann::json js;
-  j >> js;
-  nsenum_context ctx;
-  ctx.style = style;
-  ctx.includes.emplace("FlagType.hpp");
-  ctx.includes.emplace("EnumStringHash.hpp");
+  nlohmann::json js = nlohmann::json::parse(lenumsj);
+  includes.emplace("FlagType.hpp");
+  includes.emplace("EnumStringHash.hpp");
   std::vector<nsenum> enums;
   for (auto const& en : js)
-    enums.emplace_back(ctx, en);
-  if (exp)
-    ctx.export_api = fmt::format("{}{}API", pfx, mod_name);
+    enums.emplace_back(*this, en);
+  f_export = exp ? f_prefix + "API" : "";
   for (auto const& in : incl)
-    ctx.includes.emplace(in);
-  begin_header(hpp, ctx.includes);
+    includes.emplace(in);
+  begin_header(hpp, includes);
   cpp << fmt::format("\n#include <{}>", header);
   for (auto const& p : enums)
   {
@@ -129,55 +172,20 @@ void nsenum_context::write_file_header(std::ofstream& ofs, bool isheader)
   ofs << "\n\n";
 }
 
-void nsenum_context::generate(std::string const& filepfx, std::string const& apipfx, std::string mod_name,
-                              nsmodule_type type, std::filesystem::path source, std::filesystem::path gen,
-                              coding_style style)
+void nsenum_context::clean(nsmodule const& m, nsbuild const& bc)
 {
-  auto enums_json      = source / "public" / "Enums.json";
-  auto lenums_json     = source / "private" / "Enums.json";
-  bool has_enums_json  = std::filesystem::exists(enums_json);
-  bool has_lenums_json = std::filesystem::exists(lenums_json);
-  if (!has_enums_json && !has_lenums_json)
-    return;
-  auto local_path = gen / "local";
-  auto filePrefix = filepfx + mod_name;
-  std::filesystem::create_directories(local_path);
-  auto                     source_file = gen / "local" / fmt::format("{}Enums.cpp", filePrefix);
-  std::ofstream            cpp{source_file};
-  std::vector<std::string> headers;
-
-  if (cpp.is_open())
-  {
-    write_file_header(cpp, false);
-    headers.emplace_back(fmt::format("{}ModuleConfig.hpp", mod_name));
-
-    if (has_enums_json)
-    {
-      auto          hname  = fmt::format("{}Enums.hpp", filePrefix);
-      auto          header = gen / hname;
-      std::ofstream hpp{header};
-      if (hpp.is_open())
-      {
-        write_file_header(hpp, true);
-        parse(apipfx, mod_name, hname, enums_json, cpp, hpp, headers,
-              type == nsmodule_type::lib || type == nsmodule_type::ref, style);
-        headers.emplace_back(fmt::format("{}Enums.hpp", filePrefix));
-      }
-    }
-
-    if (has_lenums_json)
-    {
-      auto          hname  = fmt::format("LocalEnums.hpp", filePrefix);
-      auto          header = gen / "local" / hname;
-      std::ofstream hpp{header};
-      if (hpp.is_open())
-      {
-        write_file_header(hpp, true);
-        parse("", mod_name, hname, lenums_json, cpp, hpp, headers, false, style);
-      }
-    }
-  }
+  auto file_prefix = bc.file_prefix + m.name;
+  auto cpp         = m.get_full_gen_dir(bc) / "local" / fmt::format("{}Enums.cpp", file_prefix);
+  auto hpp         = m.get_full_gen_dir(bc) / fmt::format("{}Enums.hpp", file_prefix);
+  auto lpp         = m.get_full_gen_dir(bc) / "local" / fmt::format("{}LocalEnums.hpp", file_prefix);
+  if (std::filesystem::exists(cpp))
+    std::filesystem::remove(cpp);
+  if (std::filesystem::exists(hpp))
+    std::filesystem::remove(hpp);
+  if (std::filesystem::exists(lpp))
+    std::filesystem::remove(lpp);
 }
+
 nsenum::nsenum(nsenum_context& ictx, nlohmann::json const& jv) : ctx{ictx}, jenum{jv}
 {
   if (jenum.find("debug") != jenum.end())
@@ -482,7 +490,7 @@ void nsenum::write_header(std::ostream& ofs) const
   nsenum_context::start_namespace(ofs, namespace_name);
   if (!comment.empty())
     ofs << "\n// " << comment;
-  ofs << fmt::format("\nstruct {} {}\n{{", ctx.export_api, enum_name());
+  ofs << fmt::format("\nstruct {} {}\n{{", ctx.export_api(), enum_name());
   if (auto_flags || usage == nsenum_usage::as_enum)
   {
     write_header_enum(ofs, usage == nsenum_usage::as_enum);
@@ -532,13 +540,13 @@ void nsenum::write_header_alias(std::ostream& ofs) const
 
 void nsenum::write_header_string_table(std::ostream& ofs) const
 {
-  auto starts_with = stylize(ctx.style, "StartsWith");
-  auto ends_with   = stylize(ctx.style, "EndsWith");
-  auto from_string = stylize(ctx.style, "FromString");
-  auto to          = stylize(ctx.style, "To");
-  auto to_bit      = stylize(ctx.style, "ToBit");
-  auto to_enum     = stylize(ctx.style, "ToEnum");
-  auto table       = stylize(ctx.style, "Table");
+  auto starts_with = stylize(ctx.style(), "StartsWith");
+  auto ends_with   = stylize(ctx.style(), "EndsWith");
+  auto from_string = stylize(ctx.style(), "FromString");
+  auto to          = stylize(ctx.style(), "To");
+  auto to_bit      = stylize(ctx.style(), "ToBit");
+  auto to_enum     = stylize(ctx.style(), "ToEnum");
+  auto table       = stylize(ctx.style(), "Table");
 
   auto value_type = default_value_type();
   ofs << fmt::format("\n  using Tuple = std::tuple<std::string_view, {}>;", value_type)
@@ -569,11 +577,11 @@ void nsenum::write_header_string_table(std::ostream& ofs) const
 
 void nsenum::write_header_string_key_table(std::ostream& ofs) const
 {
-  auto to              = stylize(ctx.style, "To");
-  auto from_string_key = stylize(ctx.style, "FromStringKey");
-  auto to_flag         = stylize(ctx.style, "ToFlag");
-  auto to_enum         = stylize(ctx.style, "ToEnum");
-  auto table           = stylize(ctx.style, "Table");
+  auto to              = stylize(ctx.style(), "To");
+  auto from_string_key = stylize(ctx.style(), "FromStringKey");
+  auto to_flag         = stylize(ctx.style(), "ToFlag");
+  auto to_enum         = stylize(ctx.style(), "ToEnum");
+  auto table           = stylize(ctx.style(), "Table");
 
   auto value_type = default_value_type();
   // clang-format off
@@ -591,11 +599,11 @@ void nsenum::write_header_string_key_table(std::ostream& ofs) const
 
 void nsenum::write_header_value_functions(std::ostream& ofs) const
 {
-  auto to_value        = stylize(ctx.style, "ToValue");
-  auto from_string_key = stylize(ctx.style, "FromStringKey");
-  auto to_string_key   = stylize(ctx.style, "ToStringKey");
-  auto to_string       = stylize(ctx.style, "ToString");
-  auto get             = stylize(ctx.style, "Get");
+  auto to_value        = stylize(ctx.style(), "ToValue");
+  auto from_string_key = stylize(ctx.style(), "FromStringKey");
+  auto to_string_key   = stylize(ctx.style(), "ToStringKey");
+  auto to_string       = stylize(ctx.style(), "ToString");
+  auto get             = stylize(ctx.style(), "Get");
 
   auto value_type = default_value_type();
   ofs << fmt::format("\n  static Value {}({} iFrom);", to_value, value_type);
@@ -747,7 +755,7 @@ void nsenum::write_source(std::ostream& ofs) const
 
 void nsenum::write_source_to_value(std::ostream& ofs) const
 {
-  auto to_value = stylize(ctx.style, "ToValue");
+  auto to_value = stylize(ctx.style(), "ToValue");
 
   // clang-format off
   auto value_type = default_value_type();
@@ -814,11 +822,11 @@ void nsenum::write_source_to_value(std::ostream& ofs) const
 
 void nsenum::write_source_string_table(std::ostream& ofs) const
 {
-  auto table = stylize(ctx.style, "Table");
-  auto from_string_key = stylize(ctx.style, "FromStringKey");
-  auto starts_with = stylize(ctx.style, "StartsWith");
-  auto ends_with   = stylize(ctx.style, "EndsWith");
-  auto from_string = stylize(ctx.style, "FromString");
+  auto table = stylize(ctx.style(), "Table");
+  auto from_string_key = stylize(ctx.style(), "FromStringKey");
+  auto starts_with = stylize(ctx.style(), "StartsWith");
+  auto ends_with   = stylize(ctx.style(), "EndsWith");
+  auto from_string = stylize(ctx.style(), "FromString");
 
 
   auto const& enum_name      = name;

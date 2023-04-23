@@ -85,12 +85,17 @@ using nstuple_type_list = std::vector<nstuple_type>;
 using nsenum_entry_list = std::vector<nsenum_entry>;
 
 struct nsbuild;
+struct nsmodule;
 
-struct nsenum_context
+class nsenum_context
 {
-  std::string                     export_api;
+public:
+  std::string_view enums_json;
+  std::string_view local_enums_json;
+
   std::unordered_set<std::string> includes;
-  coding_style                    style;
+
+  static void clean(nsmodule const& m, nsbuild const&);
 
   static void        begin_header(std::ostream& ofs, std::unordered_set<std::string> const&);
   static void        start_namespace(std::ostream& ofs, std::string);
@@ -99,12 +104,20 @@ struct nsenum_context
   static std::string prefix_words(std::string const& pref, std::string const& sentence, bool is_single_word);
   static std::string modify_search(std::string const& on, nsenum_modifier modifier);
 
-  static void parse(std::string const& pfx, std::string const& mod, std::string const& header,
-                    std::filesystem::path const&, std::ofstream& cpp, std::ofstream& hpp,
-                    std::vector<std::string> const&, bool exp, coding_style);
+  void parse(nsmodule const& m, nsbuild const& bc, std::string const& header, std::string_view, std::ofstream& cpp,
+             std::ofstream& hpp, std::vector<std::string> const&, bool exp);
+
   static void write_file_header(std::ofstream& ofs, bool isheader);
-  static void generate(std::string const& filepfx, std::string const& apipfx, std::string mod_name, nsmodule_type type,
-                       std::filesystem::path source, std::filesystem::path gen, coding_style);
+
+  void generate(nsmodule const& m, nsbuild const&);
+
+  std::string const& export_api() const { return f_export; }
+  coding_style       style() const { return f_style; }
+
+private:
+  coding_style f_style;
+  std::string  f_export;
+  std::string  f_prefix;
 };
 
 struct nsenum
