@@ -223,8 +223,8 @@ struct nsmetainfo
 {
   std::string              compiler_name;
   std::string              compiler_version;
-  std::vector<std::string> ordered_timestamps;
-  string_map               timestamps;
+  std::vector<std::string> ordered_sha;
+  string_map               sha;
 };
 
 struct nsmetastate

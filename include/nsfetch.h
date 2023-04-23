@@ -24,4 +24,5 @@ struct nsfetch
   bool                     skip_namespace = false;
   bool                     runtime_only   = false;
   bool                     force_build    = false;
+  bool                     force_download = false;
 };

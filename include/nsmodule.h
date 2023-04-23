@@ -52,6 +52,7 @@ struct nsmodule
   nsbuildsteplist     postbuild;
   nsbuildcmdlist      install;
   nsglob              glob_media;
+  nsglob              glob_sources;
   std::string         version;
   std::uint32_t       framework;
 
@@ -89,6 +90,7 @@ struct nsmodule
   // .. Options
   bool console_app       = false;
   bool was_fetch_rebuilt = false;
+  bool has_globs_changed = false;
 
   nsmodule()                               = default;
   nsmodule(nsmodule&&) noexcept            = default;
@@ -117,6 +119,8 @@ struct nsmodule
     }
   }
 
+  inline void should_regenerate() { regenerate = true;  }
+
   struct content
   {
     std::string data;
@@ -132,6 +136,7 @@ struct nsmodule
   void update_macros(nsbuild const& bc, std::string const& targ_name, nstarget& targ);
   void update_fetch(nsbuild const& bc);
   void generate_plugin_manifest(nsbuild const& bc);
+  void gather_sources(nsglob& glob, nsbuild const& bc) const;
 
   content     make_fetch_build_content(nsbuild const& bc) const;
   void        backup_fetch_lists(nsbuild const& bc) const;
@@ -145,7 +150,6 @@ struct nsmodule
   void write_main_build(std::ostream&, nsbuild const& bc) const;
   void write_variables(std::ostream&, nsbuild const& bc, char sep = ';') const;
   void write_sources(std::ostream&, nsbuild const& bc) const;
-  void write_source_subpath(nsglob& glob, nsbuild const& bc) const;
   void write_target(std::ostream&, nsbuild const& bc, std::string const& name) const;
   void write_enums_init(std::ostream&, nsbuild const& bc) const;
 
@@ -191,7 +195,10 @@ struct nsmodule
 
   void build_fetched_content(nsbuild const& bc);
   void delete_build(nsbuild const& bc);
-  void download(nsbuild const& bc);
+  bool download(nsbuild const& bc);
+
+  bool glob_changed(nsbuild const& bc, std::string_view name, nsglob const&);
+  void write_glob_changed(nsbuild const& bc, std::string_view name, nsglob const&);
 
   std::filesystem::path get_full_bld_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_sdk_dir(nsbuild const& bc) const;

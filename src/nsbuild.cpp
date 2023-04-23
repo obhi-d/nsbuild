@@ -48,6 +48,16 @@ void nsbuild::main_project()
     }
     std::ofstream ff{path};
     ff << "\nmessage(\"-- Run build for the first time to generate project files.\")\n";
+    path = get_full_out_dir() / preset.name / cache_dir;
+    if (std::filesystem::exists(path))
+    {
+      auto dit = std::filesystem::directory_iterator(path);
+      for (auto const& it : dit)
+      {
+        if (it.path().extension() == ".glob")
+          std::filesystem::remove(it.path());
+      }
+    }
   }
 }
 
@@ -166,8 +176,8 @@ void nsbuild::read_meta(std::filesystem::path const& path)
     return;
   }
 
-  auto it = meta.timestamps.find("main_build");
-  if (it != meta.timestamps.end())
+  auto it = meta.sha.find("main_build");
+  if (it != meta.sha.end())
   {
     if (it->second != build_ns_sha)
       state.is_dirty = true;
@@ -205,7 +215,7 @@ void nsbuild::act_meta()
       }
     }
   }
-  meta.ordered_timestamps.emplace_back(fmt::format("\n  build_main : \"{}\";", build_ns_sha));
+  meta.ordered_sha.emplace_back(fmt::format("\n  build_main : \"{}\";", build_ns_sha));
 }
 
 void nsbuild::write_meta(std::filesystem::path const& path)
@@ -223,7 +233,7 @@ void nsbuild::write_meta(std::filesystem::path const& path)
   {
     std::ofstream ofs{path / "module_info.ns"};
     ofs << "meta {\n timestamps {";
-    for (auto& t : meta.ordered_timestamps)
+    for (auto& t : meta.ordered_sha)
     {
       ofs << t; // fmt::format("\n  {} : \"{}\";", t.first, t.second);
     }
@@ -263,13 +273,15 @@ void nsbuild::read_module(std::filesystem::path sp)
     scan_file(sp / "Module.ns", true, nullptr);
     hash_hex_str = gather_module_hash(sp);
     // Check if timestamp has changed
-    auto ts = meta.timestamps.find(targ_name);
-    if (ts == meta.timestamps.end() || ts->second != hash_hex_str || state.full_regenerate)
+    auto ts = meta.sha.find(targ_name);
+    if (ts == meta.sha.end() || ts->second != hash_hex_str || state.full_regenerate)
     {
       nslog::warn(fmt::format("{} has changed. Regenerating!", targ_name));
-      s_nsmodule->regenerate     = true;
+      
+      s_nsmodule->should_regenerate();
+
       state.is_dirty             = true;
-      meta.timestamps[targ_name] = hash_hex_str;
+      meta.sha[targ_name]  = hash_hex_str;
     }
     // Add a target
     auto t                  = targets.emplace(targ_name, nstarget{});
@@ -378,7 +390,10 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
   mod.process(*this, name, targ);
   if (mod.was_fetch_rebuilt)
     state.exit_and_rebuild = true;
-  meta.ordered_timestamps.emplace_back(fmt::format("\n  {} : \"{}\";", name, targ.sha256));
+  if (mod.has_globs_changed)
+    state.is_dirty = true;
+  meta.ordered_sha.emplace_back(
+      fmt::format("\n  {} : \"{}\"; ", name, targ.sha256));
 }
 
 void nsbuild::copy_installed_binaries()
@@ -555,7 +570,7 @@ void nsbuild::update_macros()
   macros["config_preset_name"]    = cmakeinfo.cmake_preset_name;
   macros["config_type"]           = cmakeinfo.cmake_config;
   macros["config_platform"]       = cmakeinfo.target_platform;
-  macros["config_ignored_media"]  = ignore_media_from;
+  macros["config_ignored_media"]  = media_exclude_filter;
 }
 
 void nsbuild::write_include_modules() const

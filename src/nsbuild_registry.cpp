@@ -71,6 +71,18 @@ ns_cmd_handler(plugin_dir, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(media_name, build, state, cmd)
+{
+  build.media_name = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(media_exclude_filter, build, state, cmd)
+{
+  build.media_exclude_filter = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(natvis, build, state, cmd)
 {
   build.natvis = get_idx_param(cmd, 0);
@@ -119,7 +131,7 @@ ns_cmd_handler(cppcheck_suppression, build, state, cmd)
 
 ns_star_handler(timestamps, build, state, cmd)
 {
-  build.meta.timestamps[std::string{cmd.name()}] = get_idx_param(cmd, 0);
+  build.meta.sha[std::string{cmd.name()}] = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -468,6 +480,18 @@ ns_cmd_handler(force_build, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(force_download, build, state, cmd)
+{
+  build.s_nsfetch->force_download = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(force, build, state, cmd)
+{
+  build.s_nsfetch->force_download = build.s_nsfetch->force_build = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(tag, build, state, cmd)
 {
   build.s_nsfetch->tag = get_idx_param(cmd, 0);
@@ -719,6 +743,8 @@ ns_registry(nsbuild)
   ns_cmd(download_dir);
   ns_cmd(manifests_dir);
   ns_cmd(plugin_dir);
+  ns_cmd(media_name);
+  ns_cmd(media_exclude_filter);
 
   ns_scope_cust(preset, clear_presets)
   {
@@ -784,7 +810,9 @@ ns_registry(nsbuild)
   ns_scope_auto(fetch)
   {
     ns_cmd(license);
+    ns_cmd(force);
     ns_cmd(force_build);
+    ns_cmd(force_download);
     ns_cmd(tag);
     ns_scope_def(args) { ns_star(var); }
     ns_cmd(package);

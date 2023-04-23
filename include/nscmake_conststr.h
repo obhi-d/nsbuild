@@ -204,19 +204,6 @@ endif()
 
 )_";
 
-static inline constexpr char k_media_commands[] = R"_(
-  set(__module_data)
-  foreach(l ${data_group})
-    if (NOT l MATCHES "^${module_dir}/media/Internal/")
-      list(APPEND __module_data ${l})
-    endif()
-  endforeach()
-  
-  set(data_group_output ${__module_data})
-  list(TRANSFORM data_group_output REPLACE ${module_dir}/media ${config_rt_dir}/media)
-  if(data_group_output)
-)_";
-
 static inline constexpr char k_finale[] = R"_(
 
 configure_file("${__nsbuild_data}/ModuleConfig.hxx" "${module_gen_dir}/${module_name}ModuleConfig.hpp")

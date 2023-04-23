@@ -1,7 +1,7 @@
 
 # Structure
 
-.
+```
 + sources
    +--CMakeLists.txt [generated in first run]
    +--Frameworks
@@ -31,3 +31,4 @@
      +--rt    [runtime output directory]
      +--cache
 
+```

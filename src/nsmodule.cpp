@@ -86,10 +86,15 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
   gen_path       = cmake::path(get_full_gen_dir(bc));
 
   if (has_data(type))
-    glob_media = nsglob{.name        = "data_group",
-                        .relative_to = {}, // "${CMAKE_CURRENT_LIST_DIR}",
-                        .sub_paths   = {"${module_dir}/media/*"},
-                        .recurse     = true};
+  {
+    glob_media.add_set(p / bc.media_name);
+    glob_media.recurse = true;
+    glob_media.path_exclude_filters = bc.media_exclude_filter;
+    glob_media.accumulate();
+    if(has_globs_changed |= glob_changed(bc, "data_group", glob_media))
+      write_glob_changed(bc, "data_group", glob_media);
+  }
+  
   if (has_data(type))
   {
     // Add a step
@@ -99,14 +104,13 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     step.artifacts.push_back("${data_group_output}");
     step.check = "data_group";
     step.dependencies.push_back("${data_group}");
-    step.injected_config_body = cmake::k_media_commands;
+    step.injected_config_body = "if(data_group)";
     step.injected_config_end  = "endif()";
     unset.emplace_back("data_group");
-    unset.emplace_back("data_group_output");
     cmd.msgs.push_back(fmt::format("Building data files for {}", name));
     cmd.command = "${nsbuild}";
-    cmd.params  = "--copy-media ${module_dir}/media ${config_rt_dir}/media ${module_build_dir}/media.files "
-                  "${config_ignored_media}";
+    cmd.params  = fmt::format("--copy-media ${{module_dir}}/{0} ${{config_rt_dir}}/{0} ${{module_build_dir}}/media.files "
+                  "${{config_ignored_media}}", bc.media_name);
 
     step.steps.push_back(cmd);
     step.wd = bc.wd.generic_string();
@@ -132,6 +136,16 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
   }
   else if (type == nsmodule_type::test)
   {}
+
+  if (has_runtime(type))
+  {
+    static std::unordered_set<std::string> cpp_filters = {".cpp", ".cxx"};
+    glob_sources.file_filters                          = &cpp_filters;
+    gather_sources(glob_sources, bc);
+    glob_sources.accumulate();
+    if (has_globs_changed |= glob_changed(bc, "src", glob_media))
+      write_glob_changed(bc, "src", glob_media);
+  }
 
   if (has_headers(type))
   {
@@ -398,11 +412,11 @@ void nsmodule::fetch_content(nsbuild const& bc)
   std::string sha;
   bool        change = false;
   
-  if (regenerate)
-  {
-    // download
-    download(bc);
+  // download
+  regenerate |= download(bc);
 
+  if (regenerate)
+  {    
     auto cc = make_fetch_build_content(bc);
     write_fetch_build_content(bc, cc);
     sha = cc.sha;
@@ -470,7 +484,10 @@ void nsmodule::write_main_build(std::ostream& ofs, nsbuild const& bc) const
   write_variables(ofs, bc);
   cmake::line(ofs, "globs");
   if (has_data(type))
-    glob_media.print(ofs);
+  {
+    glob_media.print(ofs, "data_group", "${CMAKE_CURRENT_LIST_DIR}/", bc.get_full_cmake_gen_dir());
+    glob_media.print(ofs, "data_group_output", fmt::format("${{config_rt_dir}}/{}", bc.media_name), {});
+  }
   write_sources(ofs, bc);
   write_target(ofs, bc, target_name);
   write_includes(ofs, bc);
@@ -502,34 +519,26 @@ void nsmodule::write_variables(std::ostream& ofs, nsbuild const& bc, char sep) c
   }
 }
 
-void nsmodule::write_sources(std::ostream& ofs, nsbuild const& bc) const
-{
-  if (has_runtime(type))
-  {
-    nsglob glob_sources;
-    glob_sources = nsglob{.name        = "__module_sources",
-                          .relative_to = {}, //"${CMAKE_CURRENT_LIST_DIR}",
-                          .sub_paths   = {},
-                          .recurse     = false};
-    write_source_subpath(glob_sources, bc);
-    glob_sources.print(ofs);
-    for (auto const& src : source_files)
-      ofs << fmt::format("\nlist(APPEND __module_sources \"{}\")", src);
-  }
-}
-
-void nsmodule::write_source_subpath(nsglob& glob, nsbuild const& bc) const
-{
-  glob.sub_paths.push_back(source_path + "/src/*.cpp");
+void nsmodule::gather_sources(nsglob& glob, nsbuild const& bc) const
+{ 
+  auto sp = std::filesystem::path(source_path);
+  auto gp = std::filesystem::path(gen_path);
+  glob.add_set(sp / "src");
   for (auto const sub : source_sub_dirs)
-    glob.sub_paths.push_back(fmt::format("{}/src/{}/*.cpp", source_path, sub));
-  glob.sub_paths.push_back(gen_path + "/*.cpp");
-  glob.sub_paths.push_back(gen_path + "/local/*.cpp");
+    glob.add_set(sp / "src" / sub);
+  glob.add_set(gp);
+  glob.add_set(gp / "local");
   for (auto const& r : references)
   {
     auto const& m = bc.get_module(r);
-    m.write_source_subpath(glob, bc);
+    m.gather_sources(glob, bc);
   }
+}
+
+void nsmodule::write_sources(std::ostream& ofs, nsbuild const& bc) const
+{
+  if (has_runtime(type))
+    glob_sources.print(ofs, "__module_sources", "${CMAKE_CURRENT_LIST_DIR}/", bc.get_full_cmake_gen_dir());
 }
 
 void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string const& name) const
@@ -1155,7 +1164,33 @@ std::filesystem::path nsmodule::get_full_gen_dir(nsbuild const& bc) const
   return bc.get_full_cfg_dir() / k_gen_dir / name;
 }
 
-void nsmodule::download(nsbuild const& bc)
+bool nsmodule::download(nsbuild const& bc)
 {
+  auto dld = get_full_dl_dir(bc);
+  if (std::filesystem::exists(dld / "CMakeLists.txt") && !regenerate && !fetch->force_download)
+    return false;
   nsprocess::git_clone(bc, get_full_dl_dir(bc), fetch->repo, fetch->tag);
+  return true;
+}
+
+bool nsmodule::glob_changed(nsbuild const& bc, std::string_view name, nsglob const& glob)
+{
+  auto meta = bc.get_full_cache_dir() / fmt::format("{}.{}.glob", this->name, name);
+  std::ifstream iff{meta};
+  if (iff.is_open())
+  {
+    std::string sha;
+    iff >> sha;
+    if (sha == glob.sha)
+      return false;
+  }
+  return true;
+}
+
+void nsmodule::write_glob_changed(nsbuild const& bc, std::string_view name, nsglob const& glob)
+{
+  auto          meta = bc.get_full_cache_dir() / fmt::format("{}.{}.glob", this->name, name);
+  std::ofstream off{meta};
+  if (off.is_open())
+    off << glob.sha;
 }

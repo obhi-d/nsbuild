@@ -38,8 +38,10 @@ struct nsbuild : public neo::command_handler
   std::string manifests_dir = "media/Plugins";
   // path relative to runtime
   std::string plugin_dir = "media/Plugins/bin";
+  // Media name
+  std::string media_name = "media";
 
-  std::string ignore_media_from = "Internal";
+  std::string media_exclude_filter = "Internal";
 
   std::string namespace_name;
   std::string macro_prefix;

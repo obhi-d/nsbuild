@@ -53,6 +53,8 @@ Purpose of each file/directory is described hereunder.
 - ``frameworks_dir`` : "Frameworks";
 - ``manifests_dir``  : "media/Plugins";
 - ``plugin_dir``     : "media/Plugins/bin"; 
+- ``media_name``     : "media";
+- ``media_exclude_filter``     : "Internal";
 - ``verbose``        : true;
 - ``natvis``         : "Scripts/utils/VSDbgVisualizers.natvis";
 - ``namespace``      : lxe;
@@ -144,7 +146,9 @@ Module ns can inject cmake code using a `{{cmake:prepare}}` and `{{cmake:finaliz
   
 - `fetch` - *git repo*
   - `license`
-  - `force_build`
+  - `force_build` : Forces a build, build is skipped if CMakeLists.txt hash matches last build hash.
+  - `force_download` : Forces a re-download, download is skipped if CMakeLists.txt is present in download directory and tag is the same as last time.
+  - `force` : This option enables both force_build and force_download
   - `tag`
   - `args`
     - `var` 
