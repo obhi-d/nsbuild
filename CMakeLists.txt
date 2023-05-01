@@ -14,7 +14,7 @@ set(JSON_BuildTests OFF CACHE INTERNAL "")
 
 FetchContent_Declare(neoscript
   GIT_REPOSITORY https://github.com/obhi-d/neoscript.git
-  GIT_TAG "v1.0.1"
+  GIT_TAG "v1.0.2"
 )
 
 FetchContent_Declare(fmt
@@ -24,12 +24,12 @@ FetchContent_Declare(fmt
 
 FetchContent_Declare(reproc
   GIT_REPOSITORY https://github.com/DaanDeMeyer/reproc.git
-  GIT_TAG 8aea3aef64c37a7ed0db759a7128a80c2540c808
+  GIT_TAG v14.2.4
 )
 
 FetchContent_Declare(json
   GIT_REPOSITORY https://github.com/nlohmann/json.git
-  GIT_TAG fec56a1a16c6e1c1b1f4e116a20e79398282626c
+  GIT_TAG v3.11.2
 )
 
 if(NOT neoscript_POPULATED)
