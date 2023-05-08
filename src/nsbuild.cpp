@@ -16,8 +16,8 @@
 #include <nslog.h>
 #include <nsprocess.h>
 #include <stdexcept>
-#include <unordered_set>
 #include <string>
+#include <unordered_set>
 
 extern void halt();
 nsbuild::nsbuild() { wd = std::filesystem::current_path(); }
@@ -65,7 +65,7 @@ bool nsbuild::scan_file(std::filesystem::path path, bool store, std::string* sha
 {
   std::ifstream iff(path);
   if (iff.is_open())
-  {    
+  {
     std::string f1_str;
     auto        size = std::filesystem::file_size(path);
     f1_str.resize(size, ' ');
@@ -122,7 +122,7 @@ void nsbuild::before_all()
   {
     process_targets();
   }
-  catch (std::exception& )
+  catch (std::exception&)
   {
     nslog::print("******************************************");
     nslog::print("*** Module failed to build!            ***");
@@ -153,12 +153,8 @@ void nsbuild::delete_builds_if_required()
 {
   if (!state.delete_builds)
     return;
-  foreach_module([this](auto& m) 
-    { 
-      m.delete_build(*this);
-    });
+  foreach_module([this](auto& m) { m.delete_build(*this); });
 }
-
 
 void nsbuild::read_meta(std::filesystem::path const& path)
 {
@@ -180,12 +176,8 @@ void nsbuild::read_meta(std::filesystem::path const& path)
     return;
   }
 
-  auto it = meta.sha.find("main_build");
-  if (it != meta.sha.end())
-  {
-    if (it->second != build_ns_sha)
-      state.is_dirty = true;
-  }
+  auto it        = meta.sha.find("main_build");
+  state.is_dirty = (it != meta.sha.end()) && (it->second != build_ns_sha);
 
   if (meta.compiler_version != cmakeinfo.cmake_cppcompiler_version)
   {
@@ -219,7 +211,7 @@ void nsbuild::act_meta()
       }
     }
   }
-  meta.ordered_sha.emplace_back(fmt::format("\n  build_main : \"{}\";", build_ns_sha));
+  meta.ordered_sha.emplace_back(fmt::format("\n  main_build : \"{}\";", build_ns_sha));
 }
 
 void nsbuild::write_meta(std::filesystem::path const& path)
@@ -281,11 +273,11 @@ void nsbuild::read_module(std::filesystem::path sp)
     if (ts == meta.sha.end() || ts->second != hash_hex_str || state.full_regenerate)
     {
       nslog::warn(fmt::format("{} has changed. Regenerating!", targ_name));
-      
+
       s_nsmodule->should_regenerate();
 
-      state.is_dirty             = true;
-      meta.sha[targ_name]  = hash_hex_str;
+      state.is_dirty      = true;
+      meta.sha[targ_name] = hash_hex_str;
     }
     // Add a target
     auto t                  = targets.emplace(targ_name, nstarget{});
@@ -387,7 +379,8 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
         if (it != targets.end())
           process_target(name, it->second);
         else
-          throw std::runtime_error(fmt::format("{} Is not a valid module. Seen as a dependent module for {}", name, mod.name));
+          throw std::runtime_error(
+              fmt::format("{} Is not a valid module. Seen as a dependent module for {}", name, mod.name));
       });
 
   sorted_targets.push_back(name);
@@ -396,8 +389,7 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
     state.exit_and_rebuild = true;
   if (mod.has_globs_changed)
     state.is_dirty = true;
-  meta.ordered_sha.emplace_back(
-      fmt::format("\n  {} : \"{}\"; ", name, targ.sha256));
+  meta.ordered_sha.emplace_back(fmt::format("\n  {} : \"{}\"; ", name, targ.sha256));
 }
 
 void nsbuild::copy_installed_binaries()
@@ -454,14 +446,14 @@ void nsbuild::copy_media(std::filesystem::path from, std::filesystem::path to, s
   if (!std::filesystem::exists(from))
     return;
   std::filesystem::create_directories(to);
-  
+
   namespace fs            = std::filesystem;
   auto       it           = fs::recursive_directory_iterator{from};
   const auto copy_options = fs::copy_options::update_existing;
 
   std::unordered_set<fs::path> touched;
   std::unordered_set<fs::path> added;
-  
+
   if (fs::exists(artefacts))
   {
     std::string   spath;
@@ -477,20 +469,20 @@ void nsbuild::copy_media(std::filesystem::path from, std::filesystem::path to, s
   for (auto const& dir_entry : it)
   {
     if (dir_entry.is_directory() && (dir_entry.path().filename() == ignore))
-        continue;
+      continue;
 
     std::error_code ec       = {};
-    auto const& path     = dir_entry.path();
-    auto        rel_path = path.lexically_relative(from);
-    auto        dest     = to / rel_path;
+    auto const&     path     = dir_entry.path();
+    auto            rel_path = path.lexically_relative(from);
+    auto            dest     = to / rel_path;
 
     if (dir_entry.is_directory())
-        fs::create_directories(dest, ec);
+      fs::create_directories(dest, ec);
     else
     {
-        fs::copy(path, dest, copy_options);
-        added.emplace(rel_path);
-        touched.erase(rel_path);
+      fs::copy(path, dest, copy_options);
+      added.emplace(rel_path);
+      touched.erase(rel_path);
     }
   }
 
@@ -503,7 +495,6 @@ void nsbuild::copy_media(std::filesystem::path from, std::filesystem::path to, s
   std::ofstream ff{artefacts};
   for (auto const& file : added)
     ff << file << std::endl;
-  
 }
 
 modid nsbuild::get_modid(std::string_view path) const
