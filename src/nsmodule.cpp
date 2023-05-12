@@ -3,12 +3,12 @@
 #include "nsbuild.h"
 #include "nscmake.h"
 #include "nscmake_conststr.h"
+#include "nsenums.h"
 #include "nslog.h"
 #include "nspreset.h"
 #include "nsprocess.h"
 #include "nstarget.h"
 #include "picosha2.h"
-#include "nsenums.h"
 
 #include <exception>
 #include <fstream>
@@ -72,20 +72,20 @@ void nsmodule::process(nsbuild const& bc, std::string const& targ_name, nstarget
   generate_plugin_manifest(bc);
 }
 
-void nsmodule::check_enums(nsbuild const& bc) const 
-{ 
-  auto lenums = std::filesystem::path(source_path) / "private" / "Enums.json"; 
-  auto enums = std::filesystem::path(source_path) / "public" / "Enums.json";
+void nsmodule::check_enums(nsbuild const& bc) const
+{
+  auto lenums = std::filesystem::path(source_path) / "private" / "Enums.json";
+  auto enums  = std::filesystem::path(source_path) / "public" / "Enums.json";
 
   std::string content;
   size_t      lenums_size = std::filesystem::exists(lenums) ? std::filesystem::file_size(lenums) : 0;
-  size_t      enums_size = std::filesystem::exists(enums) ? std::filesystem::file_size(enums) : 0;
+  size_t      enums_size  = std::filesystem::exists(enums) ? std::filesystem::file_size(enums) : 0;
 
   if (!lenums_size && !enums_size)
   {
+    nsenum_context::clean(*this, bc);
     if (sha_changed(bc, "enums", ""))
     {
-      nsenum_context::clean(*this, bc);
       write_sha_changed(bc, "enums", "");
     }
   }
@@ -94,31 +94,30 @@ void nsmodule::check_enums(nsbuild const& bc) const
   {
     std::ifstream iff{lenums};
     if (iff.is_open())
-      iff.read(content.data(), lenums_size);    
+      iff.read(content.data(), lenums_size);
   }
-   
+
   if (std::filesystem::exists(enums))
   {
     std::ifstream iff{enums};
     if (iff.is_open())
       iff.read(content.data() + lenums_size, enums_size);
   }
-   
+
   std::string sha;
   picosha2::hash256_hex_string(content, sha);
-  if (sha_changed(bc, "enums", sha))
+  if (sha_changed(bc, "enums", sha) || nsenum_context::outputs_missing(*this, bc, lenums_size > 0, enums_size > 0))
   {
     nsenum_context::clean(*this, bc);
     write_sha_changed(bc, "enums", sha);
 
     nsenum_context ctx;
-    
+
     ctx.local_enums_json = std::string_view(content.data(), lenums_size);
-    ctx.enums_json = std::string_view(content.data() + lenums_size, enums_size);
+    ctx.enums_json       = std::string_view(content.data() + lenums_size, enums_size);
 
     ctx.generate(*this, bc);
   }
-  
 }
 
 void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name, nstarget& targ)
@@ -138,13 +137,13 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
   if (has_data(type))
   {
     glob_media.add_set(p / bc.media_name);
-    glob_media.recurse = true;
+    glob_media.recurse              = true;
     glob_media.path_exclude_filters = bc.media_exclude_filter;
     glob_media.accumulate();
-    if(has_globs_changed |= sha_changed(bc, "data_group", glob_media.sha))
+    if (has_globs_changed |= sha_changed(bc, "data_group", glob_media.sha))
       write_sha_changed(bc, "data_group", glob_media.sha);
   }
-  
+
   if (has_data(type))
   {
     // Add a step
@@ -159,8 +158,9 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     unset.emplace_back("data_group");
     cmd.msgs.push_back(fmt::format("Building data files for {}", name));
     cmd.command = "${nsbuild}";
-    cmd.params  = fmt::format("--copy-media ${{module_dir}}/{0} ${{config_rt_dir}}/{0} ${{module_build_dir}}/media.files "
-                  "${{config_ignored_media}}", bc.media_name);
+    cmd.params  = fmt::format("--copy-media ${{module_dir}}/{0} ${{config_rt_dir}}/{0} ${{module_gen_dir}}/media.files "
+                               "${{config_ignored_media}}",
+                              bc.media_name);
 
     step.steps.push_back(cmd);
     step.wd = bc.wd.generic_string();
@@ -189,7 +189,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
 
   if (has_headers(type))
     check_enums(bc);
-    
+
   if (has_runtime(type))
   {
     static std::unordered_set<std::string> cpp_filters = {".cpp", ".cxx"};
@@ -204,9 +204,6 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
   {
     if (intf[nsmodule::priv_intf].empty())
       intf[nsmodule::priv_intf].emplace_back();
-    intf[nsmodule::priv_intf].back().definitions.emplace_back("L_APP_NAME", fmt::format("\"{}\"", name));
-    if (type == nsmodule_type::test)
-      intf[nsmodule::priv_intf].back().definitions.emplace_back("L_TEST_APP", fmt::format("\"{}\"", name));
   }
 
   if (!bc.s_current_preset->static_libs)
@@ -231,20 +228,33 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
       fetch->targets = fetch->components;
   }
 
-  std::filesystem::create_directories(get_full_bld_dir(bc));
   std::filesystem::create_directories(get_full_gen_dir(bc));
   std::filesystem::create_directories(get_full_gen_dir(bc) / "local");
 }
 
 void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, nstarget& targ)
 {
-  macros["framework_dir"]    = framework_path;
-  macros["framework_name"]   = framework_name;
-  macros["module_name"]      = name;
-  macros["module_dir"]       = source_path;
-  macros["module_build_dir"] = cmake::path(get_full_bld_dir(bc));
-  macros["module_gen_dir"]   = cmake::path(get_full_gen_dir(bc));
-  macros["module_target"]    = targ_name;
+  macros.fallback          = &bc.macros;
+  macros["framework_dir"]  = framework_path;
+  macros["framework_name"] = framework_name;
+  macros["module_name"]    = name;
+  macros["module_dir"]     = source_path;
+  macros["module_gen_dir"] = cmake::path(get_full_gen_dir(bc));
+  macros["module_target"]  = targ_name;
+
+  std::string tags = this->tags;
+  tags += bc.s_current_preset->tags;
+  if (type == nsmodule_type::test)
+    tags += bc.test_tags;
+
+  macros["module_tags"] = tags;
+
+  if (is_executable(type))
+    macros["module_extras"] =
+        fmt::format(R"(constexpr std::string_view AppName = \"{}\";\n  constexpr std::string_view OrgName = \"{}\";\n)",
+                    name, org_name);
+  else
+    macros["module_extras"] = "";
 
   if (fetch)
   {
@@ -263,15 +273,16 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, ns
     /// - bld/module/ts Timestamp directory
     /// - bld/module/bld  Build directory
     /// - bld/module/sdk Install directory
-    macros["fetch_bulid_dir"]    = cmake::path(get_full_bld_dir(bc));
-    macros["fetch_sdk_dir"]      = cmake::path(get_full_sdk_dir(bc));
-    macros["fetch_src_dir"]      = cmake::path(get_full_dl_dir(bc));
-    macros["fetch_package"]      = fetch->package;
-    macros["fetch_namespace"]    = fetch->namespace_name;
-    macros["fetch_repo"]         = fetch->repo;
-    macros["fetch_commit"]       = fetch->tag;
-    macros["fetch_components"]   = components;
-    macros["fetch_extern_name"]  = fetch->extern_name;
+    macros["fetch_bulid_dir"]   = cmake::path(get_full_bld_dir(bc));
+    macros["fetch_sdk_dir"]     = cmake::path(get_full_sdk_dir(bc));
+    macros["fetch_src_dir"]     = cmake::path(get_full_dl_dir(bc));
+    macros["fetch_package"]     = fetch->package;
+    macros["fetch_namespace"]   = fetch->namespace_name;
+    macros["fetch_repo"]        = fetch->repo;
+    macros["fetch_commit"]      = fetch->tag;
+    macros["fetch_components"]  = components;
+    macros["fetch_extern_name"] = fetch->extern_name;
+
     // macros["fetch_ts_dir"]       = cmake::path(get_full_ts_dir(bc));
   }
   if (!custom_target_name.empty())
@@ -285,12 +296,31 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, ns
   }
 }
 
-void nsmodule::delete_build(nsbuild const& bc) 
+void nsmodule::delete_build(nsbuild const& bc)
 {
-  nslog::print(fmt::format("Deleting : {}", name));
   std::error_code ec;
-  std::filesystem::remove_all(get_full_bld_dir(bc), ec);
-  regenerate = true;
+  if (fetch)
+  {
+    nslog::print(fmt::format("Deleting Fetch : {}", name));
+    std::filesystem::remove(get_full_fetch_file(bc), ec);
+    nsbuild::remove_cache(get_full_dl_dir(bc));
+    nsbuild::remove_cache(get_full_bld_dir(bc));
+    if (std::filesystem::exists(get_full_bld_dir(bc) / "install_manifest.txt"))
+    {
+      std::ifstream install_manifest(get_full_bld_dir(bc) / "install_manifest.txt");
+      std::string   line;
+
+      if (install_manifest)
+      {
+        while (std::getline(install_manifest, line))
+        {
+          nslog::print(fmt::format("Deleting : {}", line));
+          std::filesystem::remove(line, ec);
+        }
+      }
+    }
+  }
+  regenerate  = true;
   force_build = true;
 }
 
@@ -333,7 +363,7 @@ void nsmodule::backup_fetch_lists(nsbuild const& bc) const
 {
   auto cmakelists   = get_full_dl_dir(bc) / "CMakeLists.txt";
   auto cmakepresets = get_full_dl_dir(bc) / "CMakePresets.json";
-  namespace fs = std::filesystem;
+  namespace fs      = std::filesystem;
   if (fs::exists(cmakelists))
     fs::copy(cmakelists, get_full_gen_dir(bc) / "CMakeLists.txt");
   if (fs::exists(cmakepresets))
@@ -352,16 +382,15 @@ void nsmodule::restore_fetch_lists(nsbuild const& bc) const
 }
 
 void nsmodule::write_fetch_build_content(nsbuild const& bc, content const& cc) const
-{ 
+{
   // backup
-  auto cmakelists = get_full_dl_dir(bc) / "CMakeLists.txt";
+  auto cmakelists   = get_full_dl_dir(bc) / "CMakeLists.txt";
   auto cmakepresets = get_full_dl_dir(bc) / "CMakePresets.json";
 
   namespace fs = std::filesystem;
-  
 
   {
-    std::ofstream ffs {cmakelists};
+    std::ofstream ffs{cmakelists};
     ffs << cc.data;
   }
 
@@ -371,11 +400,10 @@ void nsmodule::write_fetch_build_content(nsbuild const& bc, content const& cc) c
   }
 }
 
-
 nsmodule::content nsmodule::make_fetch_build_content(nsbuild const& bc) const
 {
   std::stringstream ofs;
-    
+
   ofs << fmt::format(cmake::k_project_name, name, version.empty() ? bc.version : version);
   ofs << fmt::format("\nlist(PREPEND CMAKE_MODULE_PATH \"{}\")", cmake::path(get_full_sdk_dir(bc)));
   bc.macros.print(ofs);
@@ -436,7 +464,7 @@ nsmodule::content nsmodule::make_fetch_build_content(nsbuild const& bc) const
 
   content cc;
   cc.data = ofs.str();
-  
+
   picosha2::hash256_hex_string(cc.data, cc.sha);
   return cc;
 }
@@ -445,15 +473,15 @@ void nsmodule::fetch_content(nsbuild const& bc)
 {
   std::string sha;
   bool        change = false;
-  
+
   // download
   regenerate |= download(bc);
 
   if (regenerate)
-  {    
+  {
     auto cc = make_fetch_build_content(bc);
     write_fetch_build_content(bc, cc);
-    sha = cc.sha;
+    sha    = cc.sha;
     change = fetch_changed(bc, sha);
   }
 
@@ -474,12 +502,11 @@ void nsmodule::fetch_content(nsbuild const& bc)
   {
     nslog::print(fmt::format("Already Built : {}..", name));
   }
-
 }
 
 bool nsmodule::fetch_changed(nsbuild const& bc, std::string const& last_sha) const
 {
-  auto          meta = bc.get_full_cache_dir() / fmt::format("{}.fetch", name);
+  auto          meta = get_full_fetch_file(bc);
   std::ifstream iff{meta};
   if (iff.is_open())
   {
@@ -495,7 +522,7 @@ void nsmodule::write_fetch_meta(nsbuild const& bc, std::string const& last_sha) 
 {
   if (last_sha.empty())
     return;
-  auto          meta = bc.get_full_cache_dir() / fmt::format("{}.fetch", name);
+  auto          meta = get_full_fetch_file(bc);
   std::ofstream off{meta};
   if (off.is_open())
   {
@@ -520,7 +547,7 @@ void nsmodule::write_main_build(std::ostream& ofs, nsbuild const& bc) const
   if (has_data(type))
   {
     glob_media.print(ofs, "data_group", "${CMAKE_CURRENT_LIST_DIR}/", bc.get_full_cmake_gen_dir());
-    glob_media.print(ofs, "data_group_output", fmt::format("${{config_rt_dir}}/{}", bc.media_name), {});
+    glob_media.print(ofs, "data_group_output", fmt::format("${{config_rt_dir}}/{}/", bc.media_name), {});
   }
   write_sources(ofs, bc);
   write_target(ofs, bc, target_name);
@@ -554,7 +581,7 @@ void nsmodule::write_variables(std::ostream& ofs, nsbuild const& bc, char sep) c
 }
 
 void nsmodule::gather_sources(nsglob& glob, nsbuild const& bc) const
-{ 
+{
   auto sp = std::filesystem::path(source_path);
   auto gp = std::filesystem::path(gen_path);
   glob.add_set(sp / "src");
@@ -665,11 +692,11 @@ void nsmodule::write_cxx_options(std::ostream& ofs, nsbuild const& bc) const
 {
   if (!has_runtime(type))
     return;
- // cmake::line(ofs, "cxx-options");
- // ofs << "\ntarget_compile_options(${module_target} PRIVATE "
- //        "${__module_cxx_compile_flags})";
- // ofs << "\ntarget_link_options(${module_target} PRIVATE "
- //        "${__module_cxx_linker_flags})";
+  // cmake::line(ofs, "cxx-options");
+  // ofs << "\ntarget_compile_options(${module_target} PRIVATE "
+  //        "${__module_cxx_compile_flags})";
+  // ofs << "\ntarget_link_options(${module_target} PRIVATE "
+  //        "${__module_cxx_linker_flags})";
 }
 
 void nsmodule::write_includes(std::ostream& ofs, nsbuild const& bc) const
@@ -693,7 +720,7 @@ void nsmodule::write_includes(std::ostream& ofs, nsbuild const& bc) const
     write_include(ofs, "${module_dir}", "src", cmake::inheritance::priv);
     write_include(ofs, "${module_gen_dir}", "", cmake::inheritance::pub);
     write_include(ofs, "${module_gen_dir}", "local", cmake::inheritance::priv);
-    for(auto const& s : source_sub_dirs)
+    for (auto const& s : source_sub_dirs)
       write_include(ofs, "${module_dir}", "src/" + s, cmake::inheritance::priv);
     write_refs_includes(ofs, bc, *this);
   default:
@@ -727,7 +754,7 @@ void nsmodule::write_refs_includes(std::ostream& ofs, nsbuild const& bc, nsmodul
                          target.type == nsmodule_type::plugin ? cmake::inheritance::priv : cmake::inheritance::pub);
     target.write_include(ofs, m.source_path, "private", cmake::inheritance::priv);
     target.write_include(ofs, m.source_path, "src", cmake::inheritance::priv);
-    for(auto const& s : m.source_sub_dirs)
+    for (auto const& s : m.source_sub_dirs)
       target.write_include(ofs, m.source_path, "src/" + s, cmake::inheritance::priv);
     target.write_include(ofs, m.gen_path, "",
                          target.type == nsmodule_type::plugin ? cmake::inheritance::priv : cmake::inheritance::pub);
@@ -1130,7 +1157,7 @@ void nsmodule::build_fetched_content(nsbuild const& bc)
   nsprocess::cmake_config(bc, {}, cmake::path(src), xpb);
   nsprocess::cmake_build(bc, "", xpb);
   nsprocess::cmake_install(bc, cmake::path(dsdk), xpb);
-  
+
   // custom location copy
   if (!fetch->runtime_loc.empty())
   {
@@ -1187,15 +1214,23 @@ void nsmodule::build_fetched_content(nsbuild const& bc)
   }
 }
 
-std::filesystem::path nsmodule::get_full_bld_dir(nsbuild const& bc) const { return bc.get_full_build_dir() / name; }
+std::filesystem::path nsmodule::get_full_bld_dir(nsbuild const& bc) const
+{
+  return bc.get_full_build_dir() / framework_name / name;
+}
 
 std::filesystem::path nsmodule::get_full_sdk_dir(nsbuild const& bc) const { return bc.get_full_sdk_dir(); }
 
 std::filesystem::path nsmodule::get_full_dl_dir(nsbuild const& bc) const { return bc.get_full_dl_dir() / name; }
 
+std::filesystem::path nsmodule::get_full_fetch_file(nsbuild const& bc) const
+{
+  return bc.get_full_cache_dir() / fmt::format("{}.fetch", name);
+}
+
 std::filesystem::path nsmodule::get_full_gen_dir(nsbuild const& bc) const
 {
-  return bc.get_full_cfg_dir() / k_gen_dir / name;
+  return bc.get_full_cfg_dir() / k_gen_dir / framework_name / name;
 }
 
 bool nsmodule::download(nsbuild const& bc)
@@ -1209,7 +1244,7 @@ bool nsmodule::download(nsbuild const& bc)
 
 bool nsmodule::sha_changed(nsbuild const& bc, std::string_view name, std::string_view isha) const
 {
-  auto meta = bc.get_full_cache_dir() / fmt::format("{}.{}.glob", this->name, name);
+  auto          meta = bc.get_full_cache_dir() / fmt::format("{}.{}.{}.glob", framework_name, this->name, name);
   std::ifstream iff{meta};
   if (iff.is_open())
   {
@@ -1223,7 +1258,7 @@ bool nsmodule::sha_changed(nsbuild const& bc, std::string_view name, std::string
 
 void nsmodule::write_sha_changed(nsbuild const& bc, std::string_view name, std::string_view isha) const
 {
-  auto          meta = bc.get_full_cache_dir() / fmt::format("{}.{}.glob", this->name, name);
+  auto          meta = bc.get_full_cache_dir() / fmt::format("{}.{}.{}.glob", framework_name, this->name, name);
   std::ofstream off{meta};
   if (off.is_open())
     off << isha;

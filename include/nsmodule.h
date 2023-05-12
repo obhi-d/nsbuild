@@ -68,24 +68,26 @@ struct nsmodule
 
   std::unique_ptr<nsfetch> fetch;
 
+  std::string   tags;
+  std::string   org_name;
   std::string   name;
   std::string   custom_target_name;
   nsmodule_type type = nsmodule_type::none;
 
   // deferred properties
-  std::string_view framework_name;
-  std::string_view framework_path;
-  std::string      target_name;
-  std::string      source_path;
-  std::string      gen_path;
+  std::string framework_name;
+  std::string framework_path;
+  std::string target_name;
+  std::string source_path;
+  std::string gen_path;
 
   nsplugin_manifest manifest;
 
-  bool regenerate    = false;
-  bool force_build   = false;
-  bool has_confixx   = false;
-  bool disabled      = false;
-  bool direct_build  = false;
+  bool regenerate   = false;
+  bool force_build  = false;
+  bool has_confixx  = false;
+  bool disabled     = false;
+  bool direct_build = false;
 
   // .. Options
   bool console_app       = false;
@@ -119,7 +121,7 @@ struct nsmodule
     }
   }
 
-  inline void should_regenerate() { regenerate = true;  }
+  inline void should_regenerate() { regenerate = true; }
 
   struct content
   {
@@ -139,13 +141,13 @@ struct nsmodule
   void gather_sources(nsglob& glob, nsbuild const& bc) const;
   void check_enums(nsbuild const& bc) const;
 
-  content     make_fetch_build_content(nsbuild const& bc) const;
-  void        backup_fetch_lists(nsbuild const& bc) const;
-  void        write_fetch_build_content(nsbuild const& bc, content const&) const;
-  void        restore_fetch_lists(nsbuild const& bc) const;
-  void        fetch_content(nsbuild const& bc);
-  bool        fetch_changed(nsbuild const& bc, std::string const& last_sha) const;
-  void        write_fetch_meta(nsbuild const& bc, std::string const& last_sha) const;
+  content make_fetch_build_content(nsbuild const& bc) const;
+  void    backup_fetch_lists(nsbuild const& bc) const;
+  void    write_fetch_build_content(nsbuild const& bc, content const&) const;
+  void    restore_fetch_lists(nsbuild const& bc) const;
+  void    fetch_content(nsbuild const& bc);
+  bool    fetch_changed(nsbuild const& bc, std::string const& last_sha) const;
+  void    write_fetch_meta(nsbuild const& bc, std::string const& last_sha) const;
   /// @brief Called to write the cmake file
   /// @param bc config
   void write_main_build(std::ostream&, nsbuild const& bc) const;
@@ -205,4 +207,5 @@ struct nsmodule
   std::filesystem::path get_full_sdk_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_dl_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_gen_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_fetch_file(nsbuild const& bc) const;
 };

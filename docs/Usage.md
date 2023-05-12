@@ -60,6 +60,7 @@ Purpose of each file/directory is described hereunder.
 - ``namespace``      : lxe;
 - ``macro_prefix``   : Lxe;
 - ``file_prefix``    : Lxe;
+- ``test_tag``       : Tag that is added to unit tests
 - ``preset``         : win-avx-dbg
   - ``display_name``         : "win-avx-dbg";
   - ``build_type``           : debug;
@@ -71,6 +72,7 @@ Purpose of each file/directory is described hereunder.
   - ``cppcheck_suppression`` : "cppcheck_ignore.txt";
   - ``naming``               : "Lxe$(module_name)_avx";
   - ``define``               : L_EDITOR_BUILD 1;
+  - ``tag``                  : Tag added to module_tags
   - ``config``               : [msvc, gcc]
       - ``compiler_flags``   : *``[flag1, flag2]``*
       - ``linker_flags``      : *``[flag1, flag2]``*
@@ -125,7 +127,9 @@ Module ns can inject cmake code using a `{{cmake:prepare}}` and `{{cmake:finaliz
 - `exclude_when`
 - `console_app`
 - `source_paths`
-- `name`
+- `name` :        A custom module name if generated module name is not preferred
+- `tag` :         Tags that appear in the module_tags macro, can be used to decorate generated target name 
+- `org_name` :    Executables will respect and print this field in BuildConfig
 - `source_files`
 - `var` : prefixed `var`
     - *name* : *value*
@@ -146,9 +150,9 @@ Module ns can inject cmake code using a `{{cmake:prepare}}` and `{{cmake:finaliz
   
 - `fetch` - *git repo*
   - `license`
-  - `force_build` : Forces a build, build is skipped if CMakeLists.txt hash matches last build hash.
-  - `force_download` : Forces a re-download, download is skipped if CMakeLists.txt is present in download directory and tag is the same as last time.
-  - `force` : This option enables both force_build and force_download
+  - `force_build` :       Forces a build, build is skipped if CMakeLists.txt hash matches last build hash.
+  - `force_download` :    Forces a re-download, download is skipped if CMakeLists.txt is present in download directory and tag is the same as last time.
+  - `force` :             This option enables both force_build and force_download
   - `tag`
   - `args`
     - `var` 

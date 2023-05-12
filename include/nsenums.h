@@ -109,7 +109,8 @@ public:
 
   static void write_file_header(std::ofstream& ofs, bool isheader);
 
-  void generate(nsmodule const& m, nsbuild const&);
+  static bool outputs_missing(nsmodule const& m, nsbuild const&, bool has_local, bool has_public);
+  void        generate(nsmodule const& m, nsbuild const&);
 
   std::string const& export_api() const { return f_export; }
   coding_style       style() const { return f_style; }

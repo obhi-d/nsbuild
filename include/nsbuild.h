@@ -43,6 +43,8 @@ struct nsbuild : public neo::command_handler
 
   std::string media_exclude_filter = "Internal";
 
+  std::string test_tags = "";
+
   std::string namespace_name;
   std::string macro_prefix;
   std::string file_prefix;
@@ -126,6 +128,7 @@ struct nsbuild : public neo::command_handler
   /// - If not present, writes basic presets info in build dir
   /// - Generates external build and builds and installs exteranl libs
   void before_all();
+  void clean_install();
   void read_meta(std::filesystem::path const&);
   void act_meta();
   void write_meta(std::filesystem::path const&);
@@ -148,8 +151,8 @@ struct nsbuild : public neo::command_handler
   /// @brief Copy media directories and files, ignores media/Internal directory
   /// @param from
   /// @param to
-  static void copy_media(std::filesystem::path from, std::filesystem::path to,
-                         std::filesystem::path artefacts, std::string ignore);
+  static void copy_media(std::filesystem::path from, std::filesystem::path to, std::filesystem::path artefacts,
+                         std::string ignore);
 
   bool               has_naming() const { return s_current_preset && !s_current_preset->naming.empty(); }
   std::string const& naming() const { return s_current_preset->naming; }
@@ -166,8 +169,9 @@ struct nsbuild : public neo::command_handler
   void add_module(std::string_view name)
   {
     s_nsframework->modules.emplace_back();
-    s_nsmodule       = &s_nsframework->modules.back();
-    s_nsmodule->name = name;
+    s_nsmodule                 = &s_nsframework->modules.back();
+    s_nsmodule->name           = name;
+    s_nsmodule->framework_name = s_nsframework->name;
   }
 
   nsmodule const& get_module(std::string const& targ) const
@@ -185,6 +189,21 @@ struct nsbuild : public neo::command_handler
     {
       for (auto& m : f.modules)
         l(m);
+    }
+  }
+
+  static void remove_cache(std::filesystem::path const& path)
+  {
+    std::error_code ec;
+    if (std::filesystem::exists(path))
+    {
+      for (auto& p : std::filesystem::recursive_directory_iterator(path))
+      {
+        if (p.path().filename() == "CMakeCache.txt")
+        {
+          std::filesystem::remove(p.path(), ec);
+        }
+      }
     }
   }
 

@@ -91,6 +91,19 @@ std::string nsenum_context::modify_search(std::string const& on, nsenum_modifier
   return std::string{};
 }
 
+bool nsenum_context::outputs_missing(nsmodule const& m, nsbuild const& bc, bool has_local, bool has_public)
+{
+  if (!has_local && !has_public)
+    return false;
+
+  auto gen = m.get_full_gen_dir(bc);
+  auto pfx = bc.macro_prefix + m.name;
+
+  return (!std::filesystem::exists(gen / "local" / fmt::format("{}Enums.cpp", pfx))) ||
+         (has_public && !std::filesystem::exists(gen / fmt::format("{}Enums.hpp", pfx))) ||
+         (has_local && !std::filesystem::exists(gen / "local" / fmt::format("{}LocalEnums.hpp", pfx)));
+}
+
 void nsenum_context::generate(nsmodule const& m, nsbuild const& bc)
 {
   f_prefix             = bc.macro_prefix + m.name;

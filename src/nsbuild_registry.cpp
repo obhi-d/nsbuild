@@ -295,6 +295,12 @@ ns_cmd_handler(name, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(org_name, build, state, cmd)
+{
+  build.s_nsmodule->org_name = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(console_app, build, state, cmd)
 {
   build.s_nsmodule->console_app = to_bool(get_idx_param(cmd, 0));
@@ -494,7 +500,19 @@ ns_cmd_handler(force, build, state, cmd)
 
 ns_cmd_handler(tag, build, state, cmd)
 {
-  build.s_nsfetch->tag = get_idx_param(cmd, 0);
+  if (build.s_nsfetch)
+    build.s_nsfetch->tag = get_idx_param(cmd, 0);
+  else if (build.s_nsmodule)
+    build.s_nsmodule->tags += get_idx_param(cmd, 0);
+  else if (build.s_nspreset)
+    build.s_nspreset->tags += get_idx_param(cmd, 0);
+
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(test_tag, build, state, cmd)
+{
+  build.test_tags += get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -745,6 +763,7 @@ ns_registry(nsbuild)
   ns_cmd(plugin_dir);
   ns_cmd(media_name);
   ns_cmd(media_exclude_filter);
+  ns_cmd(test_tag);
 
   ns_scope_cust(preset, clear_presets)
   {
@@ -756,6 +775,7 @@ ns_registry(nsbuild)
     ns_cmd(cppcheck_suppression);
     ns_cmd(unity_build);
     ns_cmd(naming);
+    ns_cmd(tag);
     ns_scope_def(config)
     {
       ns_cmd(compiler_flags);
@@ -773,6 +793,7 @@ ns_registry(nsbuild)
   ns_cmd(console_app);
   ns_cmd(source_paths);
   ns_cmd(name);
+  ns_cmd(org_name);
   ns_cmd(source_files);
 
   ns_scope_def(var)

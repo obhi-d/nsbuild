@@ -62,19 +62,19 @@ void halt()
 }
 int main(int argc, char const* argv[])
 {
-  #ifndef NDEBUG
+#ifndef NDEBUG
   halt();
-  #endif
-  
+#endif
+
   std::string working_dir = ".";
   std::string target      = "";
   std::string preset      = "";
-  std::string filepfx      = "";
+  std::string filepfx     = "";
   std::string apipfx      = "";
   nscmakeinfo nscfg;
   runas       ras      = runas::main;
   nsprocess::s_nsbuild = std::filesystem::absolute(argv[0]);
-  
+
   for (int i = 1; i < argc; ++i)
   {
     std::string_view arg = argv[i];
@@ -82,6 +82,11 @@ int main(int argc, char const* argv[])
     if (arg == "--check" || arg == "-c")
     {
       ras   = runas::check;
+      nscfg = read_config(argv, i + 1, argc);
+    }
+    if (arg == "--clean" || arg == "-c")
+    {
+      ras   = runas::clean;
       nscfg = read_config(argv, i + 1, argc);
     }
     else if (arg == "--source" || arg == "-s")
@@ -117,7 +122,6 @@ int main(int argc, char const* argv[])
 
   try
   {
-
     build.scan_main(working_dir);
     switch (ras)
     {
@@ -128,6 +132,11 @@ int main(int argc, char const* argv[])
       build.dll_ext   = std::regex(NS_DLL_EXT, std::regex_constants::icase);
       build.cmakeinfo = nscfg;
       build.before_all();
+      break;
+    case runas::clean:
+      build.dll_ext   = std::regex(NS_DLL_EXT, std::regex_constants::icase);
+      build.cmakeinfo = nscfg;
+      build.clean_install();
       break;
     }
   }

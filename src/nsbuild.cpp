@@ -102,6 +102,23 @@ void nsbuild::handle_error(neo::state_machine& err)
   }
 }
 
+void nsbuild::clean_install()
+{
+  for (auto const& preset : presets)
+    if (preset.name == cmakeinfo.cmake_preset_name)
+    {
+      s_current_preset = &preset;
+      break;
+    }
+  // At this point we have read config!
+  compute_paths(cmakeinfo.cmake_preset_name);
+  std::filesystem::create_directories(get_full_cache_dir());
+  read_meta(get_full_cache_dir());
+  foreach_framework([this](std::filesystem::path p) { read_framework(p); });
+  state.delete_builds = true;
+  delete_builds_if_required();
+}
+
 void nsbuild::before_all()
 {
   for (auto const& preset : presets)
@@ -153,6 +170,7 @@ void nsbuild::delete_builds_if_required()
 {
   if (!state.delete_builds)
     return;
+  nsbuild::remove_cache(get_full_build_dir());
   foreach_module([this](auto& m) { m.delete_build(*this); });
 }
 
@@ -263,6 +281,7 @@ void nsbuild::read_module(std::filesystem::path sp)
   auto fwname    = sp.parent_path().filename().string();
   auto targ_name = target_name(fwname, mod_name);
   add_module(mod_name);
+
   if (!frameworks.back().excludes.contains(mod_name))
   {
     std::string hash_hex_str;

@@ -58,6 +58,12 @@ include(CTest)
 
 add_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3} ${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3}/main)
 
+if(NOT TARGET nsbuild-clean)
+    add_custom_target(nsbuild-clean
+        COMMAND ${{nsbuild}} --clean "${{__nsbuild_preset}}" "${{CMAKE_COMMAND}}" "${{CMAKE_BINARY_DIR}}" -B=${{CMAKE_BUILD_TYPE}} -X="${{CMAKE_CXX_COMPILER}}" -C="${{CMAKE_C_COMPILER}}" -V="${{CMAKE_CXX_COMPILER_VERSION}}" -G="${{CMAKE_GENERATOR}}" -I="${{CMAKE_GENERATOR_INSTANCE}}" -U="${{CMAKE_GENERATOR_PLATFORM}}" -H="${{CMAKE_GENERATOR_TOOLSET}}" -T="${{CMAKE_TOOLCHAIN}}"  -N=${{GENERATOR_IS_MULTI_CONFIG}} -P=${{nsplatform}}
+        WORKING_DIRECTORY ${{__main_nsbuild_dir}}
+    )
+endif()
 
 )_";
 
@@ -292,7 +298,7 @@ write_basic_package_version_file("${module_name}ConfigVersion.cmake"
 
 configure_package_config_file(
   "${config_build_dir}/${PROJECT_NAME}Config.cmake.in"
-  "${module_build_dir}/${module_name}Config.cmake"
+  "${CMAKE_BINARY_DIR}/${module_name}Config.cmake"
   INSTALL_DESTINATION
     lib/cmake)
 
@@ -301,8 +307,8 @@ install(EXPORT ${module_name}_Targets
   NAMESPACE ${PROJECT_NAME}::
   DESTINATION lib/cmake)
 
-install(FILES "${module_build_dir}/${module_name}Config.cmake"
-              "${module_build_dir}/${module_name}ConfigVersion.cmake"
+install(FILES "${CMAKE_BINARY_DIR}/${module_name}Config.cmake"
+              "${CMAKE_BINARY_DIR}/${module_name}ConfigVersion.cmake"
         DESTINATION lib/cmake)
 
 )_";
