@@ -172,6 +172,8 @@ void nsbuild::delete_builds_if_required()
     return;
   nsbuild::remove_cache(get_full_build_dir());
   foreach_module([this](auto& m) { m.delete_build(*this); });
+  std::error_code ec;
+  std::filesystem::remove(get_full_cache_dir() / "module_info.ns", ec);
 }
 
 void nsbuild::read_meta(std::filesystem::path const& path)
