@@ -51,7 +51,7 @@ Purpose of each file/directory is described hereunder.
 - ``runtime_dir``    : "rt";
 - ``download_dir``   : "dl";
 - ``frameworks_dir`` : "Frameworks";
-- ``manifests_dir``  : "media/Plugins";
+- ``macro``          : name value;
 - ``plugin_dir``     : "media/Plugins/bin"; 
 - ``media_name``     : "media";
 - ``media_exclude_filter``     : "Internal";
@@ -148,8 +148,9 @@ Module ns can inject cmake code using a `{{cmake:prepare}}` and `{{cmake:finaliz
   - `test_class`  - *class*
     - `test_name`  - *name*
   
-- `fetch` - *git repo*
+- `fetch` - *git repo* or *download*
   - `license`
+  - `source` : relative directory of source contents from download directory
   - `force_build` :       Forces a build, build is skipped if CMakeLists.txt hash matches last build hash.
   - `force_download` :    Forces a re-download, download is skipped if CMakeLists.txt is present in download directory and tag is the same as last time.
   - `force` :             This option enables both force_build and force_download

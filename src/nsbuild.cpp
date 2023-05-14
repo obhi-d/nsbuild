@@ -20,7 +20,20 @@
 #include <unordered_set>
 
 extern void halt();
-nsbuild::nsbuild() { wd = std::filesystem::current_path(); }
+nsbuild::nsbuild()
+{
+  wd                              = std::filesystem::current_path();
+  macros["config_source"]         = "";
+  macros["config_build_dir"]      = "";
+  macros["config_sdk_dir"]        = "";
+  macros["config_rt_dir"]         = "";
+  macros["config_frameworks_dir"] = "";
+  macros["config_dl_dir"]         = "";
+  macros["config_preset_name"]    = "";
+  macros["config_type"]           = "";
+  macros["config_platform"]       = "";
+  macros["config_ignored_media"]  = "";
+}
 
 void nsbuild::main_project()
 {

@@ -10,6 +10,7 @@ struct nsfetch
   std::string_view         repo;
   std::string_view         license;
   std::string_view         tag;
+  std::string_view         source;
   std::string_view         version;
   std::vector<nsvars>      args;
   std::string_view         package;

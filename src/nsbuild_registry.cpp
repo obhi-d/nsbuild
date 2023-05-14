@@ -21,6 +21,13 @@ ns_text_handler(custom_cmake, build, state, type, name, content)
       mod.fetch->prepare = content;
     }
   }
+  else if (type == "content")
+  {
+    auto& mod = build.frameworks.back().modules.back();
+    mod.contents.emplace_back();
+    mod.contents.back().name = name;
+    content.append_to(mod.contents.back().content);
+  }
 }
 
 ns_cmd_handler(style, build, state, cmd)
@@ -59,9 +66,11 @@ ns_cmd_handler(verbose, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(manifests_dir, build, state, cmd)
+ns_cmd_handler(macro, build, state, cmd)
 {
-  build.manifests_dir = get_idx_param(cmd, 0);
+  auto name                       = get_idx_param(cmd, 0);
+  auto value                      = get_idx_param(cmd, 1);
+  build.macros[std::string{name}] = value;
   return neo::retcode::e_success;
 }
 
@@ -435,6 +444,12 @@ ns_cmd_handler(runtime_only, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(source, build, state, cmd)
+{
+  build.s_nsfetch->source = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(namespace, build, state, cmd)
 {
   if (build.s_nsfetch)
@@ -759,7 +774,7 @@ ns_registry(nsbuild)
   ns_cmd(out_dir);
   ns_cmd(build_dir);
   ns_cmd(download_dir);
-  ns_cmd(manifests_dir);
+  ns_cmd(macro);
   ns_cmd(plugin_dir);
   ns_cmd(media_name);
   ns_cmd(media_exclude_filter);
@@ -832,6 +847,7 @@ ns_registry(nsbuild)
   {
     ns_cmd(license);
     ns_cmd(force);
+    ns_cmd(source);
     ns_cmd(force_build);
     ns_cmd(force_download);
     ns_cmd(tag);

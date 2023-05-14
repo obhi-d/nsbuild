@@ -34,6 +34,12 @@ struct nstest
   std::vector<name_value_pair> parameters;
 };
 
+struct nscontent
+{
+  std::string name;
+  std::string content;
+};
+
 /// @brief These targets are defined by every module
 /// target.prebuild : Optional. Executed before target build
 /// target : Actual build target, depends on target.prebuild, and its artifacts
@@ -45,16 +51,17 @@ struct nsmodule
     pub_intf  = 1,
   };
 
-  std::vector<nsvars> exports;
-  std::vector<nsvars> vars;
-  nsmacros            macros;
-  nsbuildsteplist     prebuild;
-  nsbuildsteplist     postbuild;
-  nsbuildcmdlist      install;
-  nsglob              glob_media;
-  nsglob              glob_sources;
-  std::string         version;
-  std::uint32_t       framework;
+  std::vector<nsvars>    exports;
+  std::vector<nsvars>    vars;
+  std::vector<nscontent> contents;
+  nsmacros               macros;
+  nsbuildsteplist        prebuild;
+  nsbuildsteplist        postbuild;
+  nsbuildcmdlist         install;
+  nsglob                 glob_media;
+  nsglob                 glob_sources;
+  std::string            version;
+  std::uint32_t          framework;
 
   std::vector<std::string> references;
 
@@ -204,6 +211,7 @@ struct nsmodule
   void write_sha_changed(nsbuild const& bc, std::string_view name, std::string_view sha) const;
 
   std::filesystem::path get_full_bld_dir(nsbuild const& bc) const;
+  std::filesystem::path get_fetch_src_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_sdk_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_dl_dir(nsbuild const& bc) const;
   std::filesystem::path get_full_gen_dir(nsbuild const& bc) const;

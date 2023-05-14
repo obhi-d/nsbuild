@@ -167,25 +167,20 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     prebuild.push_back(step);
   }
 
-  if (type == nsmodule_type::plugin)
+  for (size_t c = 0; c < contents.size(); ++c)
   {
-    // post build step to copy plugin manifest
     nsbuildstep step;
     nsbuildcmds cmd;
-    step.name = "plugin manifest";
-    step.artifacts.push_back(fmt::format("${{config_rt_dir}}/{1}/{0}Manifest.json", name, bc.manifests_dir));
-    step.dependencies.push_back(fmt::format("${{module_gen_dir}}/{0}Manifest.json", name));
+    step.name = "copy content";
+    step.artifacts.push_back(contents[c].name);
+    step.dependencies.push_back(fmt::format("${{module_gen_dir}}/c{0}.txt", c));
     cmd.msgs.push_back(fmt::format("Copying plugin manifest for {}", name));
     cmd.command = "${CMAKE_COMMAND}";
-    cmd.params  = fmt::format("-E copy_if_different ${{module_gen_dir}}/{0}Manifest.json "
-                               "${{config_rt_dir}}/{1}",
-                              name, bc.manifests_dir);
+    cmd.params  = fmt::format("-E copy_if_different \"${{module_gen_dir}}/c{0}.txt\" \"{1}\" ", c, contents[c].name);
     step.steps.push_back(cmd);
     step.wd = bc.wd.generic_string();
-    prebuild.push_back(step);
+    postbuild.push_back(step);
   }
-  else if (type == nsmodule_type::test)
-  {}
 
   if (has_headers(type))
     check_enums(bc);
@@ -275,7 +270,7 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, ns
     /// - bld/module/sdk Install directory
     macros["fetch_bulid_dir"]   = cmake::path(get_full_bld_dir(bc));
     macros["fetch_sdk_dir"]     = cmake::path(get_full_sdk_dir(bc));
-    macros["fetch_src_dir"]     = cmake::path(get_full_dl_dir(bc));
+    macros["fetch_src_dir"]     = cmake::path(get_fetch_src_dir(bc));
     macros["fetch_package"]     = fetch->package;
     macros["fetch_namespace"]   = fetch->namespace_name;
     macros["fetch_repo"]        = fetch->repo;
@@ -328,7 +323,7 @@ void nsmodule::update_fetch(nsbuild const& bc)
 {
   if (!fetch)
     return;
-  auto dl = get_full_dl_dir(bc);
+  auto dl = get_fetch_src_dir(bc);
   if (!std::filesystem::exists(dl))
     regenerate = true;
 
@@ -361,13 +356,13 @@ void nsmodule::generate_plugin_manifest(nsbuild const& bc)
 
 void nsmodule::backup_fetch_lists(nsbuild const& bc) const
 {
-  auto cmakelists   = get_full_dl_dir(bc) / "CMakeLists.txt";
-  auto cmakepresets = get_full_dl_dir(bc) / "CMakePresets.json";
+  auto cmakelists   = get_fetch_src_dir(bc) / "CMakeLists.txt";
+  auto cmakepresets = get_fetch_src_dir(bc) / "CMakePresets.json";
   namespace fs      = std::filesystem;
   if (fs::exists(cmakelists))
-    fs::copy(cmakelists, get_full_gen_dir(bc) / "CMakeLists.txt");
+    fs::copy(cmakelists, get_fetch_src_dir(bc) / "CMakeLists.txt");
   if (fs::exists(cmakepresets))
-    fs::copy(cmakepresets, get_full_gen_dir(bc) / "CMakePresets.txt");
+    fs::copy(cmakepresets, get_fetch_src_dir(bc) / "CMakePresets.txt");
 }
 
 void nsmodule::restore_fetch_lists(nsbuild const& bc) const
@@ -376,16 +371,16 @@ void nsmodule::restore_fetch_lists(nsbuild const& bc) const
   auto cmakepresets = get_full_gen_dir(bc) / "CMakePresets.json";
   namespace fs      = std::filesystem;
   if (fs::exists(cmakelists))
-    fs::copy(cmakelists, get_full_dl_dir(bc) / "CMakeLists.txt");
+    fs::copy(cmakelists, get_fetch_src_dir(bc) / "CMakeLists.txt");
   if (fs::exists(cmakepresets))
-    fs::copy(cmakepresets, get_full_dl_dir(bc) / "CMakePresets.txt");
+    fs::copy(cmakepresets, get_fetch_src_dir(bc) / "CMakePresets.txt");
 }
 
 void nsmodule::write_fetch_build_content(nsbuild const& bc, content const& cc) const
 {
   // backup
-  auto cmakelists   = get_full_dl_dir(bc) / "CMakeLists.txt";
-  auto cmakepresets = get_full_dl_dir(bc) / "CMakePresets.json";
+  auto cmakelists   = get_fetch_src_dir(bc) / "CMakeLists.txt";
+  auto cmakepresets = get_fetch_src_dir(bc) / "CMakePresets.json";
 
   namespace fs = std::filesystem;
 
@@ -436,7 +431,7 @@ nsmodule::content nsmodule::make_fetch_build_content(nsbuild const& bc) const
     }
   }
 
-  auto cmakelists = get_full_dl_dir(bc) / "CMakeLists.txt";
+  auto cmakelists = get_fetch_src_dir(bc) / "CMakeLists.txt";
   if (std::filesystem::exists(cmakelists))
   {
     std::ifstream t{cmakelists};
@@ -566,6 +561,11 @@ void nsmodule::write_main_build(std::ostream& ofs, nsbuild const& bc) const
   for (auto const& u : unset)
     ofs << fmt::format("\nunset({})", u);
   // config file
+  for (size_t c = 0; c < contents.size(); ++c)
+  {
+    std::ofstream of{get_full_gen_dir(bc) / fmt::format("c{}.txt", c)};
+    of << contents[c].content;
+  }
 }
 
 void nsmodule::write_variables(std::ostream& ofs, nsbuild const& bc, char sep) const
@@ -1150,7 +1150,7 @@ void nsmodule::write_runtime_settings(std::ostream& ofs, nsbuild const& bc) cons
 
 void nsmodule::build_fetched_content(nsbuild const& bc)
 {
-  auto src  = get_full_dl_dir(bc);
+  auto src  = get_fetch_src_dir(bc);
   auto xpb  = get_full_bld_dir(bc);
   auto dsdk = get_full_sdk_dir(bc);
 
@@ -1222,6 +1222,11 @@ std::filesystem::path nsmodule::get_full_bld_dir(nsbuild const& bc) const
 std::filesystem::path nsmodule::get_full_sdk_dir(nsbuild const& bc) const { return bc.get_full_sdk_dir(); }
 
 std::filesystem::path nsmodule::get_full_dl_dir(nsbuild const& bc) const { return bc.get_full_dl_dir() / name; }
+std::filesystem::path nsmodule::get_fetch_src_dir(nsbuild const& bc) const
+{
+  return fetch ? (fetch->source.empty() ? bc.get_full_dl_dir() / name : bc.get_full_dl_dir() / name / fetch->source)
+               : std::filesystem::path();
+}
 
 std::filesystem::path nsmodule::get_full_fetch_file(nsbuild const& bc) const
 {
@@ -1236,9 +1241,12 @@ std::filesystem::path nsmodule::get_full_gen_dir(nsbuild const& bc) const
 bool nsmodule::download(nsbuild const& bc)
 {
   auto dld = get_full_dl_dir(bc);
-  if (std::filesystem::exists(dld / "CMakeLists.txt") && !regenerate && !fetch->force_download)
+  if (std::filesystem::exists(get_fetch_src_dir(bc) / "CMakeLists.txt") && !regenerate && !fetch->force_download)
     return false;
-  nsprocess::git_clone(bc, get_full_dl_dir(bc), fetch->repo, fetch->tag);
+  if (fetch->repo.ends_with(".git"))
+    nsprocess::git_clone(bc, get_full_dl_dir(bc), fetch->repo, fetch->tag);
+  else
+    nsprocess::download(bc, get_full_dl_dir(bc), fetch->repo, fetch->source);
   return true;
 }
 

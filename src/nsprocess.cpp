@@ -5,8 +5,8 @@
 #include <nscmake.h>
 #include <nslog.h>
 #include <nsprocess.h>
-#include <reproc++/run.hpp>
 #include <reproc++/reproc.hpp>
+#include <reproc++/run.hpp>
 #include <system_error>
 
 namespace nsprocess
@@ -54,12 +54,39 @@ void cmake_install(nsbuild const& bc, std::string_view prefix, std::filesystem::
   cmake(bc, std::move(args), wd);
 }
 
+void download(nsbuild const& bc, std::filesystem::path const& dl, std::string_view const& repo, std::string_view name)
+{
+#ifdef _WIN64
+  powershell(
+      bc,
+      {std::format("Invoke-RestMethod -URI {} -OutFile source.zip; Expand-Archive -Path source.zip -DestinationPath . "
+                   "-Force",
+                   repo)},
+      dl);
+
+#else
+  execute("curl", bc, {"-L", "-o", "source.zip", repo}, dl);
+  execute("unzip", bc, {"-o", "source.zip"}, dl);
+#endif
+  std::error_code ec;
+  // remove source file and any existing directories
+  auto dir = std::filesystem::directory_iterator(dl);
+  for (auto const& d : dir)
+  {
+    if (d.path().filename() != name)
+      std::filesystem::remove_all(d.path(), ec);
+  }
+}
+
 void git_clone(nsbuild const& bc, std::filesystem::path const& dl, std::string_view const& repo, std::string_view tag)
 {
   std::error_code ec;
   if (!std::filesystem::exists(dl) || std::filesystem::is_empty(dl, ec))
   {
-    git(bc, {"clone", std::string{repo}, "--recurse-submodules", "--shallow-submodules", "--branch", std::string{tag}, "--depth=1", "."}, dl);
+    git(bc,
+        {"clone", std::string{repo}, "--recurse-submodules", "--shallow-submodules", "--branch", std::string{tag},
+         "--depth=1", "."},
+        dl);
   }
   else
   {
@@ -80,11 +107,11 @@ void git_clone(nsbuild const& bc, std::filesystem::path const& dl, std::string_v
   }
 }
 
-void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::path wd)
+void execute(std::string_view name, nsbuild const& bc, std::vector<std::string> args, std::filesystem::path wd)
 {
   std::vector<char const*> sargs;
   sargs.reserve(args.size() + 1);
-  sargs.emplace_back(bc.cmakeinfo.cmake_bin.c_str());
+  sargs.emplace_back(name.data());
   for (auto const& a : args)
     sargs.emplace_back(a.c_str());
   sargs.emplace_back(nullptr);
@@ -95,7 +122,7 @@ void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::pa
   reproc::arguments pargs{sargs.data()};
   reproc::process   proc;
   reproc::options   default_opt;
- 
+
   default_opt.redirect.parent = true;
 
   auto [status, rc] = reproc::run(pargs);
@@ -112,36 +139,19 @@ void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::pa
   }
 }
 
+void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::path wd)
+{
+  execute(bc.cmakeinfo.cmake_bin.c_str(), bc, std::move(args), std::move(wd));
+}
+
 void git(nsbuild const& bc, std::vector<std::string> args, std::filesystem::path wd)
 {
-  std::vector<char const*> sargs;
-  sargs.reserve(args.size() + 1);
-  sargs.emplace_back("git");
-  for (auto const& a : args)
-    sargs.emplace_back(a.c_str());
-  sargs.emplace_back(nullptr);
-  auto save = std::filesystem::current_path();
-  std::filesystem::create_directories(wd);
-  std::filesystem::current_path(wd);
+  execute("git", bc, std::move(args), std::move(wd));
+}
 
-  reproc::arguments pargs{sargs.data()};
-  reproc::process   proc;
-  reproc::options   default_opt;
-
-  default_opt.redirect.parent = true;
-
-  auto [status, rc] = reproc::run(pargs);
-  std::filesystem::current_path(save);
-
-  std::string msg = rc.message();
-  if (rc || status != 0)
-  {
-    nslog::error("Build failed.");
-    if (rc)
-      throw std::system_error(rc);
-    else
-      throw std::runtime_error(fmt::format("Command returned : {}", status));
-  }
+void powershell(nsbuild const& bc, std::vector<std::string> args, std::filesystem::path wd)
+{
+  execute("powershell.exe", bc, std::move(args), std::move(wd));
 }
 
 std::filesystem::path s_nsbuild;
