@@ -293,6 +293,8 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, ns
 
 void nsmodule::delete_build(nsbuild const& bc)
 {
+  if (deleted)
+    return;
   std::error_code ec;
   if (fetch)
   {
@@ -317,6 +319,7 @@ void nsmodule::delete_build(nsbuild const& bc)
   }
   regenerate  = true;
   force_build = true;
+  deleted     = true;
 }
 
 void nsmodule::update_fetch(nsbuild const& bc)
@@ -1247,6 +1250,8 @@ bool nsmodule::download(nsbuild const& bc)
     nsprocess::git_clone(bc, get_full_dl_dir(bc), fetch->repo, fetch->tag);
   else
     nsprocess::download(bc, get_full_dl_dir(bc), fetch->repo, fetch->source);
+  if (!deleted)
+    delete_build(bc);
   return true;
 }
 

@@ -95,6 +95,7 @@ struct nsmodule
   bool has_confixx  = false;
   bool disabled     = false;
   bool direct_build = false;
+  bool deleted      = false;
 
   // .. Options
   bool console_app       = false;
