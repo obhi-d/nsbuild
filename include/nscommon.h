@@ -36,7 +36,8 @@ enum class runas
   check,
   generate_enum,
   copy_media,
-  clean
+  clean,
+  header_map
 };
 
 enum class output_fmt

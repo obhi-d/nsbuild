@@ -14,42 +14,51 @@
 
 ns_registry(nsbuild);
 
+template <typename T>
+bool read(std::string_view name, std::string_view arg, T& to)
+{
+  if (arg.starts_with(name))
+  {
+    to = arg.substr(name.length());
+    return true;
+  }
+  return false;
+}
+
+template <typename T, typename L>
+bool read(std::string_view name, std::string_view arg, T& to, L&& l)
+{
+  if (arg.starts_with(name))
+  {
+    to = l(arg.substr(name.length()));
+    return true;
+  }
+  return false;
+}
+
 nscmakeinfo read_config(char const* argv[], int i, int argc)
 {
   nscmakeinfo cfg;
-  if (i < argc)
-    cfg.cmake_preset_name = argv[i++];
-  if (i < argc)
-    cfg.cmake_bin = argv[i++];
-  if (i < argc)
-    cfg.cmake_build_dir = argv[i++];
+
   for (; i < argc; ++i)
   {
     std::string_view arg = argv[i];
-    if (arg.starts_with("-B="))
-      cfg.cmake_config = arg.substr(3);
-    else if (arg.starts_with("-X="))
-      cfg.cmake_cppcompiler = arg.substr(3);
-    else if (arg.starts_with("-C="))
-      cfg.cmake_ccompiler = arg.substr(3);
-    else if (arg.starts_with("-V="))
-      cfg.cmake_cppcompiler_version = arg.substr(3);
-    else if (arg.starts_with("-G="))
-      cfg.cmake_generator = arg.substr(3);
-    else if (arg.starts_with("-I="))
-      cfg.cmake_generator_instance = arg.substr(3);
-    else if (arg.starts_with("-U="))
-      cfg.cmake_generator_platform = arg.substr(3);
-    else if (arg.starts_with("-H="))
-      cfg.cmake_generator_toolset = arg.substr(3);
-    else if (arg.starts_with("-T="))
-      cfg.cmake_toolchain = arg.substr(3);
-    else if (arg.starts_with("-N="))
-      cfg.cmake_is_multi_cfg = to_bool(arg.substr(3));
-    else if (arg.starts_with("-P="))
-      cfg.target_platform = arg.substr(3);
-    else if (arg.starts_with("--no-fetch-build"))
-      cfg.cmake_skip_fetch_builds = true;
+    // clang-format off
+    read("--preset=", arg, cfg.cmake_preset_name) || 
+    read("--cmake=", arg, cfg.cmake_bin) ||
+    read("--binary-dir=", arg, cfg.cmake_build_dir) || 
+    read("--build-type=", arg, cfg.cmake_config) ||
+    read("--cpp-compiler-id=", arg, cfg.cmake_cppcompiler) || 
+    read("--c-compiler-id=", arg, cfg.cmake_ccompiler) ||
+    read("--cpp-compiler-ver=", arg, cfg.cmake_cppcompiler_version) ||
+    read("--generator=", arg, cfg.cmake_generator) ||
+    read("--generator-instance=", arg, cfg.cmake_generator_instance) ||
+    read("--generator-platform=", arg, cfg.cmake_generator_platform) ||
+    read("--generator-toolset=", arg, cfg.cmake_generator_toolset) ||
+    read("--toolchain=", arg, cfg.cmake_toolchain) ||
+    read("--is-multiconfig=", arg, cfg.cmake_is_multi_cfg, to_bool) ||
+    read("--platform=", arg, cfg.target_platform, to_bool);
+    // clang-format on
   }
   return cfg;
 }
@@ -95,6 +104,12 @@ int main(int argc, char const* argv[])
         working_dir = argv[i + 1];
       i++;
     }
+    else if (arg == "--header-map" || arg == "-m")
+    {
+      ras = runas::header_map;
+      if (i + 1 < argc)
+        target = argv[i + 1];
+    }
     else if (arg == "--copy-media" || arg == "-e")
     {
       std::string from   = "";
@@ -125,6 +140,9 @@ int main(int argc, char const* argv[])
     build.scan_main(working_dir);
     switch (ras)
     {
+    case runas::header_map:
+      build.header_map(target);
+      break;
     case runas::main:
       build.main_project();
       break;

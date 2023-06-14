@@ -36,7 +36,21 @@ endif()
 
 
 add_custom_target(nsbuild-check ALL
-  COMMAND ${{nsbuild}} --check "${{__nsbuild_preset}}" "${{CMAKE_COMMAND}}" "${{CMAKE_BINARY_DIR}}" -B=${{CMAKE_BUILD_TYPE}} -X="${{CMAKE_CXX_COMPILER}}" -C="${{CMAKE_C_COMPILER}}" -V="${{CMAKE_CXX_COMPILER_VERSION}}" -G="${{CMAKE_GENERATOR}}" -I="${{CMAKE_GENERATOR_INSTANCE}}" -U="${{CMAKE_GENERATOR_PLATFORM}}" -H="${{CMAKE_GENERATOR_TOOLSET}}" -T="${{CMAKE_TOOLCHAIN}}"  -N=${{GENERATOR_IS_MULTI_CONFIG}} -P=${{nsplatform}}
+  COMMAND ${{nsbuild}} --check 
+                         --preset="${{__nsbuild_preset}}" 
+                         --cmake="${{CMAKE_COMMAND}}" 
+                         --binary-dir="${{CMAKE_BINARY_DIR}}" 
+                         --build-type=${{CMAKE_BUILD_TYPE}} 
+                         --cpp-compiler-id="${{CMAKE_CXX_COMPILER}}" 
+                         --c-compiler-id="${{CMAKE_C_COMPILER}}" 
+                         --cpp-compiler-ver="${{CMAKE_CXX_COMPILER_VERSION}}" 
+                         --generator="${{CMAKE_GENERATOR}}" 
+                         --generator-instance="${{CMAKE_GENERATOR_INSTANCE}}" 
+                         --generator-platform="${{CMAKE_GENERATOR_PLATFORM}}" 
+                         --generator-toolset="${{CMAKE_GENERATOR_TOOLSET}}" 
+                         --toolchain="${{CMAKE_TOOLCHAIN}}"  
+                         --is-multiconfig=${{GENERATOR_IS_MULTI_CONFIG}} 
+                         --platform=${{nsplatform}}
   WORKING_DIRECTORY ${{__main_nsbuild_dir}}
 )
 
@@ -60,7 +74,21 @@ add_subdirectory(${{CMAKE_CURRENT_LIST_DIR}}/{1}/${{__nsbuild_preset}}/{3} ${{CM
 
 if(NOT TARGET nsbuild-clean)
     add_custom_target(nsbuild-clean
-        COMMAND ${{nsbuild}} --clean "${{__nsbuild_preset}}" "${{CMAKE_COMMAND}}" "${{CMAKE_BINARY_DIR}}" -B=${{CMAKE_BUILD_TYPE}} -X="${{CMAKE_CXX_COMPILER}}" -C="${{CMAKE_C_COMPILER}}" -V="${{CMAKE_CXX_COMPILER_VERSION}}" -G="${{CMAKE_GENERATOR}}" -I="${{CMAKE_GENERATOR_INSTANCE}}" -U="${{CMAKE_GENERATOR_PLATFORM}}" -H="${{CMAKE_GENERATOR_TOOLSET}}" -T="${{CMAKE_TOOLCHAIN}}"  -N=${{GENERATOR_IS_MULTI_CONFIG}} -P=${{nsplatform}}
+        COMMAND ${{nsbuild}} --clean 
+                         --preset="${{__nsbuild_preset}}" 
+                         --cmake="${{CMAKE_COMMAND}}" 
+                         --binary-dir="${{CMAKE_BINARY_DIR}}" 
+                         --build-type=${{CMAKE_BUILD_TYPE}} 
+                         --cpp-compiler-id="${{CMAKE_CXX_COMPILER}}" 
+                         --c-compiler-id="${{CMAKE_C_COMPILER}}" 
+                         --cpp-compiler-ver="${{CMAKE_CXX_COMPILER_VERSION}}" 
+                         --generator="${{CMAKE_GENERATOR}}" 
+                         --generator-instance="${{CMAKE_GENERATOR_INSTANCE}}" 
+                         --generator-platform="${{CMAKE_GENERATOR_PLATFORM}}" 
+                         --generator-toolset="${{CMAKE_GENERATOR_TOOLSET}}" 
+                         --toolchain="${{CMAKE_TOOLCHAIN}}"  
+                         --is-multiconfig=${{GENERATOR_IS_MULTI_CONFIG}} 
+                         --platform=${{nsplatform}}
         WORKING_DIRECTORY ${{__main_nsbuild_dir}}
     )
 endif()

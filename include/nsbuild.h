@@ -137,8 +137,8 @@ struct nsbuild : public neo::command_handler
   void read_module(std::filesystem::path);
   void write_include_modules() const;
   void write_install_configs(std::ofstream&) const;
-  void write_common_files(std::filesystem::path const&);
   void delete_builds_if_required();
+  void header_map(std::filesystem::path);
 
   std::string gather_module_hash(std::filesystem::path const&);
 
@@ -229,7 +229,7 @@ struct nsbuild : public neo::command_handler
   fullpaths paths;
   void      compute_paths(std::string const& preset);
 
-  inline std::filesystem::path const& get_full_scan_dir() const { return paths.scan_dir; }
+  inline std::filesystem::path const& get_full_source_dir() const { return paths.scan_dir; }
   inline std::filesystem::path const& get_full_cfg_dir() const { return paths.cfg_dir; }
   inline std::filesystem::path const& get_full_rt_dir() const { return paths.rt_dir; }
   inline std::filesystem::path const& get_full_cmake_gen_dir() const { return paths.cmake_gen_dir; }

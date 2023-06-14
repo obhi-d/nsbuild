@@ -3,6 +3,7 @@
 #include "nscmake.h"
 #include "nscmake_conststr.h"
 #include "nsenums.h"
+#include "nsheader_map.h"
 #include "picosha2.h"
 
 #include <exception>
@@ -38,7 +39,7 @@ nsbuild::nsbuild()
 void nsbuild::main_project()
 {
   compute_paths({});
-  auto cml = get_full_scan_dir() / "CMakeLists.txt";
+  auto cml = get_full_source_dir() / "CMakeLists.txt";
 
   {
     std::ofstream ff{cml};
@@ -47,7 +48,7 @@ void nsbuild::main_project()
   }
 
   {
-    auto          cml = get_full_scan_dir() / "CMakePresets.json";
+    auto          cml = get_full_source_dir() / "CMakePresets.json";
     std::ofstream ff{cml};
     nspreset::write(ff, 0, {}, *this);
   }
@@ -187,6 +188,21 @@ void nsbuild::delete_builds_if_required()
   foreach_module([this](auto& m) { m.delete_build(*this); });
   std::error_code ec;
   std::filesystem::remove(get_full_cache_dir() / "module_info.ns", ec);
+}
+
+void nsbuild::header_map(std::filesystem::path targ_file)
+{
+  nsheader_map hmap;
+  hmap.scan_frameworks(get_full_source_dir() / frameworks_dir);
+  if (targ_file.empty())
+  {
+    // go through source directory
+  }
+  else
+  {
+    hmap.build(targ_file);
+    hmap.write(get_full_out_dir() / (targ_file.stem().string() + ".csv"));
+  }
 }
 
 void nsbuild::read_meta(std::filesystem::path const& path)
@@ -346,7 +362,7 @@ std::string nsbuild::gather_module_hash(std::filesystem::path const& path)
 template <typename L>
 void nsbuild::foreach_framework(L&& l)
 {
-  auto fwdir = get_full_scan_dir() / frameworks_dir;
+  auto fwdir = get_full_source_dir() / frameworks_dir;
   for (auto const& dir_entry : std::filesystem::directory_iterator{fwdir})
   {
     // for each fw
@@ -462,7 +478,7 @@ void nsbuild::generate_enum(std::string filepfx, std::string apipfx, std::string
   throw std::runtime_error("Not implemented");
   /*
   compute_paths(preset);
-  auto spwd         = get_full_scan_dir();
+  auto spwd         = get_full_source_dir();
   auto [fw, mod]    = get_modid(from);
   auto mod_src_path = spwd / frameworks_dir / fw / mod;
   add_framework(fw);
@@ -591,9 +607,9 @@ void nsbuild::compute_paths(std::string const& preset)
 
 void nsbuild::update_macros()
 {
-  auto pwd = get_full_scan_dir();
+  auto pwd = get_full_source_dir();
 
-  macros["config_source"]         = cmake::path(get_full_scan_dir());
+  macros["config_source"]         = cmake::path(pwd);
   macros["config_build_dir"]      = cmake::path(get_full_cmake_gen_dir());
   macros["config_sdk_dir"]        = cmake::path(get_full_sdk_dir());
   macros["config_rt_dir"]         = cmake::path(get_full_rt_dir());
@@ -626,7 +642,7 @@ void nsbuild::write_include_modules() const
   if (preset.cppcheck)
   {
     auto supression_file_cpy = get_full_cfg_dir() / cmake_gen_dir / "CppCheckSuppressions.txt";
-    auto supression_file     = get_full_scan_dir() / preset.cppcheck_suppression;
+    auto supression_file     = get_full_source_dir() / preset.cppcheck_suppression;
     if (preset.cppcheck_suppression.empty() || !std::filesystem::exists(supression_file))
     {
       std::ofstream ofs{supression_file_cpy};
