@@ -6,10 +6,12 @@
 
         const dag = d3.dagStratify()(graph);
         const nodeRadius = 20;
-        const layout = d3
-            .sugiyama() // base layout
-            .decross(d3.decrossOpt()) // minimize number of crossings
-            .nodeSize((node) => [(node ? 10.6 : 0.25) * nodeRadius, 3 * nodeRadius]); // set node size instead of constraining to fit
+        var layout = d3
+            .sugiyama();
+        if (graph.length < 20)
+         // base layout
+            layout = layout.decross(d3.decrossOpt()); // minimize number of crossings
+        layout = layout.nodeSize((node) => [(node ? 10.6 : 0.25) * nodeRadius, 3 * nodeRadius]); // set node size instead of constraining to fit
         const { width, height } = layout(dag);
 
         // --------------------------------
@@ -35,9 +37,10 @@
             .y((d) => d.y);
 
         // Plot edges
-        svgSelection
-            .append("g")
-            .selectAll("path")
+       const g = svgSelection
+            .append("g");
+
+        g.append("g").selectAll("path")
             .data(dag.links())
             .enter()
             .append("path")
@@ -67,7 +70,7 @@
             });
 
         // Select nodes
-        const nodes = svgSelection
+        const nodes = g
             .append("g")
             .selectAll("g")
             .data(dag.descendants())
@@ -98,6 +101,16 @@
             .attr("fill", "white")
             .attr("class", "text");
 
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on("zoom", zoomed);
+
+        svgSelection.call(zoom);
+
+        function zoomed(event) {
+            const { transform } = event;
+            g.attr("transform", transform);
+        }
 
     </script>
 </body>
