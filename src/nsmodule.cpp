@@ -195,24 +195,19 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
       write_sha_changed(bc, "src", glob_media.sha);
   }
 
-  if (is_executable(type))
-  {
-    if (intf[nsmodule::priv_intf].empty())
-      intf[nsmodule::priv_intf].emplace_back();
-  }
+  if (intf[nsmodule::priv_intf].empty())
+    intf[nsmodule::priv_intf].emplace_back();
+
+  intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_CONFIG_HEADER", fmt::format("\"{}ModuleConfig.hpp\"", name));
 
   if (!bc.s_current_preset->static_libs)
   {
-    if (intf[nsmodule::priv_intf].empty())
-      intf[nsmodule::priv_intf].emplace_back();
-    intf[nsmodule::priv_intf].back().definitions.emplace_back("LUMIERE_EXPORT_AS_DYNAMIC_LIB", "1");
+    intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_SHARED_LIBS", "1");
   }
 
   if (bc.s_current_preset->build_type == "debug")
   {
-    if (intf[nsmodule::priv_intf].empty())
-      intf[nsmodule::priv_intf].emplace_back();
-    intf[nsmodule::priv_intf].back().definitions.emplace_back("L_DEBUG", "1");
+    intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_DEBUG_BUILD", "1");
   }
 
   if (fetch)
