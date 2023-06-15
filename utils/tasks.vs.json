@@ -1,0 +1,39 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "Full Regnerate CMakeLists!",
+      "appliesTo": "/",
+      "type": "launch",
+      "command": "${workspaceRoot}/../building/nsbuild",
+      "workingDirectory": "${workspaceRoot}",
+      "args": [
+        "--source",
+        "${workspaceRoot}"
+      ]
+    },
+    {
+      "taskLabel": "Create HeaderMap!",
+      "appliesTo": "*.cpp, *.hpp",
+      "type": "launch",
+      "command": "${workspaceRoot}/../building/nsbuild",
+      "workingDirectory": "${workspaceRoot}",
+      "args": [
+        "--source",
+        "${workspaceRoot}",
+        "--header-map",
+        "${file}"
+      ]
+    },
+    {
+      "taskLabel": "Update NSBuild",
+      "appliesTo": "/",
+      "workingDirectory": "${workspaceRoot}/../building",
+      "type": "launch",
+      "command": "${env.COMSPEC}",
+      "args": [
+        "vcvarsall.bat && python build.py"
+      ]
+    }
+  ]
+}
