@@ -118,7 +118,7 @@ install (FILES
   "${CMAKE_CURRENT_LIST_DIR}/data/CyclicHeaderMapEnd.html"
   "${CMAKE_CURRENT_LIST_DIR}/data/TopoHeaderMapBegin.html"
   "${CMAKE_CURRENT_LIST_DIR}/data/TopoHeaderMapEnd.html"
-  "${CMAKE_CURRENT_LIST_DIR}/data/d3-dag.iife.min.js
-  "${CMAKE_CURRENT_LIST_DIR}/data/d3.v6.min.js
+  "${CMAKE_CURRENT_LIST_DIR}/data/d3-dag.iife.min.js"
+  "${CMAKE_CURRENT_LIST_DIR}/data/d3.v6.min.js"
 
   DESTINATION ./)
