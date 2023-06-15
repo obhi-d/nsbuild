@@ -1,0 +1,105 @@
+﻿// const width = window.innerWidth;
+        // const height = window.innerHeight;
+        const rectHeight = 12;
+        const svg = d3.select("body")
+            .append("svg")
+
+        const dag = d3.dagStratify()(graph);
+        const nodeRadius = 20;
+        const layout = d3
+            .sugiyama() // base layout
+            .decross(d3.decrossOpt()) // minimize number of crossings
+            .nodeSize((node) => [(node ? 10.6 : 0.25) * nodeRadius, 3 * nodeRadius]); // set node size instead of constraining to fit
+        const { width, height } = layout(dag);
+
+        // --------------------------------
+        // This code only handles rendering
+        // --------------------------------
+        const svgSelection = d3.select("svg");
+        svgSelection.attr("viewBox", [0, 0, width, height].join(" "));
+        const defs = svgSelection.append("defs"); // For gradients
+
+        const steps = dag.size();
+        const interp = d3.interpolateRainbow;
+        const colorMap = new Map();
+        var i = 0;
+        for (const node of dag.descendants()) {
+            colorMap.set(node.data.id, interp(i++ / steps));
+        }
+
+        // How to draw edges
+        const line = d3
+            .line()
+            .curve(d3.curveCatmullRom)
+            .x((d) => d.x)
+            .y((d) => d.y);
+
+        // Plot edges
+        svgSelection
+            .append("g")
+            .selectAll("path")
+            .data(dag.links())
+            .enter()
+            .append("path")
+            .attr("d", ({ points }) => line(points))
+            .attr("fill", "none")
+            .attr("stroke-width", 3)
+            .attr("stroke", ({ source, target }) => {
+                // encodeURIComponents for spaces, hope id doesn't have a `--` in it
+                const gradId = encodeURIComponent(`${source.data.id}--${target.data.id}`);
+                const grad = defs
+                    .append("linearGradient")
+                    .attr("id", gradId)
+                    .attr("gradientUnits", "userSpaceOnUse")
+                    .attr("x1", source.x)
+                    .attr("x2", target.x)
+                    .attr("y1", source.y)
+                    .attr("y2", target.y);
+                grad
+                    .append("stop")
+                    .attr("offset", "0%")
+                    .attr("stop-color", colorMap.get(source.data.id));
+                grad
+                    .append("stop")
+                    .attr("offset", "100%")
+                    .attr("stop-color", colorMap.get(target.data.id));
+                return `url(#${gradId})`;
+            });
+
+        // Select nodes
+        const nodes = svgSelection
+            .append("g")
+            .selectAll("g")
+            .data(dag.descendants())
+            .enter()
+            .append("g")
+            .attr("transform", ({ x, y }) => `translate(${x}, ${y})`);
+
+        // Plot node circles
+        nodes
+
+                    .append("rect")
+                    .attr("x", (n) => -(n.data.id.length * 8) / 2)
+                    .attr("y", -rectHeight/2)
+                    .attr("fill", (n) => colorMap.get(n.data.id))
+                    .attr("width", (n) => n.data.id.length * 8 )
+                    .attr("height", rectHeight)
+                    .attr("rx", 5)
+                    .attr("ry", 5)
+                    ;
+
+
+        // Add text to nodes
+        nodes
+            .append("text")
+            .text((d) => d.data.id)
+            .attr("text-anchor", "middle")
+            .attr("alignment-baseline", "middle")
+            .attr("fill", "white")
+            .attr("class", "text");
+
+
+    </script>
+</body>
+
+</html>

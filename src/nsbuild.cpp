@@ -202,7 +202,9 @@ void nsbuild::header_map(std::filesystem::path targ_file)
   else
   {
     hmap.build(targ_file);
-    hmap.write_html(get_full_out_dir() / (targ_file.stem().string() + ".html"), *this);
+    auto html = get_full_out_dir() / (targ_file.stem().string() + ".html");
+    hmap.write_html(html, *this);
+    std::system(html.string().c_str());
   }
 }
 

@@ -84,8 +84,12 @@ add_executable(nsbuild
     ${CMAKE_CURRENT_SOURCE_DIR}/data/EnumStringHash.hxx 
     ${CMAKE_CURRENT_SOURCE_DIR}/data/FlagType.hxx
     ${CMAKE_CURRENT_SOURCE_DIR}/data/ModuleConfig.hxx    
-    ${CMAKE_CURRENT_SOURCE_DIR}/data/HeaderMapBegin.html
-    ${CMAKE_CURRENT_SOURCE_DIR}/data/HeaderMapEnd.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/CyclicHeaderMapBegin.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/CyclicHeaderMapEnd.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/TopoHeaderMapBegin.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/TopoHeaderMapEnd.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/d3-dag.iife.min.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/d3.v6.min.js
 
     ${CMAKE_CURRENT_BINARY_DIR}
  )
@@ -110,6 +114,11 @@ install (FILES
   "${CMAKE_CURRENT_LIST_DIR}/data/FlagType.hxx"
   "${CMAKE_CURRENT_LIST_DIR}/data/ModuleConfig.hxx" 
   "${CMAKE_CURRENT_LIST_DIR}/data/EnumStringHash.hxx"
-  "${CMAKE_CURRENT_LIST_DIR}/data/HeaderMapBegin.html"
-  "${CMAKE_CURRENT_LIST_DIR}/data/HeaderMapEnd.html"
+  "${CMAKE_CURRENT_LIST_DIR}/data/CyclicHeaderMapBegin.html"
+  "${CMAKE_CURRENT_LIST_DIR}/data/CyclicHeaderMapEnd.html"
+  "${CMAKE_CURRENT_LIST_DIR}/data/TopoHeaderMapBegin.html"
+  "${CMAKE_CURRENT_LIST_DIR}/data/TopoHeaderMapEnd.html"
+  "${CMAKE_CURRENT_LIST_DIR}/data/d3-dag.iife.min.js
+  "${CMAKE_CURRENT_LIST_DIR}/data/d3.v6.min.js
+
   DESTINATION ./)
