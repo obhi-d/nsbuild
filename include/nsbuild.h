@@ -229,6 +229,7 @@ struct nsbuild : public neo::command_handler
   fullpaths paths;
   void      compute_paths(std::string const& preset);
 
+  inline std::filesystem::path const& get_data_dir() const { return paths.data_dir; }
   inline std::filesystem::path const& get_full_source_dir() const { return paths.scan_dir; }
   inline std::filesystem::path const& get_full_cfg_dir() const { return paths.cfg_dir; }
   inline std::filesystem::path const& get_full_rt_dir() const { return paths.rt_dir; }

@@ -193,6 +193,7 @@ void nsbuild::delete_builds_if_required()
 void nsbuild::header_map(std::filesystem::path targ_file)
 {
   nsheader_map hmap;
+  compute_paths({});
   hmap.scan_frameworks(get_full_source_dir() / frameworks_dir);
   if (targ_file.empty())
   {
@@ -201,7 +202,7 @@ void nsbuild::header_map(std::filesystem::path targ_file)
   else
   {
     hmap.build(targ_file);
-    hmap.write(get_full_out_dir() / (targ_file.stem().string() + ".csv"));
+    hmap.write_html(get_full_out_dir() / (targ_file.stem().string() + ".html"), *this);
   }
 }
 

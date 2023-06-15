@@ -6,6 +6,7 @@
 #include <unordered_map>
 #include <vector>
 
+struct nsbuild;
 class nsheader_map
 {
 public:
@@ -15,6 +16,8 @@ public:
   void        scan_modules(std::filesystem::path mods) noexcept;
   std::size_t build(std::filesystem::path const& p) noexcept;
   void        write(std::filesystem::path p);
+  void        write_json(std::filesystem::path p);
+  void        write_html(std::filesystem::path p, nsbuild const&);
 
   struct node
   {

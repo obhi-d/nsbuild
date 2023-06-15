@@ -1,0 +1,129 @@
+    </script>
+    <script>
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        const rectHeight = 30;
+        const initialSpacing = 200; // Adjust the initial spacing between nodes
+
+        const svg = d3.select("body")
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+
+       
+        const data = graph.nodes;
+        const links = graph.links;
+
+        const simulation = d3.forceSimulation(data)
+            .force("link", d3.forceLink().links(links).id(d => d.id))
+            .force("charge", d3.forceManyBody().strength(-2000))
+            .force("center", d3.forceCenter(width / 2, height / 2));
+
+        const arrow = svg.append("defs").append("marker")
+            .attr("id", "arrow")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 0)    // here i was placed 0
+            .attr("refY", 0)
+            .attr("markerWidth", 4)
+            .attr("markerHeight", 4)
+            .attr("orient", "auto")
+            .append("svg:path")
+            .attr("d", "M0,-5L10,0L0,5");
+
+        const g = svg.append("g")
+        const link = g.append("g")
+            .attr("stroke", "#bbb")
+            .attr("stroke-width", 3)
+            .selectAll("polyline") // selecting polylines instead of lines
+            .data(links)
+            .enter().append("polyline") // adding polylines instead of lines
+            .attr("points", function (d) {
+                return [
+                    d.source.x, d.source.y,
+                    // here i calculate midpoints where markers need to appear
+                    d.source.x / 2 + d.target.x / 2, d.source.y / 2 + d.target.y / 2,
+                    d.target.x, d.target.y
+                ].join(',');
+            })
+            .style("marker-mid", "url(#arrow)"); // here i changed type of marker
+
+
+
+        const node = g.append("g")
+            .selectAll("rect")
+            .data(data)
+            .join("rect")
+            .attr("class", "node")
+            .attr("width", d => d.id.length * 12)
+            .attr("height", rectHeight)
+            .attr("rx", 5)
+            .attr("ry", 5)
+            .call(drag(simulation));
+
+        const text = g.append("g")
+            .selectAll("text")
+            .data(data)
+            .join("text")
+            .attr("class", "text")
+            .attr("x", d => d.x + (d.id.length * 12) / 2)
+            .attr("y", d => d.y + rectHeight / 2)
+            .text(d => d.id);
+
+        const zoom = d3.zoom()
+            .scaleExtent([0.1, 4])
+            .on("zoom", zoomed);
+
+        svg.call(zoom);
+
+        function zoomed(event) {
+            const { transform } = event;
+            g.attr("transform", transform);
+        }
+        simulation.on("tick", () => {
+            link
+                .attr("points", function (d) {
+                    return [
+                        d.source.x, d.source.y,
+                        // here i calculate midpoints where markers need to appear
+                        d.source.x / 2 + d.target.x / 2, d.source.y / 2 + d.target.y / 2,
+                        d.target.x, d.target.y
+                    ].join(',');
+                });
+
+            node
+                .attr("x", d => d.x - (d.id.length * 12) / 2)
+                .attr("y", d => d.y - rectHeight / 2);
+
+            text
+                .attr("x", d => d.x)
+                .attr("y", d => d.y);
+        });
+
+        function drag(simulation) {
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                d.fx = d.x;
+                d.fy = d.y;
+            }
+
+            return d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended);
+        }
+       
+    </script>
+</body>
+
+</html>

@@ -83,7 +83,11 @@ add_executable(nsbuild
     ${CMAKE_CURRENT_SOURCE_DIR}/data/BuildConfig.hxx 
     ${CMAKE_CURRENT_SOURCE_DIR}/data/EnumStringHash.hxx 
     ${CMAKE_CURRENT_SOURCE_DIR}/data/FlagType.hxx
-    ${CMAKE_CURRENT_SOURCE_DIR}/data/ModuleConfig.hxx    ${CMAKE_CURRENT_BINARY_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/ModuleConfig.hxx    
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/HeaderMapBegin.html
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/HeaderMapEnd.html
+
+    ${CMAKE_CURRENT_BINARY_DIR}
  )
 
 target_include_directories(nsbuild PRIVATE 
@@ -106,4 +110,6 @@ install (FILES
   "${CMAKE_CURRENT_LIST_DIR}/data/FlagType.hxx"
   "${CMAKE_CURRENT_LIST_DIR}/data/ModuleConfig.hxx" 
   "${CMAKE_CURRENT_LIST_DIR}/data/EnumStringHash.hxx"
+  "${CMAKE_CURRENT_LIST_DIR}/data/HeaderMapBegin.html"
+  "${CMAKE_CURRENT_LIST_DIR}/data/HeaderMapEnd.html"
   DESTINATION ./)
