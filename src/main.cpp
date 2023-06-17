@@ -57,7 +57,7 @@ nscmakeinfo read_config(char const* argv[], int i, int argc)
     read("--generator-toolset=", arg, cfg.cmake_generator_toolset) ||
     read("--toolchain=", arg, cfg.cmake_toolchain) ||
     read("--is-multiconfig=", arg, cfg.cmake_is_multi_cfg, to_bool) ||
-    read("--platform=", arg, cfg.target_platform, to_bool);
+    read("--platform=", arg, cfg.target_platform);
     // clang-format on
   }
   return cfg;

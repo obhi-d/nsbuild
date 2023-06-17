@@ -51,6 +51,7 @@ struct nsbuild : public neo::command_handler
 
   bool verbose  = false;
   bool cppcheck = false;
+  bool glob_sources = false;
 
   // Project name
   std::string project_name;

@@ -9,24 +9,16 @@ struct nsglob
   // std::string_view name;
 
   std::unordered_set<std::string>* file_filters = nullptr;
-  std::string_view path_exclude_filters;
+  std::string_view                 path_exclude_filters;
 
-  struct file_set
-  {
-    std::filesystem::path              sub_path;
-    std::vector<std::filesystem::path> files;
-  };
-
-  std::vector<file_set> sub_paths;
+  std::vector<std::filesystem::path> sub_paths;
+  using file_set = std::vector<std::filesystem::path>;
+  file_set files;
 
   std::string sha;
   bool        recurse = false;
 
-  inline void add_set(std::filesystem::path p)
-  {
-    sub_paths.emplace_back();
-    sub_paths.back().sub_path = std::filesystem::absolute(std::move(p));
-  }
+  inline void add_set(std::filesystem::path p) { sub_paths.emplace_back(std::filesystem::absolute(std::move(p))); }
 
   void print(std::ostream&, std::string_view) const;
   void print(std::ostream&, std::string_view as, std::string_view ctx, std::filesystem::path const& relative_to) const;

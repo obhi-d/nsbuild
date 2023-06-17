@@ -187,18 +187,24 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
 
   if (has_runtime(type))
   {
-    static std::unordered_set<std::string> cpp_filters = {".cpp", ".cxx"};
+    static std::unordered_set<std::string> cpp_filters = {".cpp"};
     glob_sources.file_filters                          = &cpp_filters;
     gather_sources(glob_sources, bc);
-    glob_sources.accumulate();
-    if (has_globs_changed |= sha_changed(bc, "src", glob_media.sha))
-      write_sha_changed(bc, "src", glob_media.sha);
+
+    if (!bc.glob_sources)
+    {
+      glob_sources.accumulate();
+      if (has_globs_changed |= sha_changed(bc, "src", glob_media.sha))
+        write_sha_changed(bc, "src", glob_media.sha);
+    }
   }
 
   if (intf[nsmodule::priv_intf].empty())
     intf[nsmodule::priv_intf].emplace_back();
 
-  intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_CONFIG_HEADER", fmt::format("\"{}ModuleConfig.hpp\"", name));
+  if (has_runtime(type))
+    intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_CONFIG_HEADER",
+                                                              fmt::format("\"{}ModuleConfig.hpp\"", name));
 
   if (!bc.s_current_preset->static_libs)
   {
@@ -597,7 +603,12 @@ void nsmodule::gather_sources(nsglob& glob, nsbuild const& bc) const
 void nsmodule::write_sources(std::ostream& ofs, nsbuild const& bc) const
 {
   if (has_runtime(type))
-    glob_sources.print(ofs, "__module_sources", "${CMAKE_CURRENT_LIST_DIR}/", bc.get_full_cmake_gen_dir());
+  {
+    if (bc.glob_sources)
+      glob_sources.print(ofs, "__module_sources");
+    else
+      glob_sources.print(ofs, "__module_sources", "${CMAKE_CURRENT_LIST_DIR}/", bc.get_full_cmake_gen_dir());
+  }
 }
 
 void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string const& name) const
