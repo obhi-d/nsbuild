@@ -546,7 +546,7 @@ void nsmodule::write_main_build(std::ostream& ofs, nsbuild const& bc) const
   if (has_data(type))
   {
     glob_media.print(ofs, "data_group", "${CMAKE_CURRENT_LIST_DIR}/", bc.get_full_cmake_gen_dir());
-    glob_media.print(ofs, "data_group_output", fmt::format("${{config_rt_dir}}/{}/", bc.media_name), {});
+    glob_media.print(ofs, "data_group_output", fmt::format("${{config_rt_dir}}/{}/", bc.media_name), glob_media.sub_paths.back());
   }
   write_sources(ofs, bc);
   write_target(ofs, bc, target_name);
