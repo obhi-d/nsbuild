@@ -12,7 +12,7 @@ void nsglob::print(std::ostream& oss, std::string_view name) const
   for (auto s : sub_paths)
   {
     for (auto const& f : *file_filters)
-      oss << fmt::format("\nlist(APPEND {} \"{}/*.{}\")", name, cmake::path(s), f);
+      oss << fmt::format("\nlist(APPEND {} \"{}/*{}\")", name, cmake::path(s), f);
   }
   if (recurse)
     oss << "\nfile(GLOB_RECURSE ";
