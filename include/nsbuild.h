@@ -49,8 +49,8 @@ struct nsbuild : public neo::command_handler
   std::string macro_prefix;
   std::string file_prefix;
 
-  bool verbose  = false;
-  bool cppcheck = false;
+  bool verbose      = false;
+  bool cppcheck     = false;
   bool glob_sources = false;
 
   // Project name
@@ -97,6 +97,8 @@ struct nsbuild : public neo::command_handler
 
   std::string s_nstestNamespace;
   std::string s_nstestClass;
+  std::string s_nstestNamespaceTags;
+  std::string s_nstestClassTags;
 
   nspreset const* s_current_preset = nullptr;
   //--------------------------------------

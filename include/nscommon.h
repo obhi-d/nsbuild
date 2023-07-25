@@ -93,6 +93,32 @@ inline std::string get_first_concat(neo::command const& cmd, std::string def = "
   return def;
 }
 
+inline std::vector<std::string> get_list_at(uint32_t i, neo::command const& cmd)
+{
+  auto const& params = cmd.params();
+  auto        size   = params.value().size();
+  if (i >= size)
+    return {};
+  auto const&              l = params.value();
+  std::vector<std::string> ret;
+  if (size == 1)
+  {
+    if (l[i].index() == 2)
+    {
+      auto const& lst = std::get<2>(l[i]);
+      for (auto const& v : lst)
+      {
+        ret.emplace_back(cmd.as_string(v, ""));
+      }
+      return ret;
+    }
+    else
+      return {std::string{cmd.as_string(l[i], "")}};
+  }
+
+  return ret;
+}
+
 inline std::vector<std::string> get_first_list(neo::command const& cmd)
 {
   auto const& params = cmd.params();

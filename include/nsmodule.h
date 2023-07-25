@@ -31,6 +31,7 @@ using name_value_pair = std::pair<std::string, std::string>;
 struct nstest
 {
   std::string                  name;
+  std::string                  tags;
   std::vector<name_value_pair> parameters;
 };
 

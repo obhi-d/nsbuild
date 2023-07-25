@@ -555,7 +555,7 @@ void nsenum::write_header_string_table(std::ostream& ofs) const
 {
   auto starts_with = stylize(ctx.style(), "StartsWith");
   auto ends_with   = stylize(ctx.style(), "EndsWith");
-  auto from_string = stylize(ctx.style(), "FromString");
+  auto from_string = stylize(ctx.style(), "fromString");
   auto to          = stylize(ctx.style(), "To");
   auto to_bit      = stylize(ctx.style(), "ToBit");
   auto to_enum     = stylize(ctx.style(), "ToEnum");
@@ -839,7 +839,7 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
   auto from_string_key = stylize(ctx.style(), "FromStringKey");
   auto starts_with = stylize(ctx.style(), "StartsWith");
   auto ends_with   = stylize(ctx.style(), "EndsWith");
-  auto from_string = stylize(ctx.style(), "FromString");
+  auto from_string = stylize(ctx.style(), "fromString");
 
 
   auto const& enum_name      = name;
@@ -850,7 +850,7 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
   auto table_type = fmt::format("std::array<{}Tuple, {}>", name, item_count);
 
   if (string_key)
-    ofs << fmt::format("\n{0} k{1}StringTable = enums::SortTuple<{0}, 0>({0}{{\n",
+    ofs << fmt::format("\n{0} k{1}StringTable = enums::sortTuple<{0}, 0>({0}{{\n",
                        table_type, name);
   else
     ofs << fmt::format("\n{0} k{1}StringTable = {{\n", table_type, name);
@@ -919,7 +919,7 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
       if (search_modifier != nsenum_modifier::none)
         ofs << nsenum_context::modify_search("iValue", search_modifier);
       ofs << fmt::format(
-          "\n  return enums::StringStartsWith(k{0}StringTable, iValue, {0}::{1}",
+          "\n  return enums::stringStartsWith(k{0}StringTable, iValue, {0}::{1}",
           enum_name, def_value_type);
       finish_with();
     }
@@ -932,7 +932,7 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
       if (search_modifier != nsenum_modifier::none)
         ofs << nsenum_context::modify_search("iValue", search_modifier);
       ofs << fmt::format(
-          "\n  return enums::StringEndsWith(k{0}StringTable, iValue, {0}::{1}",
+          "\n  return enums::stringEndsWith(k{0}StringTable, iValue, {0}::{1}",
           enum_name, def_value_type);
       finish_with();
     }
@@ -945,7 +945,7 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
     if (search_modifier != nsenum_modifier::none)
       ofs << nsenum_context::modify_search("iValue", search_modifier);
     ofs << fmt::format(
-        "\n  return enums::FromString(k{0}StringTable, iValue, {0}::{1}",
+        "\n  return enums::fromString(k{0}StringTable, iValue, {0}::{1}",
         enum_name, def_value_type);
     finish_with();
   }

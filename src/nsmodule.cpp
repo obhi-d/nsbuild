@@ -546,7 +546,8 @@ void nsmodule::write_main_build(std::ostream& ofs, nsbuild const& bc) const
   if (has_data(type))
   {
     glob_media.print(ofs, "data_group", "${CMAKE_CURRENT_LIST_DIR}/", bc.get_full_cmake_gen_dir());
-    glob_media.print(ofs, "data_group_output", fmt::format("${{config_rt_dir}}/{}/", bc.media_name), glob_media.sub_paths.back());
+    glob_media.print(ofs, "data_group_output", fmt::format("${{config_rt_dir}}/{}/", bc.media_name),
+                     glob_media.sub_paths.back());
   }
   write_sources(ofs, bc);
   write_target(ofs, bc, target_name);
@@ -642,7 +643,7 @@ void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string co
     break;
   case nsmodule_type::test:
     ofs << fmt::format("\nadd_executable({} {} ${{__module_sources}} ${{__natvis_file}})", name,
-                       console_app ? "${__nsbuild_console_app_options}" : "${__nsbuild_app_options}");
+                       "${__nsbuild_console_app_options}");
     break;
   default:
     break;
@@ -1127,9 +1128,13 @@ void nsmodule::write_tests(std::ostream& ofs, nsbuild const& bc) const
         first = false;
         continue;
       }
-      ofs << fmt::format("--test-param-{}={} ", p.first, p.second);
+      ofs << fmt::format("--{}={} ", p.first, p.second);
     }
     ofs << "\n  WORKING_DIRECTORY ${config_rt_dir}/bin)";
+    if (!t.tags.empty())
+    {
+      ofs << fmt::format("\nset_tests_properties({} PROPERTIES LABELS \"{}\")", t.name, t.tags);
+    }
   }
 }
 

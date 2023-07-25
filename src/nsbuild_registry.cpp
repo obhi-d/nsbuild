@@ -37,7 +37,7 @@ ns_cmd_handler(style, build, state, cmd)
     build.style = coding_style::UpperCamelCase;
   else if (val == "lower_camel_case")
     build.style = coding_style::LowerCamelCase;
-  else if (val == "SnakeCase")
+  else if (val == "snake_case")
     build.style = coding_style::SnakeCase;
   return neo::retcode::e_success;
 }
@@ -699,19 +699,46 @@ ns_cmdend_handler(fetch, build, state, name)
 ns_cmd_handler(test_namespace, build, state, cmd)
 {
   build.s_nstestNamespace = get_idx_param(cmd, 0);
+  auto list               = get_list_at(1, cmd);
+  bool first              = true;
+  for (auto const& l : list)
+  {
+    if (!first)
+      build.s_nstestNamespaceTags += ";";
+    build.s_nstestNamespaceTags += l;
+    first = false;
+  }
   return neo::retcode::e_success;
 }
 
 ns_cmd_handler(test_class, build, state, cmd)
 {
   build.s_nstestClass = get_idx_param(cmd, 0);
+  auto list           = get_list_at(1, cmd);
+  bool first          = true;
+  for (auto const& l : list)
+  {
+    if (!first)
+      build.s_nstestClassTags += ";";
+    build.s_nstestClassTags += l;
+    first = false;
+  }
   return neo::retcode::e_success;
 }
 
 ns_cmd_handler(test_name, build, state, cmd)
 {
-  nstest test;
-  test.name          = fmt::format("{}.{}.{}", build.s_nstestNamespace, build.s_nstestClass, get_idx_param(cmd, 0));
+  build.s_nsmodule->tests.emplace_back();
+
+  nstest& test = build.s_nsmodule->tests.back();
+  test.name    = fmt::format("{}.{}.{}", build.s_nstestNamespace, build.s_nstestClass, get_idx_param(cmd, 0));
+  test.tags    = build.s_nstestNamespaceTags;
+  if (!build.s_nstestClassTags.empty())
+  {
+    if (!test.tags.empty())
+      test.tags += ";";
+    test.tags += build.s_nstestClassTags;
+  }
   auto const& params = cmd.params().value();
   for (auto const& p : params)
   {
@@ -723,7 +750,6 @@ ns_cmd_handler(test_name, build, state, cmd)
                                [&test](neo::single const& l) { test.parameters.emplace_back(l.name(), l.value()); }},
                p);
   }
-  build.s_nsmodule->tests.push_back(test);
   return neo::retcode::e_success;
 }
 
@@ -748,6 +774,18 @@ ns_cmdend_handler(clear_interface, build, state, cmd)
 ns_cmdend_handler(clear_presets, build, state, cmd)
 {
   build.s_nspreset = nullptr;
+  return neo::retcode::e_success;
+}
+
+ns_cmdend_handler(clear_testns, build, state, cmd)
+{
+  build.s_nstestNamespaceTags.clear();
+  return neo::retcode::e_success;
+}
+
+ns_cmdend_handler(clear_test, build, state, cmd)
+{
+  build.s_nstestClassTags.clear();
   return neo::retcode::e_success;
 }
 
@@ -845,9 +883,9 @@ ns_registry(nsbuild)
 
   ns_subalias_cust(postbuild, clear_buildstep, prebuild);
 
-  ns_scope_def(test_namespace)
+  ns_scope_cust(test_namespace, clear_testns)
   {
-    ns_scope_def(test_class) { ns_cmd(test_name); }
+    ns_scope_cust(test_class, clear_test) { ns_cmd(test_name); }
   }
 
   ns_scope_auto(fetch)

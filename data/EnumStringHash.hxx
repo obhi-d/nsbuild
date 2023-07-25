@@ -133,7 +133,7 @@ struct Key
 
 // Returns the string fragment without the prefix
 template <typename EnumType, typename ArrayType, typename StringType>
-inline std::tuple<EnumType, StringType> StringStartsWith(ArrayType const& iList, StringType iValue,
+inline std::tuple<EnumType, StringType> stringStartsWith(ArrayType const& iList, StringType iValue,
                                                              EnumType defaultValue)
 {
   // clang-format off
@@ -148,7 +148,7 @@ inline std::tuple<EnumType, StringType> StringStartsWith(ArrayType const& iList,
 
 // Returns the string fragment without the suffix
 template <typename EnumType, typename ArrayType, typename StringType>
-inline std::tuple<EnumType, StringType> StringEndsWith(ArrayType const& iList, StringType iValue, EnumType defaultValue)
+inline std::tuple<EnumType, StringType> stringEndsWith(ArrayType const& iList, StringType iValue, EnumType defaultValue)
 {
   // clang-format off
   for (auto const& e : iList)
@@ -161,7 +161,7 @@ inline std::tuple<EnumType, StringType> StringEndsWith(ArrayType const& iList, S
 }
 
 template <typename EnumType, typename ArrayType, typename StringType, typename Linear = std::false_type>
-inline EnumType FromString(ArrayType const& iList, StringType iValue, EnumType defaultValue, Linear l = {})
+inline EnumType fromString(ArrayType const& iList, StringType iValue, EnumType defaultValue, Linear l = {})
 {
   constexpr std::uint32_t kMinLinearSearch = 16;
   // clang-format off
@@ -181,7 +181,7 @@ inline EnumType FromString(ArrayType const& iList, StringType iValue, EnumType d
 }
 
 template <typename Array, unsigned kTupleIndex>
-inline constexpr auto SortTuple(Array arr)
+inline constexpr auto sortTuple(Array arr)
 {
   auto result = arr;
   std::sort(
