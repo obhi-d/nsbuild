@@ -625,6 +625,8 @@ void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string co
   case nsmodule_type::exe:
     ofs << fmt::format("\nadd_executable({} {} ${{__module_sources}} ${{__natvis_file}})", name,
                        console_app ? "${__nsbuild_console_app_options}" : "${__nsbuild_app_options}");
+    if (console_app)
+      ofs << "\ntarget_compile_definitions(${{module_target}} -DBC_CONSOLE_APP)";
     break;
   case nsmodule_type::ref:
     ofs << fmt::format("\nadd_library({} INTERFACE)", name);
@@ -644,6 +646,8 @@ void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string co
   case nsmodule_type::test:
     ofs << fmt::format("\nadd_executable({} {} ${{__module_sources}} ${{__natvis_file}})", name,
                        "${__nsbuild_console_app_options}");
+    if (console_app)
+      ofs << "\ntarget_compile_definitions(${{module_target}} -DBC_CONSOLE_APP)";
     break;
   default:
     break;
