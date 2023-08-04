@@ -54,19 +54,27 @@ void cmake_install(nsbuild const& bc, std::string_view prefix, std::filesystem::
   cmake(bc, std::move(args), wd);
 }
 
+template <typename... Args>
+std::vector<std::string> make_args(Args&&... args)
+{
+  std::vector<std::string> result;
+  (result.emplace_back(std::forward<Args>(args)),...);
+  return result;
+}
+
 void download(nsbuild const& bc, std::filesystem::path const& dl, std::string_view const& repo, std::string_view name)
 {
 #ifdef _WIN64
+
   powershell(
       bc,
-      {std::format("Invoke-RestMethod -URI {} -OutFile source.zip; Expand-Archive -Path source.zip -DestinationPath . "
-                   "-Force",
-                   repo)},
+      make_args(std::format("Invoke-RestMethod -URI {} -OutFile source.zip; Expand-Archive -Path source.zip -DestinationPath . -Force",
+                   repo)),
       dl);
 
 #else
-  execute("curl", bc, {"-L", "-o", "source.zip", repo}, dl);
-  execute("unzip", bc, {"-o", "source.zip"}, dl);
+  execute("curl", bc, make_args("-L", "-o", "source.zip", repo), dl);
+  execute("unzip", bc, make_args("-o", "source.zip"), dl);
 #endif
   std::error_code ec;
   // remove source file and any existing directories
@@ -84,19 +92,19 @@ void git_clone(nsbuild const& bc, std::filesystem::path const& dl, std::string_v
   if (!std::filesystem::exists(dl) || std::filesystem::is_empty(dl, ec))
   {
     git(bc,
-        {"clone", std::string{repo}, "--recurse-submodules", "--shallow-submodules", "--branch", std::string{tag},
-         "--depth=1", "."},
+        make_args("clone", repo, "--recurse-submodules", "--shallow-submodules", "--branch", tag,
+         "--depth=1", "."),
         dl);
   }
   else
   {
     try
     {
-      git(bc, {"remote", "set-url", "origin", std::string{repo}}, dl);
-      git(bc, {"fetch", "--depth=1", "origin", "--recurse-submodules=yes", std::string{tag}}, dl);
-      git(bc, {"reset", "--hard", "FETCH_HEAD"}, dl);
-      git(bc, {"submodule", "update"}, dl);
-      git(bc, {"clean", "-dfx"}, dl);
+      git(bc, make_args("remote", "set-url", "origin", repo), dl);
+      git(bc, make_args("fetch", "--depth=1", "origin", "--recurse-submodules=yes", tag), dl);
+      git(bc, make_args("reset", "--hard", "FETCH_HEAD"), dl);
+      git(bc, make_args("submodule", "update"), dl);
+      git(bc, make_args("clean", "-dfx"), dl);
     }
     catch (std::exception&)
     {

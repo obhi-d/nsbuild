@@ -10,7 +10,7 @@ if (POLICY CMP0048)
 endif (POLICY CMP0048)
 
 project({0} VERSION {4} LANGUAGES C CXX)
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.25)
 set(nsbuild "{2}")
 
 set(__nsbuild_app_options)
@@ -289,7 +289,7 @@ if (POLICY CMP0048)
 endif (POLICY CMP0048)
 
 project({0} VERSION {1} LANGUAGES C CXX)
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.25)
 include(ExternalProject)
 
 

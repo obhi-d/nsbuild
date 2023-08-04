@@ -171,8 +171,9 @@ struct nsmodule
   void write_cxx_options(std::ostream&, nsbuild const& bc) const;
 
   void write_includes(std::ostream&, nsbuild const& bc) const;
-  void write_include(std::ostream& ofs, std::string_view path, std::string_view subpath, cmake::inheritance) const;
-  void write_refs_includes(std::ostream& ofs, nsbuild const& bc, nsmodule const& target) const;
+  void write_include(std::ostream& ofs, nsglob& glob, std::string_view path, std::string_view subpath,
+                     cmake::inheritance) const;
+  void write_refs_includes(std::ostream& ofs, nsglob& glob, nsbuild const& bc, nsmodule const& target) const;
   void write_find_package(std::ostream& ofs, nsbuild const& bc) const;
 
   void write_definitions(std::ostream&, nsbuild const& bc) const;

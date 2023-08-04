@@ -335,28 +335,7 @@ void nsmodule::update_fetch(nsbuild const& bc)
   fetch_content(bc);
 }
 
-void nsmodule::generate_plugin_manifest(nsbuild const& bc)
-{
-  if (type != nsmodule_type::plugin)
-    return;
-
-  std::ofstream f{get_full_gen_dir(bc) / fmt::format("{0}Manifest.json", name)};
-  f << "{" << fmt::format(k_json_val, "author", manifest.author) << ", "
-    << fmt::format(k_json_val, "company", manifest.company) << ", " << fmt::format(k_json_val, "binary", target_name)
-    << ", " << fmt::format(k_json_val, "version", version.empty() ? bc.version : version) << ", "
-    << fmt::format(k_json_val, "compatibility", manifest.compatibility) << ", "
-    << fmt::format(k_json_val, "context", manifest.context) << ", " << fmt::format(k_json_val, "desc", manifest.desc)
-    << ", " << fmt::format(k_json_bool, "optional", manifest.optional) << ", " << fmt::format(k_json_obj, "services");
-  bool first = true;
-  for (auto const& s : manifest.services)
-  {
-    if (!first)
-      f << ", ";
-    f << fmt::format(k_json_val, s.first, s.second);
-    first = false;
-  }
-  f << "\n}\n}";
-}
+void nsmodule::generate_plugin_manifest(nsbuild const& bc) {}
 
 void nsmodule::backup_fetch_lists(nsbuild const& bc) const
 {
@@ -654,7 +633,9 @@ void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string co
   }
 
   if (has_runtime(type))
+  {
     ofs << "\nunset(__module_sources)";
+  }
 }
 
 void nsmodule::write_enums_init(std::ostream& ofs, nsbuild const& bc) const
@@ -728,21 +709,37 @@ void nsmodule::write_includes(std::ostream& ofs, nsbuild const& bc) const
   case nsmodule_type::lib:
   case nsmodule_type::plugin:
     cmake::line(ofs, "includes");
-    write_include(ofs, "${CMAKE_CURRENT_LIST_DIR}", "", cmake::inheritance::pub);
-    write_include(ofs, "${module_dir}", "public", cmake::inheritance::pub);
-    write_include(ofs, "${module_dir}", "private", cmake::inheritance::priv);
-    write_include(ofs, "${module_dir}", "src", cmake::inheritance::priv);
-    write_include(ofs, "${module_gen_dir}", "", cmake::inheritance::pub);
-    write_include(ofs, "${module_gen_dir}", "local", cmake::inheritance::priv);
-    for (auto const& s : source_sub_dirs)
-      write_include(ofs, "${module_dir}", "src/" + s, cmake::inheritance::priv);
-    write_refs_includes(ofs, bc, *this);
+    {
+      ofs << "\nset(__module_headers)";
+      nsglob header_glob;
+
+      static std::unordered_set<std::string> hpp_filters = {".hpp"};
+      header_glob.file_filters                           = &hpp_filters;
+      header_glob.recurse                                = false;
+
+      write_include(ofs, header_glob, "${CMAKE_CURRENT_LIST_DIR}", "", cmake::inheritance::pub);
+      write_include(ofs, header_glob, "${module_dir}", "public", cmake::inheritance::pub);
+      write_include(ofs, header_glob, "${module_dir}", "private", cmake::inheritance::priv);
+      write_include(ofs, header_glob, "${module_dir}", "src", cmake::inheritance::priv);
+      write_include(ofs, header_glob, "${module_gen_dir}", "", cmake::inheritance::pub);
+      write_include(ofs, header_glob, "${module_gen_dir}", "local", cmake::inheritance::priv);
+      for (auto const& s : source_sub_dirs)
+        write_include(ofs, header_glob, "${module_dir}", "src/" + s, cmake::inheritance::priv);
+      write_refs_includes(ofs, header_glob, bc, *this);
+
+      if (bc.glob_sources)
+      {
+        header_glob.print(ofs, "__module_headers");
+        ofs << "\ntarget_sources(${module_target} PRIVATE ${__module_headers})";
+        ofs << "\nunset(__module_headers)";
+      }
+    }
   default:
     break;
   }
 }
 
-void nsmodule::write_include(std::ostream& ofs, std::string_view path, std::string_view subpath,
+void nsmodule::write_include(std::ostream& ofs, nsglob& glob, std::string_view path, std::string_view subpath,
                              cmake::inheritance inherit) const
 {
   // Assume build
@@ -756,23 +753,24 @@ void nsmodule::write_include(std::ostream& ofs, std::string_view path, std::stri
   // if (expo == cmake::exposition::install)
   //  ofs << "\n\t\t$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}}>");
   ofs << "\n)\nendif()";
+  glob.sub_paths.push_back(fmt::format("{}/{}", path, subpath));
 }
 
-void nsmodule::write_refs_includes(std::ostream& ofs, nsbuild const& bc, nsmodule const& target) const
+void nsmodule::write_refs_includes(std::ostream& ofs, nsglob& glob, nsbuild const& bc, nsmodule const& target) const
 {
   for (auto const& r : references)
   {
     auto const& m = bc.get_module(r);
-    m.write_refs_includes(ofs, bc, target);
-    target.write_include(ofs, m.source_path, "public",
+    m.write_refs_includes(ofs, glob, bc, target);
+    target.write_include(ofs, glob, m.source_path, "public",
                          target.type == nsmodule_type::plugin ? cmake::inheritance::priv : cmake::inheritance::pub);
-    target.write_include(ofs, m.source_path, "private", cmake::inheritance::priv);
-    target.write_include(ofs, m.source_path, "src", cmake::inheritance::priv);
+    target.write_include(ofs, glob, m.source_path, "private", cmake::inheritance::priv);
+    target.write_include(ofs, glob, m.source_path, "src", cmake::inheritance::priv);
     for (auto const& s : m.source_sub_dirs)
-      target.write_include(ofs, m.source_path, "src/" + s, cmake::inheritance::priv);
-    target.write_include(ofs, m.gen_path, "",
+      target.write_include(ofs, glob, m.source_path, "src/" + s, cmake::inheritance::priv);
+    target.write_include(ofs, glob, m.gen_path, "",
                          target.type == nsmodule_type::plugin ? cmake::inheritance::priv : cmake::inheritance::pub);
-    target.write_include(ofs, m.gen_path, "local", cmake::inheritance::priv);
+    target.write_include(ofs, glob, m.gen_path, "local", cmake::inheritance::priv);
   }
 }
 
