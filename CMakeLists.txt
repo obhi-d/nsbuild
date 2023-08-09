@@ -25,8 +25,8 @@ FetchContent_Declare(fmt
 )
 
 FetchContent_Declare(reproc
-  GIT_REPOSITORY https://github.com/DaanDeMeyer/reproc.git
-  GIT_TAG v14.2.4
+  GIT_REPOSITORY https://github.com/obhi-d/reproc.git
+  GIT_TAG v1.0.0-alpha
   GIT_SHALLOW ON
 )
 
