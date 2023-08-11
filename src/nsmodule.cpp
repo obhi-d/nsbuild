@@ -213,7 +213,12 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
 
   if (bc.s_current_preset->build_type == "debug")
   {
+    intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_IS_DEBUG_BUILD", "1");
     intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_DEBUG_BUILD", "1");
+  }
+  else
+  {
+    intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_IS_DEBUG_BUILD", "0");
   }
 
   if (fetch)

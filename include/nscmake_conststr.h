@@ -5,12 +5,13 @@ namespace cmake
 {
 static inline constexpr char k_main_preamble[] = R"_(
 
+cmake_minimum_required(VERSION 3.25)
+
 if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
 
 project({0} VERSION {4} LANGUAGES C CXX)
-cmake_minimum_required(VERSION 3.25)
 set(nsbuild "{2}")
 
 set(__nsbuild_app_options)
@@ -284,12 +285,13 @@ FetchContent_MakeAvailable(${fetch_extern_name})
 
 static inline constexpr char k_project_name[] = R"_(
 
+cmake_minimum_required(VERSION 3.25)
+
 if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
 
 project({0} VERSION {1} LANGUAGES C CXX)
-cmake_minimum_required(VERSION 3.25)
 include(ExternalProject)
 
 
