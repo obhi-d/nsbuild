@@ -31,9 +31,10 @@
 
 namespace BuildConfig
 {
+  constexpr bool DebugBuild = BC_IS_DEBUG_BUILD;
+
   namespace @PROJECT_NAME@
   {
-    constexpr bool             DebugBuild    = BC_IS_DEBUG_BUILD;
     constexpr unsigned int     Major         = @PROJECT_VERSION_MAJOR@;
     constexpr unsigned int     Minor         = @PROJECT_VERSION_MINOR@;
     constexpr unsigned int     Revision      = @PROJECT_VERSION_PATCH@;
