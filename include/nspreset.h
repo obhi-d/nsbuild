@@ -15,6 +15,7 @@ struct nspreset
   std::string  desc;
   std::string  architecture;
   std::string  tags;
+  std::string  platform;
   nameval_list definitions;
 
   std::vector<std::string> allowed_filters;

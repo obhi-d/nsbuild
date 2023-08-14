@@ -57,6 +57,8 @@ void nspreset::write(std::ostream& ff, std::uint32_t options, nameval_list const
   auto& configurations = j["configurePresets"];
   for (auto const& cxx : bc.presets)
   {
+    if (!bc.cmakeinfo.target_platform.empty() && cxx.platform != bc.cmakeinfo.target_platform)
+      continue;
     // only write msvc
     json  cfg;
     auto& cache_vars = cfg["cacheVariables"];
@@ -76,6 +78,8 @@ void nspreset::write(std::ostream& ff, std::uint32_t options, nameval_list const
   auto& builds = j["buildPresets"];
   for (auto const& cxx : bc.presets)
   {
+    if (!bc.cmakeinfo.target_platform.empty() && cxx.platform != bc.cmakeinfo.target_platform)
+      continue;
     json bld;
     bld["name"]            = cxx.name;
     bld["displayName"]     = cxx.display_name;
@@ -97,6 +101,8 @@ void nspreset::write(std::ostream& ff, std::uint32_t options, std::string_view b
   auto& configurations = j["configurePresets"];
   for (auto const& cxx : bc.presets)
   {
+    if (!bc.cmakeinfo.target_platform.empty() && cxx.platform != bc.cmakeinfo.target_platform)
+      continue;
     // only write msvc
     if (cxx.name == bc.cmakeinfo.cmake_preset_name)
     {
@@ -122,6 +128,8 @@ void nspreset::write(std::ostream& ff, std::uint32_t options, std::string_view b
   auto& builds = j["buildPresets"];
   for (auto const& cxx : bc.presets)
   {
+    if (!bc.cmakeinfo.target_platform.empty() && cxx.platform != bc.cmakeinfo.target_platform)
+      continue;
     if (cxx.name == bc.cmakeinfo.cmake_preset_name)
     {
       json bld;

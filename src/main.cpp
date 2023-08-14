@@ -9,6 +9,10 @@
 #else
 #define NS_DLL_EXT "(\\.so[\\.0-9]*$)|(\\.json$)|(\\.conf)"
 #endif
+#if defined(__APPLE__) && defined(__MACH__)
+/* Apple OSX and iOS (Darwin) */
+#include <TargetConditionals.h>
+#endif
 
 #include <nslog.h>
 
@@ -83,6 +87,7 @@ int main(int argc, char const* argv[])
   nscmakeinfo nscfg;
   runas       ras      = runas::main;
   nsprocess::s_nsbuild = std::filesystem::absolute(argv[0]);
+  nsbuild build;
 
   for (int i = 1; i < argc; ++i)
   {
@@ -97,6 +102,12 @@ int main(int argc, char const* argv[])
     {
       ras   = runas::clean;
       nscfg = read_config(argv, i + 1, argc);
+    }
+    if (arg == "--platform" || arg == "-p")
+    {
+      if (i + 1 < argc)
+        build.cmakeinfo.target_platform = argv[i + 1];
+      i++;
     }
     else if (arg == "--source" || arg == "-s")
     {
@@ -131,7 +142,27 @@ int main(int argc, char const* argv[])
     }
   }
 
-  nsbuild build;
+  build.cmakeinfo = nscfg;
+
+  if (build.cmakeinfo.target_platform.empty())
+  {
+#ifdef _WIN64
+    build.cmakeinfo.target_platform = "windows";
+#elif __linux__
+    build.cmakeinfo.target_platform = "linux";
+#elif defined(__APPLE__) && defined(__MACH__)
+#if TARGET_IPHONE_SIMULATOR == 1
+    build.cmakeinfo.target_platform = "iphone_simul";
+#elif TARGET_OS_IPHONE == 1
+    build.cmakeinfo.target_platform = "iphone";
+#elif TARGET_OS_MAC == 1
+    build.cmakeinfo.target_platform = "osx";
+#endif
+#elif defined(__ANDROID__)
+    build.cmakeinfo.target_platform = "android";
+#endif
+  }
+
   build.state.ras = ras;
   neo_register(nsbuild, build.reg);
 
@@ -147,13 +178,11 @@ int main(int argc, char const* argv[])
       build.main_project();
       break;
     case runas::check:
-      build.dll_ext   = std::regex(NS_DLL_EXT, std::regex_constants::icase);
-      build.cmakeinfo = nscfg;
+      build.dll_ext = std::regex(NS_DLL_EXT, std::regex_constants::icase);
       build.before_all();
       break;
     case runas::clean:
-      build.dll_ext   = std::regex(NS_DLL_EXT, std::regex_constants::icase);
-      build.cmakeinfo = nscfg;
+      build.dll_ext = std::regex(NS_DLL_EXT, std::regex_constants::icase);
       build.clean_install();
       break;
     }

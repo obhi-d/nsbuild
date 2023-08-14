@@ -120,6 +120,12 @@ ns_cmd_handler(compiler_name, build, state, cmd)
 
 ns_cmd_handler(timestamps, build, state, cmd) { return neo::retcode::e_success; }
 
+ns_cmd_handler(platform, build, state, cmd)
+{
+  build.s_nspreset->platform = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(unity_build, build, state, cmd)
 {
   build.s_nspreset->unity_build = to_bool(get_idx_param(cmd, 0));
@@ -836,6 +842,7 @@ ns_registry(nsbuild)
     ns_cmd(unity_build);
     ns_cmd(naming);
     ns_cmd(tag);
+    ns_cmd(platform);
     ns_scope_def(config)
     {
       ns_cmd(compiler_flags);
