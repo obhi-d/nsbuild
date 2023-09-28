@@ -1,18 +1,18 @@
 
 #pragma once
 
-#include <cstdint>
-#include <type_traits>
-#include <initializer_list>
-#include <compare>
-#include <bit>
 #include "BuildConfig.hpp"
 
-namespace @default_namespace_name@ // namespace
-{
+#include <bit>
+#include <compare>
+#include <cstdint>
+#include <initializer_list>
+#include <type_traits>
 
-template <typename T>
-concept EnumType = std::is_enum_v<T>;
+namespace @default_namespace_name @ // namespace
+    {
+
+        template <typename T> concept EnumType = std::is_enum_v<T>;
 
 //! Use this class only and only when you want to convert an Enum into flags
 //! If the enum already has flag bits representation, use
@@ -105,8 +105,8 @@ public:
   }
   inline constexpr EnumFlags operator|(EnumFlags iValue) const noexcept { return (EnumFlags)(value | iValue.value); }
   inline constexpr EnumFlags operator&(EnumFlags iValue) const noexcept { return (EnumFlags)(value & iValue.value); }
-  inline constexpr EnumFlags operator~() const noexcept {return (EnumFlags)(~value); }
-  inline constexpr           operator bool() const noexcept { return value != 0; }
+  inline constexpr EnumFlags operator~() const noexcept { return (EnumFlags)(~value); }
+  inline constexpr operator bool() const noexcept { return value != 0; }
   template <typename Enum2>
   inline constexpr bool operator()(Enum2 iValue) const noexcept
   {
@@ -159,37 +159,36 @@ private:
 };
 
 #define DECLARE_MASK_FLAGS(EnumClass)                                                                                  \
-  inline EnumClass operator|(EnumClass lhs, EnumClass rhs)                                                             \
+  inline constexpr EnumClass operator|(EnumClass lhs, EnumClass rhs)                                                   \
   {                                                                                                                    \
     using T = std::underlying_type_t<EnumClass>;                                                                       \
     return static_cast<EnumClass>(static_cast<T>(lhs) | static_cast<T>(rhs));                                          \
   }                                                                                                                    \
-  inline EnumClass& operator|=(EnumClass& lhs, EnumClass rhs)                                                          \
+  inline EnumClass& operator|=(EnumClass& lhs, EnumClass rhs)                                                \
   {                                                                                                                    \
     lhs = lhs | rhs;                                                                                                   \
     return lhs;                                                                                                        \
   }                                                                                                                    \
-  inline EnumClass operator~(EnumClass lhs)                                                                            \
+  inline constexpr EnumClass operator~(EnumClass lhs)                                                                  \
   {                                                                                                                    \
     using T = std::underlying_type_t<EnumClass>;                                                                       \
     return static_cast<EnumClass>(~static_cast<T>(lhs));                                                               \
   }                                                                                                                    \
-  inline EnumClass operator&(EnumClass lhs, EnumClass rhs)                                                             \
+  inline constexpr EnumClass operator&(EnumClass lhs, EnumClass rhs)                                                   \
   {                                                                                                                    \
     using T = std::underlying_type_t<EnumClass>;                                                                       \
     return static_cast<EnumClass>(static_cast<T>(lhs) & static_cast<T>(rhs));                                          \
   }                                                                                                                    \
-  inline auto operator&=(EnumClass& lhs, EnumClass rhs)                                                                \
+  inline auto operator&=(EnumClass& lhs, EnumClass rhs)                                                      \
   {                                                                                                                    \
     lhs = lhs & rhs;                                                                                                   \
     return lhs;                                                                                                        \
   }                                                                                                                    \
-  inline bool operator!(EnumClass lhs)                                                                                 \
+  inline constexpr bool operator!(EnumClass lhs)                                                                       \
   {                                                                                                                    \
     using T = std::underlying_type_t<EnumClass>;                                                                       \
     return static_cast<T>(lhs) == 0;                                                                                   \
-  }                                                                                                                    \
-  
+  }
 
 template <int i, typename Int = std::uint32_t>
 constexpr static inline Int defineFlag(Int v)
@@ -199,9 +198,9 @@ constexpr static inline Int defineFlag(Int v)
 
 #define DEFINE_FLAG(Flag, Value) inline static constexpr auto BC_TOKEN_PASTE(f, Flag) = defineFlag(Value)
 
-// Prefer enum flags 
-#define DECLARE_SCOPED_MASK_FLAGS(Scope, Type)       \
-   DECLARE_MASK_FLAGS(Scope::Type)                   \
-   using BC_TOKEN_PASTE(Scope, Flags) = Scope::Type 
+// Prefer enum flags
+#define DECLARE_SCOPED_MASK_FLAGS(Scope, Type)                                                                         \
+  DECLARE_MASK_FLAGS(Scope::Type)                                                                                      \
+  using BC_TOKEN_PASTE(Scope, Flags) = Scope::Type
 
 } // @default_namespace_name@
