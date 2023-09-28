@@ -32,7 +32,7 @@
       "type": "launch",
       "command": "${env.COMSPEC}",
       "args": [
-        "vcvarsall.bat && python build.py"
+        "build.bat"
       ]
     }
   ]
