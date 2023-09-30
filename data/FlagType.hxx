@@ -9,10 +9,12 @@
 #include <initializer_list>
 #include <type_traits>
 
-namespace @default_namespace_name @ // namespace
-    {
+// clang-format off
+namespace @default_namespace_name@ // namespace
+{
+// clang-format on
 
-        template <typename T> concept EnumType = std::is_enum_v<T>;
+template <typename T> concept EnumType = std::is_enum_v<T>;
 
 //! Use this class only and only when you want to convert an Enum into flags
 //! If the enum already has flag bits representation, use
@@ -203,4 +205,4 @@ constexpr static inline Int defineFlag(Int v)
   DECLARE_MASK_FLAGS(Scope::Type)                                                                                      \
   using BC_TOKEN_PASTE(Scope, Flags) = Scope::Type
 
-} // @default_namespace_name@
+} // namespace @default_namespace_name@
