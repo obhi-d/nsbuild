@@ -206,7 +206,12 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_CONFIG_HEADER",
                                                               fmt::format("\"{}ModuleConfig.hpp\"", name));
 
-  if (!bc.s_current_preset->static_libs)
+  if (type == nsmodule_type::plugin && !bc.s_current_preset->static_plugins)
+  {
+    intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_SHARED_LIBS", "1");
+  }
+
+  if (!bc.s_current_preset->static_libs && type != nsmodule_type::plugin)
   {
     intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_SHARED_LIBS", "1");
   }
@@ -625,7 +630,10 @@ void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string co
       ofs << fmt::format("\nadd_library({} SHARED ${{__module_sources}})", name);
     break;
   case nsmodule_type::plugin:
-    ofs << fmt::format("\nadd_library({} MODULE ${{__module_sources}})", name);
+    if (bc.s_current_preset->static_plugins)
+      ofs << fmt::format("\nadd_library({} STATIC ${{__module_sources}})", name);
+    else
+      ofs << fmt::format("\nadd_library({} MODULE ${{__module_sources}})", name);
     break;
   case nsmodule_type::test:
     ofs << fmt::format("\nadd_executable({} {} ${{__module_sources}} ${{__natvis_file}})", name,

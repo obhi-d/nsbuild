@@ -138,6 +138,12 @@ ns_cmd_handler(static_libs, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(static_plugins, build, state, cmd)
+{
+  build.s_nspreset->static_plugins = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(cppcheck, build, state, cmd)
 {
   build.s_nspreset->cppcheck = to_bool(get_idx_param(cmd, 0));
@@ -851,6 +857,7 @@ ns_registry(nsbuild)
     ns_cmd(define);
     ns_cmd(build_type);
     ns_cmd(static_libs);
+    ns_cmd(static_plugins);
   }
 
   ns_cmd(excludes);
