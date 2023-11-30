@@ -35,8 +35,6 @@ struct nsbuild : public neo::command_handler
   // path relative to scan
   std::string frameworks_dir = "Frameworks";
   // path relative to runtime
-  std::string manifests_dir = "media/Plugins";
-  // path relative to runtime
   std::string plugin_dir = "media/Plugins/bin";
   // Media name
   std::string media_name = "media";

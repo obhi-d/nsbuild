@@ -231,18 +231,6 @@ struct nsfilecopy
   bool                     is_dir_copy = false;
 };
 
-struct nsplugin_manifest
-{
-  std::string_view                                           desc;
-  std::string_view                                           company;
-  std::string_view                                           author;
-  std::string_view                                           type;
-  std::string_view                                           compatibility;
-  std::string_view                                           context;
-  std::string_view                                           optional;
-  std::vector<std::pair<std::string_view, std::string_view>> services;
-};
-
 using string_map   = std::unordered_map<std::string, std::string>;
 using stringv_map  = std::unordered_map<std::string_view, std::string_view>;
 using nameval_list = std::vector<std::pair<std::string, std::string>>;

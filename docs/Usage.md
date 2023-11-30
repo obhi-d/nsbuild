@@ -67,6 +67,7 @@ Purpose of each file/directory is described hereunder.
   - ``allow``                : [avx, debug, windows];
   - ``disallow``             : [release];
   - ``static_libs``          : true;
+  - ``static_plugins``       : true;
   - ``cppcheck``             : false;
   - ``unity_build``          : true; 
   - ``cppcheck_suppression`` : "cppcheck_ignore.txt";
@@ -134,6 +135,7 @@ Module ns can inject cmake code using a `{{cmake:prepare}}` and `{{cmake:finaliz
 - `var` : prefixed `var`
     - *name* : *value*
 - `references`
+- `required_plugins` :  List of plugins the exe should embed in static build. Only used in executables.
 - `prebuild`, `postbuild`
   - `artifacts`
   - `dependencies`

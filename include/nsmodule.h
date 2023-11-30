@@ -65,6 +65,7 @@ struct nsmodule
   std::uint32_t          framework;
 
   std::vector<std::string> references;
+  std::vector<std::string> required_plugins;
 
   std::vector<std::string>      source_sub_dirs;
   std::vector<std::string>      source_files;
@@ -88,8 +89,6 @@ struct nsmodule
   std::string target_name;
   std::string source_path;
   std::string gen_path;
-
-  nsplugin_manifest manifest;
 
   bool regenerate   = false;
   bool force_build  = false;
@@ -146,7 +145,6 @@ struct nsmodule
   void update_properties(nsbuild const& bc, std::string const& targ_name, nstarget& targ);
   void update_macros(nsbuild const& bc, std::string const& targ_name, nstarget& targ);
   void update_fetch(nsbuild const& bc);
-  void generate_plugin_manifest(nsbuild const& bc);
   void gather_sources(nsglob& glob, nsbuild const& bc) const;
   void check_enums(nsbuild const& bc) const;
 
@@ -192,6 +190,7 @@ struct nsmodule
   void write_target_link_libs(std::ostream& ofs, std::string_view target, cmake::inheritance,
                               std::string_view filter) const;
   void write_refs_dependencies(std::ostream& ofs, nsbuild const& bc, nsmodule const& target) const;
+  void write_plugin_dependencies(std::ostream& ofs, nsbuild const& bc) const;
 
   void write_linklibs(std::ostream& ofs, nsbuild const& bc) const;
   void write_linklibs_begin(std::ostream& ofs, nsbuild const& bc) const;

@@ -69,7 +69,6 @@ void nsmodule::process(nsbuild const& bc, std::string const& targ_name, nstarget
     return;
   update_macros(bc, targ_name, targ);
   update_fetch(bc);
-  generate_plugin_manifest(bc);
 }
 
 void nsmodule::check_enums(nsbuild const& bc) const
@@ -174,7 +173,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     step.name = "copy content";
     step.artifacts.push_back(contents[c].name);
     step.dependencies.push_back(fmt::format("${{module_gen_dir}}/c{0}.txt", c));
-    cmd.msgs.push_back(fmt::format("Copying plugin manifest for {}", name));
+    cmd.msgs.push_back(fmt::format("Copying contents for {}", name));
     cmd.command = "${CMAKE_COMMAND}";
     cmd.params  = fmt::format("-E copy_if_different \"${{module_gen_dir}}/c{0}.txt\" \"{1}\" ", c, contents[c].name);
     step.steps.push_back(cmd);
@@ -344,8 +343,6 @@ void nsmodule::update_fetch(nsbuild const& bc)
   std::error_code ec;
   fetch_content(bc);
 }
-
-void nsmodule::generate_plugin_manifest(nsbuild const& bc) {}
 
 void nsmodule::backup_fetch_lists(nsbuild const& bc) const
 {
@@ -966,6 +963,8 @@ void nsmodule::write_dependencies_mod(std::ostream& ofs, nsbuild const& bc) cons
   write_dependencies(ofs, bc, pub_intf);
   write_dependencies(ofs, bc, priv_intf);
   write_refs_dependencies(ofs, bc, *this);
+  if (bc.s_current_preset->static_plugins && type == nsmodule_type::exe)
+    write_plugin_dependencies(ofs, bc);
 }
 
 void nsmodule::write_dependencies_end(std::ostream& ofs, nsbuild const& bc) const { ofs << cmake::k_write_dependency; }
@@ -1002,6 +1001,15 @@ void nsmodule::write_target_link_libs(std::ostream& ofs, std::string_view target
   ofs << fmt::format("\nlist(APPEND {} {})",
                      inh == cmake::inheritance::pub ? "__module_pub_link_libs" : "__module_priv_link_libs",
                      filter.empty() ? std::string{target} : fmt::format("$<{}:{}>", filter, target));
+}
+
+void nsmodule::write_plugin_dependencies(std::ostream& ofs, nsbuild const& bc) const
+{
+  for (auto const& r : required_plugins)
+  {
+    auto const& mod = bc.get_module(r);
+    write_dependency(ofs, mod.target_name, cmake::inheritance::priv, "");
+  }
 }
 
 void nsmodule::write_refs_dependencies(std::ostream& ofs, nsbuild const& bc, nsmodule const& target) const
@@ -1169,8 +1177,9 @@ void nsmodule::write_runtime_settings(std::ostream& ofs, nsbuild const& bc) cons
     break;
   case nsmodule_type::plugin:
     cmake::line(ofs, "runtime-settings");
-    ofs << "\nset_target_properties(${module_target} PROPERTIES "
-        << fmt::format(cmake::k_plugin_locations, bc.plugin_dir) << ")";
+    if (!bc.s_current_preset->static_plugins)
+      ofs << "\nset_target_properties(${module_target} PROPERTIES "
+          << fmt::format(cmake::k_plugin_locations, bc.plugin_dir) << ")";
     break;
   default:
     return;

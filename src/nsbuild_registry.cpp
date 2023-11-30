@@ -614,6 +614,14 @@ ns_cmd_handler(dependencies, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(required_plugins, build, state, cmd)
+{
+  auto l = get_first_list(cmd);
+  if (build.s_nsmodule)
+    build.s_nsmodule->required_plugins = std::move(l);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(references, build, state, cmd)
 {
   auto l = get_first_list(cmd);
@@ -641,8 +649,6 @@ ns_cmd_handler(description, build, state, cmd)
 {
   if (build.s_nspreset)
     build.s_nspreset->desc = get_idx_param(cmd, 0);
-  else if (build.s_nsmodule)
-    build.s_nsmodule->manifest.desc = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -657,48 +663,6 @@ ns_cmd_handler(disallow, build, state, cmd)
 {
   if (build.s_nspreset)
     build.s_nspreset->disallowed_filters = get_first_list(cmd);
-  return neo::retcode::e_success;
-}
-
-ns_cmd_handler(company, build, state, cmd)
-{
-  build.s_nsmodule->manifest.company = get_idx_param(cmd, 0);
-  return neo::retcode::e_success;
-}
-
-ns_cmd_handler(author, build, state, cmd)
-{
-  build.s_nsmodule->manifest.author = get_idx_param(cmd, 0);
-  return neo::retcode::e_success;
-}
-
-ns_cmd_handler(type_id, build, state, cmd)
-{
-  build.s_nsmodule->manifest.type = get_idx_param(cmd, 0);
-  return neo::retcode::e_success;
-}
-
-ns_cmd_handler(compatibility, build, state, cmd)
-{
-  build.s_nsmodule->manifest.compatibility = get_idx_param(cmd, 0);
-  return neo::retcode::e_success;
-}
-
-ns_cmd_handler(context, build, state, cmd)
-{
-  build.s_nsmodule->manifest.context = get_idx_param(cmd, 0);
-  return neo::retcode::e_success;
-}
-
-ns_cmd_handler(optional, build, state, cmd)
-{
-  build.s_nsmodule->manifest.optional = get_idx_param(cmd, 0);
-  return neo::retcode::e_success;
-}
-
-ns_cmd_handler(service, build, state, cmd)
-{
-  build.s_nsmodule->manifest.services.emplace_back(get_idx_param(cmd, 0), get_idx_param(cmd, 1));
   return neo::retcode::e_success;
 }
 
@@ -877,6 +841,7 @@ ns_registry(nsbuild)
   }
 
   ns_cmd(references);
+  ns_cmd(required_plugins);
 
   ns_scope_cust(prebuild, clear_buildstep)
   {
@@ -929,18 +894,6 @@ ns_registry(nsbuild)
     ns_cmd(dependencies);
     ns_cmd(libraries);
     ns_cmd(define);
-  }
-
-  ns_scope_def(plugin)
-  {
-    ns_cmd(description);
-    ns_cmd(company);
-    ns_cmd(author);
-    ns_cmd(type_id);
-    ns_cmd(compatibility);
-    ns_cmd(context);
-    ns_cmd(optional);
-    ns_cmd(service);
   }
 
   ns_subalias_cust(private, clear_interface, intf);
