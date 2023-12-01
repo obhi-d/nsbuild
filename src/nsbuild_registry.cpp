@@ -719,7 +719,8 @@ ns_cmd_handler(test_name, build, state, cmd)
     fmt::format_to(std::back_inserter(test.name), ".{}", build.s_nstestClass);
   if (pushTestName)
     fmt::format_to(std::back_inserter(test.name), ".{}", name);
-  test.tags = build.s_nstestNamespaceTags;
+  test.test_param_name = fmt::format("{}.{}.{}", build.s_nstestNamespace, build.s_nstestClass, name);
+  test.tags            = build.s_nstestNamespaceTags;
   if (!build.s_nstestClassTags.empty())
   {
     if (!test.tags.empty())
