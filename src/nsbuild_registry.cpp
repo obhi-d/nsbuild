@@ -706,9 +706,20 @@ ns_cmd_handler(test_name, build, state, cmd)
 {
   build.s_nsmodule->tests.emplace_back();
 
-  nstest& test = build.s_nsmodule->tests.back();
-  test.name    = fmt::format("{}.{}.{}", build.s_nstestNamespace, build.s_nstestClass, get_idx_param(cmd, 0));
-  test.tags    = build.s_nstestNamespaceTags;
+  nstest&          test              = build.s_nsmodule->tests.back();
+  auto             name              = get_idx_param(cmd, 0);
+  std::string_view testName          = name == "default" ? "" : name;
+  bool             pushTestName      = name != "default";
+  bool             pushClassName     = build.s_nstestClass != "any" || pushTestName;
+  bool             pushNamespaceName = build.s_nstestNamespace != "any" || pushClassName;
+  test.name                          = build.s_nsmodule->name;
+  if (pushNamespaceName)
+    fmt::format_to(std::back_inserter(test.name), ".{}", build.s_nstestNamespace);
+  if (pushClassName)
+    fmt::format_to(std::back_inserter(test.name), ".{}", build.s_nstestClass);
+  if (pushTestName)
+    fmt::format_to(std::back_inserter(test.name), ".{}", name);
+  test.tags = build.s_nstestNamespaceTags;
   if (!build.s_nstestClassTags.empty())
   {
     if (!test.tags.empty())
