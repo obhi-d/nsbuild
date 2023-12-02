@@ -16,7 +16,7 @@ T* cmd_insert_with_filter(std::vector<T>& v, nsbuild const& build, neo::command 
     v.emplace_back();
     v.back().filters = filters.value();
   }
-  
+
   v.emplace_back();
   return &v.back();
 }
@@ -80,15 +80,9 @@ nspath cmd_parse_nspath(nspath_type default_type, neo::command const& cmd)
   return p;
 }
 
-void cmd_print(nsbuildcmds& list, neo::command const& cmd)
-{
-  list.msgs.emplace_back(cmake::value(cmd.params(), ' '));
-}
+void cmd_print(nsbuildcmds& list, neo::command const& cmd) { list.msgs.emplace_back(cmake::value(cmd.params(), ' ')); }
 
-void cmd_trace(nsbuildcmds& list, neo::command const& cmd)
-{
-  list.msgs.emplace_back(cmake::value(cmd.params(), ' '));
-}
+void cmd_trace(nsbuildcmds& list, neo::command const& cmd) { list.msgs.emplace_back(cmake::value(cmd.params(), ' ')); }
 
 void cmd_cmake(nsbuildcmds& list, neo::command const& cmd)
 {
@@ -107,6 +101,16 @@ void cmd_copy_dir(nsbuildcmds& list, neo::command const& cmd)
 {
   list.command = "${CMAKE_COMMAND}";
   list.params  = " -E copy_directory ";
+  list.params += cmake::value(cmd.params(), ' ');
+}
+
+void cmd_python(nsbuildcmds& list, neo::command const& cmd)
+{
+#ifdef _WIN64
+  list.command = "python";
+#else
+  list.command = "python3";
+#endif
   list.params += cmake::value(cmd.params(), ' ');
 }
 

@@ -442,6 +442,12 @@ ns_cmd_handler(copy_dir, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(python, build, state, cmd)
+{
+  cmd_python(*build.s_nsbuildcmds, cmd);
+  return neo::retcode::e_success;
+}
+
 ns_star_handler(any, build, state, cmd)
 {
   cmd_any(*build.s_nsbuildcmds, cmd);
@@ -868,6 +874,7 @@ ns_registry(nsbuild)
       ns_cmd(cmake);
       ns_cmd(copy);
       ns_cmd(copy_dir);
+      ns_cmd(python);
       ns_star(any);
     }
   }
