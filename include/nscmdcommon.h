@@ -106,11 +106,7 @@ void cmd_copy_dir(nsbuildcmds& list, neo::command const& cmd)
 
 void cmd_python(nsbuildcmds& list, neo::command const& cmd)
 {
-#ifdef _WIN64
-  list.command = "python";
-#else
-  list.command = "python3";
-#endif
+  list.command = "${Python_EXECUTABLE}";
   list.params += cmake::value(cmd.params(), ' ');
 }
 

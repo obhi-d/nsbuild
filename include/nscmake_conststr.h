@@ -18,6 +18,8 @@ set(__nsbuild_app_options)
 set(__nsbuild_console_app_options)
 set(__nsbuild_root ${{CMAKE_CURRENT_LIST_DIR}})
 
+find_package(Python REQUIRED COMPONENTS Interpreter)
+
 if (NOT DEFINED nsplatform)
 
   set(nsplatform)
