@@ -158,7 +158,6 @@ ns_cmd_handler(cppcheck_suppression, build, state, cmd)
 
 ns_star_handler(timestamps, build, state, cmd)
 {
-  build.meta.sha[std::string{cmd.name()}] = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 

@@ -140,6 +140,8 @@ struct nsbuild : public neo::command_handler
   void write_install_configs(std::ofstream&) const;
   void delete_builds_if_required();
   void header_map(std::filesystem::path);
+  bool read_sha(std::string_view name, std::string const& current) const;
+  void write_sha(std::string_view name, std::string const& current) const; 
 
   std::string gather_module_hash(std::filesystem::path const&);
 

@@ -208,6 +208,27 @@ void nsbuild::header_map(std::filesystem::path targ_file)
   }
 }
 
+bool nsbuild::read_sha(std::string_view name, std::string const& current) const
+{
+  std::ifstream sha_file(get_full_cache_dir() / fmt::format("{}.sha", name));
+  if (sha_file.is_open())
+  {
+    std::string sha;
+    std::getline(sha_file, sha);
+    return sha == current;
+  }
+  return false;
+}
+
+void nsbuild::write_sha(std::string_view name, std::string const& current) const
+{
+  std::ofstream sha_file(get_full_cache_dir() / fmt::format("{}.sha", name));
+  if (sha_file.is_open())
+  {
+    sha_file << current << std::endl;
+  }
+}
+
 void nsbuild::read_meta(std::filesystem::path const& path)
 {
   if (!scan_file(path / "compiler.ns", false))
@@ -219,17 +240,7 @@ void nsbuild::read_meta(std::filesystem::path const& path)
     return;
   }
 
-  if (!scan_file(path / "module_info.ns", false))
-  {
-    nslog::print("Meta info file was missing! Will regenerate!");
-    state.meta_missing    = true;
-    state.is_dirty        = true;
-    state.full_regenerate = true;
-    return;
-  }
-
-  auto it        = meta.sha.find("main_build");
-  state.is_dirty = (it != meta.sha.end()) && (it->second != build_ns_sha);
+  state.is_dirty = !read_sha("main_build", build_ns_sha);
 
   if (meta.compiler_version != cmakeinfo.cmake_cppcompiler_version)
   {
@@ -263,7 +274,6 @@ void nsbuild::act_meta()
       }
     }
   }
-  meta.ordered_sha.emplace_back(fmt::format("\n  main_build : \"{}\";", build_ns_sha));
 }
 
 void nsbuild::write_meta(std::filesystem::path const& path)
@@ -278,15 +288,8 @@ void nsbuild::write_meta(std::filesystem::path const& path)
         << fmt::format("\n compiler_name \"{}\";", cmakeinfo.cmake_cppcompiler);
     ofs << "\n}";
   }
-  {
-    std::ofstream ofs{path / "module_info.ns"};
-    ofs << "meta {\n timestamps {";
-    for (auto& t : meta.ordered_sha)
-    {
-      ofs << t; // fmt::format("\n  {} : \"{}\";", t.first, t.second);
-    }
-    ofs << "\n }\n}";
-  }
+
+  write_sha("main_build", build_ns_sha);
 }
 
 void nsbuild::scan_main(std::filesystem::path sp)
@@ -322,15 +325,13 @@ void nsbuild::read_module(std::filesystem::path sp)
     scan_file(sp / "Module.ns", true, nullptr);
     hash_hex_str = gather_module_hash(sp);
     // Check if timestamp has changed
-    auto ts = meta.sha.find(targ_name);
-    if (ts == meta.sha.end() || ts->second != hash_hex_str || state.full_regenerate)
+    s_nsmodule->set_sha(hash_hex_str);
+    if (!read_sha(mod_name, hash_hex_str) || state.full_regenerate)
     {
       nslog::warn(fmt::format("{} has changed. Regenerating!", targ_name));
 
       s_nsmodule->should_regenerate();
-
       state.is_dirty      = true;
-      meta.sha[targ_name] = hash_hex_str;
     }
     // Add a target
     auto t                  = targets.emplace(targ_name, nstarget{});
@@ -442,7 +443,6 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
     state.exit_and_rebuild = true;
   if (mod.has_globs_changed)
     state.is_dirty = true;
-  meta.ordered_sha.emplace_back(fmt::format("\n  {} : \"{}\"; ", name, targ.sha256));
 }
 
 void nsbuild::copy_installed_binaries()
@@ -454,7 +454,9 @@ void nsbuild::copy_installed_binaries()
     namespace fs = std::filesystem;
 
     auto       top_path     = get_full_sdk_dir() / l;
-    auto       it           = fs::recursive_directory_iterator{get_full_sdk_dir() / l};
+    if (!std::filesystem::exists(top_path))
+      continue;
+    auto       it           = fs::recursive_directory_iterator{top_path};
     const auto copy_options = fs::copy_options::update_existing;
     for (auto const& dir_entry : it)
     {

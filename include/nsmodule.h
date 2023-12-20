@@ -90,6 +90,7 @@ struct nsmodule
   std::string target_name;
   std::string source_path;
   std::string gen_path;
+  std::string sha;
 
   bool regenerate   = false;
   bool force_build  = false;
@@ -97,6 +98,7 @@ struct nsmodule
   bool disabled     = false;
   bool direct_build = false;
   bool deleted      = false;
+  bool sha_written  = false;
 
   // .. Options
   bool console_app       = false;
@@ -130,7 +132,15 @@ struct nsmodule
     }
   }
 
-  inline void should_regenerate() { regenerate = true; }
+  inline void set_sha(std::string s) 
+  {
+    sha = std::move(s);
+  }
+
+  inline void should_regenerate() 
+  {
+     regenerate = true; 
+  }
 
   struct content
   {
@@ -148,6 +158,7 @@ struct nsmodule
   void update_fetch(nsbuild const& bc);
   void gather_sources(nsglob& glob, nsbuild const& bc) const;
   void check_enums(nsbuild const& bc) const;
+  void write_sha(nsbuild const& bc);
 
   content make_fetch_build_content(nsbuild const& bc) const;
   void    backup_fetch_lists(nsbuild const& bc) const;

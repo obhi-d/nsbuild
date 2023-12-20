@@ -128,6 +128,8 @@ endif()
 set(__natvis_file {2})
 if (MSVC AND __natvis_file)
   set(__natvis_file "${{__nsbuild_root}}/${{__natvis_file}}")
+else()
+  set(__natvis_file)
 endif()
 
 set(default_namespace_name "{3}")

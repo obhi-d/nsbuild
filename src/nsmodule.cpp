@@ -66,9 +66,14 @@ void nsmodule::process(nsbuild const& bc, std::string const& targ_name, nstarget
 {
   update_properties(bc, targ_name, targ);
   if (disabled)
+  {
+    write_sha(bc);
     return;
+  }
+    
   update_macros(bc, targ_name, targ);
   update_fetch(bc);
+  write_sha(bc);
 }
 
 void nsmodule::check_enums(nsbuild const& bc) const
@@ -1225,7 +1230,9 @@ void nsmodule::build_fetched_content(nsbuild const& bc)
         {
           if (bc.verbose)
             nslog::print(fmt::format("Copying : {}", name));
-          std::filesystem::copy(dir_entry.path(), bc.get_full_rt_dir() / "bin" / dir_entry.path().filename(),
+            auto path = bc.get_full_rt_dir() / "bin";
+          std::filesystem::create_directories(path);
+          std::filesystem::copy(dir_entry.path(), path / dir_entry.path().filename(),
                                 copy_options);
           continue;
         }
@@ -1285,9 +1292,19 @@ bool nsmodule::download(nsbuild const& bc)
     nsprocess::git_clone(bc, get_full_dl_dir(bc), fetch->repo, fetch->tag);
   else
     nsprocess::download(bc, get_full_dl_dir(bc), fetch->repo, fetch->source);
+  write_sha(bc);
   if (!deleted)
     delete_build(bc);
   return true;
+}
+
+void nsmodule::write_sha(nsbuild const& bc)
+{
+  if (!sha_written)
+  {
+    bc.write_sha(name, sha);
+    sha_written  = true;
+  }
 }
 
 bool nsmodule::sha_changed(nsbuild const& bc, std::string_view name, std::string_view isha) const
