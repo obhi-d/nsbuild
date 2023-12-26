@@ -1,0 +1,96 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "Enums.schema.json",
+  "title": "Enums.json schema file definition",
+  "description": "Defines the structure of Enums.json file",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "name": {
+        "type": "string",
+        "description": "Enum name, directly used as a scope for the class"
+      },
+      "type": {
+        "type": "string",
+        "description": "The integer type used for the enum definition"
+      },
+      "namespace": {
+        "type": "string",
+        "description": "The namespace under which the enum struct is declared. Multiple scopes are supported (for eg. abc::def)"
+      },
+      "usage": {
+        "type": "string",
+        "enum": [ "autoflags", "flags", "const" ],
+        "description": "Defines how the enum is used"
+      },
+      "associations": {
+        "type": "array",
+        "description": "An enum can be associated with other data, such that each enum can be used to fetch the data from a table. This array decalres the assocations.",
+        "items": {
+          "type": "object",
+          "properties": {
+            "prefix": {
+              "type": "string",
+              "description": "This prefix is added to the declaration of each element for this association."
+            },
+            "name": {
+              "type": "string",
+              "description": "This is the name of the associated field."
+            },
+            "type": {
+              "type": "string",
+              "description": "This type of the data field."
+            }
+          }
+        }
+      },
+      "options": {
+        "description": "Various options for generating an enum. `nostring/no-string` : No string table is generated. `custom-strings`: Second element of values tuple is treated as the assoicated string for the enum. `skip-last-element`: Counters and last flags are not added. `no-auto-default`: Does not assume a default value as a return type of a function. `suffix-match`/`prefix-match`: Functions are generated to match suffix/prefix.",
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [ "no-strings", "nostrings", "string-key", "custom-strings", "skip-last-element", "no-auto-default", "suffix-match", "prefix-match" ]
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [ "no-strings", "nostrings", "string-key", "custom-strings", "skip-last-element", "no-auto-default", "suffix-match", "prefix-match" ]
+            }
+          }
+        ]
+      },
+      "stringModifier": {
+        "description": "String modifiers are applied to the string generated or associated with the enum value",
+        "type": "string",
+        "enum": [ "lower", "upper", "lower-camel-case", "upper-camel-case", "camel-case", "snake-case" ]
+      },
+      "searchModifier": {
+        "description": "Search modifiers are applied to the string in the string to enum  conversion function",
+        "type": "string",
+        "enum": [ "lower", "upper" ]
+      },
+      "comment": {
+        "description": "Comment added before enum declaration",
+        "type": "string"
+      },
+      "default": {
+        "description": "The default enum value from the list of values",
+        "type": "string"
+      },
+      "include": {
+        "description": "File to include before enum declaration",
+        "type": "string"
+      },
+      "declarations": {
+        "description": "List of string declarations to include inside the enum struct scope",
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    }
+  }
+
+}

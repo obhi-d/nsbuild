@@ -547,6 +547,7 @@ void nsenum::write_header_alias(std::ostream& ofs) const
     ofs << fmt::format("\nusing {}Enum = {}::Enum;", name, enum_name());
   if (has_flags)
   {
+    ofs << fmt::format("\nusing {}Bit = {}::Bit;", name, enum_name());
     ofs << fmt::format("\nDECLARE_SCOPED_MASK_FLAGS({}, Bit);", name);
   }
 }
@@ -709,9 +710,11 @@ void nsenum::write_header_enum(std::ostream& ofs, bool write_value) const
   {
     if (print_comma)
       ofs << ",\n";
-    ofs << "    kCount";
+    ofs << "    eEnumCounter";
+    ofs << fmt::format("\n  }};\n  static constexpr {0} Count = Enum::eEnumCounter;\n", type);
   }
-  ofs << "\n  };\n";
+  else
+    ofs << "\n  };\n";
 }
 
 void nsenum::write_header_flags(std::ostream& ofs) const
@@ -745,13 +748,13 @@ void nsenum::write_header_auto_flags(std::ostream& ofs) const
     if (entry.flag_is_0)
       ofs << " = 0";
     else
-      ofs << fmt::format(" = {} << {}", one, entry.get_entry(nsenum_usage::as_enum));
+      ofs << fmt::format(" = {} << static_cast<utype>({})", one, entry.get_entry(nsenum_usage::as_enum));
   }
   if (!skip_last_element)
   {
     if (print_comma)
       ofs << ", ";
-    ofs << fmt::format("\n    fLastFlag = {} << kCount", one);
+    ofs << fmt::format("\n    fLastFlag = {} << static_cast<utype>(Enum::eEnumCounter)", one);
   }
   ofs << "\n  };\n";
 }
@@ -839,7 +842,7 @@ void nsenum::write_source_string_table(std::ostream& ofs) const
   auto from_string_key = stylize(ctx.style(), "FromStringKey");
   auto starts_with = stylize(ctx.style(), "StartsWith");
   auto ends_with   = stylize(ctx.style(), "EndsWith");
-  auto from_string = stylize(ctx.style(), "fromString");
+  auto from_string = stylize(ctx.style(), "FromString");
 
 
   auto const& enum_name      = name;
