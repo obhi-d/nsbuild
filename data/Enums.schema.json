@@ -24,7 +24,7 @@
           },
           "usage": {
             "type": "string",
-            "enum": [ "autoflags", "flags", "const" ],
+            "enum": [ "autoflags", "flags", "const", "enum" ],
             "description": "Defines how the enum is used"
           },
           "associations": {
