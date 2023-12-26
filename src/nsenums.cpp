@@ -159,11 +159,14 @@ void nsenum_context::parse(nsmodule const& m, nsbuild const& bc, std::string con
 {
   // if (mod_name == "Graphics")
   //   halt();
-  nlohmann::json js = nlohmann::json::parse(lenumsj);
+  nlohmann::json js     = nlohmann::json::parse(lenumsj);
+  auto           jenums = js.find("enums");
+  if (jenums == js.end())
+    return;
   includes.emplace("FlagType.hpp");
   includes.emplace("EnumStringHash.hpp");
   std::vector<nsenum> enums;
-  for (auto const& en : js)
+  for (auto const& en : jenums.value())
     enums.emplace_back(*this, en);
   f_export = exp ? f_prefix + "API" : "";
   for (auto const& in : incl)
