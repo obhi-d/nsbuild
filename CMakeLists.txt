@@ -90,6 +90,7 @@ add_executable(nsbuild
     ${CMAKE_CURRENT_SOURCE_DIR}/data/TopoHeaderMapEnd.html
     ${CMAKE_CURRENT_SOURCE_DIR}/data/d3-dag.iife.min.js
     ${CMAKE_CURRENT_SOURCE_DIR}/data/d3.v6.min.js
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/Enums.schema.json
 
     ${CMAKE_CURRENT_BINARY_DIR}
  )
