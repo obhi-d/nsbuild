@@ -92,6 +92,25 @@
             "items": {
               "type": "string"
             }
+          },
+          "values": {
+            "description": "Enumeration values",
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "description": "The enum value."
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "description": "Tuple of string values depending on options and associations."
+                  }
+                }
+              ]
+            }
           }
         }
       }
