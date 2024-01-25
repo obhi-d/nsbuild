@@ -141,6 +141,8 @@ void nsbuild::before_all()
       s_current_preset = &preset;
       break;
     }
+  if (s_current_preset->static_plugins)
+    nslog::print("Plugin modules will link statically");
   // At this point we have read config!
   compute_paths(cmakeinfo.cmake_preset_name);
   std::filesystem::create_directories(get_full_cache_dir());
@@ -331,7 +333,7 @@ void nsbuild::read_module(std::filesystem::path sp)
       nslog::warn(fmt::format("{} has changed. Regenerating!", targ_name));
 
       s_nsmodule->should_regenerate();
-      state.is_dirty      = true;
+      state.is_dirty = true;
     }
     // Add a target
     auto t                  = targets.emplace(targ_name, nstarget{});
@@ -453,7 +455,7 @@ void nsbuild::copy_installed_binaries()
   {
     namespace fs = std::filesystem;
 
-    auto       top_path     = get_full_sdk_dir() / l;
+    auto top_path = get_full_sdk_dir() / l;
     if (!std::filesystem::exists(top_path))
       continue;
     auto       it           = fs::recursive_directory_iterator{top_path};
