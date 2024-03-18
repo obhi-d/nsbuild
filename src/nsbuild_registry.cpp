@@ -66,12 +66,6 @@ ns_cmd_handler(verbose, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(glob_sources, build, state, cmd)
-{
-  build.glob_sources = to_bool(get_idx_param(cmd, 0));
-  return neo::retcode::e_success;
-}
-
 ns_cmd_handler(macro, build, state, cmd)
 {
   auto name                       = get_idx_param(cmd, 0);
@@ -123,6 +117,12 @@ ns_cmd_handler(timestamps, build, state, cmd) { return neo::retcode::e_success; 
 ns_cmd_handler(platform, build, state, cmd)
 {
   build.s_nspreset->platform = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(glob_sources, build, state, cmd)
+{
+  build.s_nspreset->glob_sources = to_bool(get_idx_param(cmd, 0));
   return neo::retcode::e_success;
 }
 
@@ -802,7 +802,6 @@ ns_registry(nsbuild)
   ns_cmd(file_prefix);
   ns_cmd(version);
   ns_cmd(verbose);
-  ns_cmd(glob_sources);
   ns_cmd(sdk_dir);
   ns_cmd(cmake_gen_dir);
   ns_cmd(frameworks_dir);
@@ -823,6 +822,7 @@ ns_registry(nsbuild)
     ns_cmd(display_name);
     ns_cmd(description);
     ns_cmd(allow);
+    ns_cmd(glob_sources);
     ns_cmd(disallow);
     ns_cmd(cppcheck);
     ns_cmd(cppcheck_suppression);

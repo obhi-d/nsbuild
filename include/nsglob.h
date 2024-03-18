@@ -18,7 +18,13 @@ struct nsglob
   std::string sha;
   bool        recurse = false;
 
-  inline void add_set(std::filesystem::path p) { sub_paths.emplace_back(std::filesystem::absolute(std::move(p))); }
+  inline void add_set(std::filesystem::path p)
+  {
+    std::error_code ec;
+    auto absp = std::filesystem::absolute(std::move(p), ec);
+    if (!ec)
+      sub_paths.emplace_back(std::move(absp));
+  }
 
   void print(std::ostream&, std::string_view) const;
   void print(std::ostream&, std::string_view as, std::string_view ctx, std::filesystem::path const& relative_to) const;

@@ -1,0 +1,12 @@
+{
+  "version": "0.2.1",
+  "tasks": [
+    {
+      "taskLabel": "NSBuild: Regenerate",
+      "appliesTo": "/",
+      "type": "launch",
+      "command": "${workspaceRoot}/../building/nsbuild",
+      "args": [ "--source", "${workspaceRoot}" ]
+    }
+  ]
+}

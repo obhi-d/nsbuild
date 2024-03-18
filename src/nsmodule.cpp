@@ -191,11 +191,13 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
 
   if (has_runtime(type))
   {
-    static std::unordered_set<std::string> cpp_filters = {".cpp"};
-    glob_sources.file_filters                          = &cpp_filters;
-    gather_sources(glob_sources, bc);
+    static std::unordered_set<std::string> filters     = {".cpp", ".hpp"};
 
-    if (!bc.glob_sources)
+    glob_sources.file_filters                          = &filters;
+    gather_sources(glob_sources, bc);
+    gather_headers(glob_sources, bc);
+
+    if (!bc.s_current_preset->glob_sources)
     {
       glob_sources.accumulate();
       if (has_globs_changed |= sha_changed(bc, "src", glob_media.sha))
@@ -592,14 +594,34 @@ void nsmodule::gather_sources(nsglob& glob, nsbuild const& bc) const
   }
 }
 
+void nsmodule::gather_headers(nsglob& glob, nsbuild const& bc) const
+{
+  auto sp = std::filesystem::path(source_path);
+  auto gp = std::filesystem::path(gen_path);
+  glob.add_set(sp / "public");
+  glob.add_set(sp / "private");
+  for (auto const sub : source_sub_dirs)
+  {
+    glob.add_set(sp / "public" / sub);
+    glob.add_set(sp / "private" / sub);
+  }
+  glob.add_set(gp);
+  glob.add_set(gp / "local");
+  for (auto const& r : references)
+  {
+    auto const& m = bc.get_module(r);
+    m.gather_headers(glob, bc);
+  }
+}
 void nsmodule::write_sources(std::ostream& ofs, nsbuild const& bc) const
 {
   if (has_runtime(type))
   {
-    if (bc.glob_sources)
+    if (bc.s_current_preset->glob_sources)
       glob_sources.print(ofs, "__module_sources");
     else
       glob_sources.print(ofs, "__module_sources", "${CMAKE_CURRENT_LIST_DIR}/", bc.get_full_cmake_gen_dir());
+    
   }
 }
 
@@ -726,35 +748,36 @@ void nsmodule::write_includes(std::ostream& ofs, nsbuild const& bc) const
     cmake::line(ofs, "includes");
     {
       ofs << "\nset(__module_headers)";
-      nsglob header_glob;
-
-      static std::unordered_set<std::string> hpp_filters = {".hpp"};
-      header_glob.file_filters                           = &hpp_filters;
-      header_glob.recurse                                = false;
-
-      write_include(ofs, header_glob, "${CMAKE_CURRENT_LIST_DIR}", "", cmake::inheritance::pub);
-      write_include(ofs, header_glob, "${module_dir}", "public", cmake::inheritance::pub);
-      write_include(ofs, header_glob, "${module_dir}", "private", cmake::inheritance::priv);
-      write_include(ofs, header_glob, "${module_dir}", "src", cmake::inheritance::priv);
-      write_include(ofs, header_glob, "${module_gen_dir}", "", cmake::inheritance::pub);
-      write_include(ofs, header_glob, "${module_gen_dir}", "local", cmake::inheritance::priv);
+      
+      //nsglob header_glob;
+      //
+      //static std::unordered_set<std::string> hpp_filters = {".hpp"};
+      //header_glob.file_filters                           = &hpp_filters;
+      //header_glob.recurse                                = false;
+    
+      write_include(ofs, /*header_glob, */ "${CMAKE_CURRENT_LIST_DIR}", "", cmake::inheritance::pub);
+      write_include(ofs, /*header_glob, */ "${module_dir}", "public", cmake::inheritance::pub);
+      write_include(ofs, /*header_glob, */ "${module_dir}", "private", cmake::inheritance::priv);
+      write_include(ofs, /*header_glob, */ "${module_dir}", "src", cmake::inheritance::priv);
+      write_include(ofs, /*header_glob, */ "${module_gen_dir}", "", cmake::inheritance::pub);
+      write_include(ofs, /*header_glob, */ "${module_gen_dir}", "local", cmake::inheritance::priv);
       for (auto const& s : source_sub_dirs)
-        write_include(ofs, header_glob, "${module_dir}", "src/" + s, cmake::inheritance::priv);
-      write_refs_includes(ofs, header_glob, bc, *this);
-
-      if (bc.glob_sources)
-      {
-        header_glob.print(ofs, "__module_headers");
-        ofs << "\ntarget_sources(${module_target} PRIVATE ${__module_headers})";
-        ofs << "\nunset(__module_headers)";
-      }
+        write_include(ofs, /*header_glob,*/  "${module_dir}", "src/" + s, cmake::inheritance::priv);
+      write_refs_includes(ofs, /*header_glob,*/ bc, *this);
+    
+      // if (bc.glob_sources)
+      // {
+      //   header_glob.print(ofs, "__module_headers");
+      //   ofs << "\ntarget_sources(${module_target} PRIVATE ${__module_headers})";
+      //   ofs << "\nunset(__module_headers)";
+      // }
     }
   default:
     break;
   }
 }
 
-void nsmodule::write_include(std::ostream& ofs, nsglob& glob, std::string_view path, std::string_view subpath,
+void nsmodule::write_include(std::ostream& ofs, /* nsglob& glob,*/ std::string_view path, std::string_view subpath,
                              cmake::inheritance inherit) const
 {
   // Assume build
@@ -768,24 +791,25 @@ void nsmodule::write_include(std::ostream& ofs, nsglob& glob, std::string_view p
   // if (expo == cmake::exposition::install)
   //  ofs << "\n\t\t$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}}>");
   ofs << "\n)\nendif()";
-  glob.sub_paths.push_back(fmt::format("{}/{}", path, subpath));
+  // glob.sub_paths.push_back(fmt::format("{}/{}", path, subpath));
 }
 
-void nsmodule::write_refs_includes(std::ostream& ofs, nsglob& glob, nsbuild const& bc, nsmodule const& target) const
+void nsmodule::write_refs_includes(std::ostream& ofs, /*  nsglob& glob,*/ nsbuild const& bc,
+                                   nsmodule const& target) const
 {
   for (auto const& r : references)
   {
     auto const& m = bc.get_module(r);
-    m.write_refs_includes(ofs, glob, bc, target);
-    target.write_include(ofs, glob, m.source_path, "public",
+    m.write_refs_includes(ofs, /* glob, */ bc, target);
+    target.write_include(ofs, /* glob, */ m.source_path, "public",
                          target.type == nsmodule_type::plugin ? cmake::inheritance::priv : cmake::inheritance::pub);
-    target.write_include(ofs, glob, m.source_path, "private", cmake::inheritance::priv);
-    target.write_include(ofs, glob, m.source_path, "src", cmake::inheritance::priv);
+    target.write_include(ofs, /* glob, */ m.source_path, "private", cmake::inheritance::priv);
+    target.write_include(ofs, /* glob, */  m.source_path, "src", cmake::inheritance::priv);
     for (auto const& s : m.source_sub_dirs)
-      target.write_include(ofs, glob, m.source_path, "src/" + s, cmake::inheritance::priv);
-    target.write_include(ofs, glob, m.gen_path, "",
+      target.write_include(ofs, /* glob, */ m.source_path, "src/" + s, cmake::inheritance::priv);
+    target.write_include(ofs, /* glob, */ m.gen_path, "",
                          target.type == nsmodule_type::plugin ? cmake::inheritance::priv : cmake::inheritance::pub);
-    target.write_include(ofs, glob, m.gen_path, "local", cmake::inheritance::priv);
+    target.write_include(ofs, /* glob, */ m.gen_path, "local", cmake::inheritance::priv);
   }
 }
 

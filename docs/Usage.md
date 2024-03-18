@@ -70,6 +70,7 @@ Purpose of each file/directory is described hereunder.
   - ``static_plugins``       : true;
   - ``cppcheck``             : false;
   - ``unity_build``          : true; 
+  - ``glob_sources``         : true;
   - ``cppcheck_suppression`` : "cppcheck_ignore.txt";
   - ``naming``               : "Lxe$(module_name)_avx";
   - ``define``               : L_EDITOR_BUILD 1;

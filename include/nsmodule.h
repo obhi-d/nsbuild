@@ -101,9 +101,10 @@ struct nsmodule
   bool sha_written  = false;
 
   // .. Options
-  bool console_app       = false;
-  bool was_fetch_rebuilt = false;
-  bool has_globs_changed = false;
+  bool console_app         = false;
+  bool was_fetch_rebuilt   = false;
+  bool has_globs_changed   = false;
+  bool has_headers_changed = false;
 
   nsmodule()                               = default;
   nsmodule(nsmodule&&) noexcept            = default;
@@ -157,6 +158,7 @@ struct nsmodule
   void update_macros(nsbuild const& bc, std::string const& targ_name, nstarget& targ);
   void update_fetch(nsbuild const& bc);
   void gather_sources(nsglob& glob, nsbuild const& bc) const;
+  void gather_headers(nsglob& glob, nsbuild const& bc) const;
   void check_enums(nsbuild const& bc) const;
   void write_sha(nsbuild const& bc);
 
@@ -181,9 +183,9 @@ struct nsmodule
   void write_cxx_options(std::ostream&, nsbuild const& bc) const;
 
   void write_includes(std::ostream&, nsbuild const& bc) const;
-  void write_include(std::ostream& ofs, nsglob& glob, std::string_view path, std::string_view subpath,
+  void write_include(std::ostream& ofs, /* nsglob& glob, */ std::string_view path, std::string_view subpath,
                      cmake::inheritance) const;
-  void write_refs_includes(std::ostream& ofs, nsglob& glob, nsbuild const& bc, nsmodule const& target) const;
+  void write_refs_includes(std::ostream& ofs, /* nsglob& glob,*/ nsbuild const& bc, nsmodule const& target) const;
   void write_find_package(std::ostream& ofs, nsbuild const& bc) const;
 
   void write_definitions(std::ostream&, nsbuild const& bc) const;
