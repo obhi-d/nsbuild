@@ -274,16 +274,16 @@ static inline constexpr char k_fetch_content[] = R"_(
 
 include(FetchContent)
 FetchContent_Declare(
-  ${fetch_extern_name}
-  GIT_REPOSITORY ${fetch_repo}
-  GIT_TAG ${fetch_commit}
+  ${{{}_extern_name}}
+  GIT_REPOSITORY ${{{}_repo}}
+  GIT_TAG ${{{}_commit}}
   GIT_SHALLOW 1
-  SOURCE_DIR ${fetch_src_dir}
-  SUBBUILD_DIR ${fetch_subbulid_dir}
-  BINARY_DIR ${fetch_bulid_dir}
+  SOURCE_DIR ${{{}_src_dir}}
+  SUBBUILD_DIR ${{{}_subbulid_dir}}
+  BINARY_DIR ${{{}_bulid_dir}}
  )
 
-FetchContent_MakeAvailable(${fetch_extern_name})
+FetchContent_MakeAvailable(${{{}_extern_name}})
 
 )_";
 

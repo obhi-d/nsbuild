@@ -5,6 +5,7 @@
 #include <nscommon.h>
 #include <nsfetch.h>
 #include <nsglob.h>
+#include <nsinstallers.h>
 #include <nsinterface.h>
 #include <nsmacros.h>
 
@@ -76,7 +77,7 @@ struct nsmodule
 
   std::array<nsinterface_list, 2> intf;
 
-  std::unique_ptr<nsfetch> fetch;
+  std::vector<nsfetch> fetch;
 
   std::string   tags;
   std::string   org_name;
@@ -133,15 +134,9 @@ struct nsmodule
     }
   }
 
-  inline void set_sha(std::string s) 
-  {
-    sha = std::move(s);
-  }
+  inline void set_sha(std::string s) { sha = std::move(s); }
 
-  inline void should_regenerate() 
-  {
-     regenerate = true; 
-  }
+  inline void should_regenerate() { regenerate = true; }
 
   struct content
   {
@@ -149,26 +144,27 @@ struct nsmodule
     std::string sha;
   };
 
+  nsfetch* find_fetch(std::string_view name);
+
   /// @brief Called in a thread to generate CMakeLists.txt
   /// @param bc Config
   /// @param name Name of this target
   /// @param targ Target object for reference
-  void process(nsbuild const& bc, std::string const& name, nstarget& targ);
+  void process(nsbuild const& bc, nsinstallers& installer, std::string const& name, nstarget& targ);
   void update_properties(nsbuild const& bc, std::string const& targ_name, nstarget& targ);
   void update_macros(nsbuild const& bc, std::string const& targ_name, nstarget& targ);
-  void update_fetch(nsbuild const& bc);
+  void update_fetch(nsbuild const& bc, nsinstallers& installer);
   void gather_sources(nsglob& glob, nsbuild const& bc) const;
   void gather_headers(nsglob& glob, nsbuild const& bc) const;
   void check_enums(nsbuild const& bc) const;
   void write_sha(nsbuild const& bc);
+  void write_sha(nsbuild const& bc, nsfetch const& fetch);
 
-  content make_fetch_build_content(nsbuild const& bc) const;
-  void    backup_fetch_lists(nsbuild const& bc) const;
-  void    write_fetch_build_content(nsbuild const& bc, content const&) const;
-  void    restore_fetch_lists(nsbuild const& bc) const;
-  void    fetch_content(nsbuild const& bc);
-  bool    fetch_changed(nsbuild const& bc, std::string const& last_sha) const;
-  void    write_fetch_meta(nsbuild const& bc, std::string const& last_sha) const;
+  content make_fetch_build_content(nsbuild const& bc, nsfetch const& ft) const;
+  void    write_fetch_build_content(nsbuild const& bc, nsfetch const& ft, content const&) const;
+  void    fetch_content(nsbuild const& bc, nsinstallers& installer, nsfetch& ft);
+  bool    fetch_changed(nsbuild const& bc, nsfetch const& ft, std::string const& last_sha) const;
+  void    write_fetch_meta(nsbuild const& bc, nsfetch const& ft, std::string const& last_sha) const;
   /// @brief Called to write the cmake file
   /// @param bc config
   void write_main_build(std::ostream&, nsbuild const& bc) const;
@@ -219,17 +215,21 @@ struct nsmodule
   void write_tests(std::ostream&, nsbuild const& bc) const;
   void write_runtime_settings(std::ostream&, nsbuild const& bc) const;
 
-  void build_fetched_content(nsbuild const& bc);
+  void build_fetched_content(nsbuild const& bc, nsinstallers& installer, nsfetch const& fetch);
   void delete_build(nsbuild const& bc);
-  bool download(nsbuild const& bc);
+  bool download(nsbuild const& bc, nsfetch& ft);
 
   bool sha_changed(nsbuild const& bc, std::string_view name, std::string_view sha) const;
   void write_sha_changed(nsbuild const& bc, std::string_view name, std::string_view sha) const;
 
+  bool restore_fetch_lists(nsbuild const& bc, nsfetch const& ft) const;
+  void backup_fetch_lists(nsbuild const& bc, nsfetch const& ft) const;
+
   std::filesystem::path get_full_bld_dir(nsbuild const& bc) const;
-  std::filesystem::path get_fetch_src_dir(nsbuild const& bc) const;
+  std::filesystem::path get_fetch_bld_dir(nsbuild const& bc, nsfetch const& nfc) const;
+  std::filesystem::path get_fetch_src_dir(nsbuild const& bc, nsfetch const& nfc) const;
   std::filesystem::path get_full_sdk_dir(nsbuild const& bc) const;
-  std::filesystem::path get_full_dl_dir(nsbuild const& bc) const;
+  std::filesystem::path get_full_dl_dir(nsbuild const& bc, nsfetch const& nfc) const;
   std::filesystem::path get_full_gen_dir(nsbuild const& bc) const;
-  std::filesystem::path get_full_fetch_file(nsbuild const& bc) const;
+  std::filesystem::path get_full_fetch_file(nsbuild const& bc, nsfetch const& nfc) const;
 };

@@ -58,32 +58,39 @@ template <typename... Args>
 std::vector<std::string> make_args(Args&&... args)
 {
   std::vector<std::string> result;
-  (result.emplace_back(std::forward<Args>(args)),...);
+  (result.emplace_back(std::forward<Args>(args)), ...);
   return result;
 }
 
-void download(nsbuild const& bc, std::filesystem::path const& dl, std::string_view const& repo, std::string_view name)
+bool download(nsbuild const& bc, std::filesystem::path const& dl, std::string_view const& repo, std::string_view name,
+              std::string_view version, bool force)
 {
+  auto zip =
+      name.empty() ? version.empty() ? "source.zip" : fmt::format("{}.zip", version) : fmt::format("{}.zip", name);
+  if (std::filesystem::exists(dl / zip) && (!name.empty() || !version.empty()) && !force)
+    return false;
+
+  if (!std::filesystem::exists(dl / zip) || name.empty())
 #ifdef _WIN64
-
-  powershell(
-      bc,
-      make_args(std::format("Invoke-RestMethod -URI {} -OutFile source.zip; Expand-Archive -Path source.zip -DestinationPath . -Force",
-                   repo)),
-      dl);
-
+    powershell(bc, make_args(std::format("Invoke-RestMethod -URI {} -OutFile {}", repo, zip)), dl);
 #else
-  execute("curl", bc, make_args("-L", "-o", "source.zip", repo), dl);
-  execute("unzip", bc, make_args("-o", "source.zip"), dl);
+    execute("curl", bc, make_args("-L", "-o", zip, repo), dl);
 #endif
   std::error_code ec;
   // remove source file and any existing directories
   auto dir = std::filesystem::directory_iterator(dl);
   for (auto const& d : dir)
   {
-    if (d.path().filename() != name)
+    if (d.path().filename() != zip)
       std::filesystem::remove_all(d.path(), ec);
   }
+
+#ifdef _WIN64
+  powershell(bc, make_args(std::format("Expand-Archive -Path {} -DestinationPath . -Force", zip)), dl);
+#else
+  execute("unzip", bc, make_args("-o", zip), dl);
+#endif
+  return true;
 }
 
 void git_clone(nsbuild const& bc, std::filesystem::path const& dl, std::string_view const& repo, std::string_view tag)
@@ -91,9 +98,7 @@ void git_clone(nsbuild const& bc, std::filesystem::path const& dl, std::string_v
   std::error_code ec;
   if (!std::filesystem::exists(dl) || std::filesystem::is_empty(dl, ec))
   {
-    git(bc,
-        make_args("clone", repo, "--recurse-submodules", "--shallow-submodules", "--branch", tag,
-         "--depth=1", "."),
+    git(bc, make_args("clone", repo, "--recurse-submodules", "--shallow-submodules", "--branch", tag, "--depth=1", "."),
         dl);
   }
   else

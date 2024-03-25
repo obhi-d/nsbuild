@@ -4,6 +4,7 @@
 #include <nscmakeinfo.h>
 #include <nscommon.h>
 #include <nsframework.h>
+#include <nsinstallers.h>
 #include <nsmacros.h>
 #include <nsmodule.h>
 #include <nspreset.h>
@@ -47,9 +48,9 @@ struct nsbuild : public neo::command_handler
   std::string macro_prefix;
   std::string file_prefix;
 
-  bool verbose      = false;
-  bool cppcheck     = false;
-  
+  bool verbose  = false;
+  bool cppcheck = false;
+
   // Project name
   std::string project_name;
 
@@ -106,6 +107,9 @@ struct nsbuild : public neo::command_handler
   // Common file sha
   string_map common_files_sha;
 
+  // Install cache
+  nsinstallers install_cache;
+
   //--------------------------------------
   // Fn
   nsbuild();
@@ -140,7 +144,7 @@ struct nsbuild : public neo::command_handler
   void delete_builds_if_required();
   void header_map(std::filesystem::path);
   bool read_sha(std::string_view name, std::string const& current) const;
-  void write_sha(std::string_view name, std::string const& current) const; 
+  void write_sha(std::string_view name, std::string const& current) const;
 
   std::string gather_module_hash(std::filesystem::path const&);
 

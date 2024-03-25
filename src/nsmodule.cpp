@@ -12,6 +12,7 @@
 
 #include <exception>
 #include <fstream>
+#include <ranges>
 #include <sstream>
 
 bool has_data(nsmodule_type t)
@@ -62,7 +63,13 @@ bool has_headers(nsmodule_type t)
 
 bool is_executable(nsmodule_type t) { return t == nsmodule_type::exe || t == nsmodule_type::test; }
 
-void nsmodule::process(nsbuild const& bc, std::string const& targ_name, nstarget& targ)
+nsfetch* nsmodule::find_fetch(std::string_view name)
+{
+  auto it = std::ranges::find(fetch, name, &nsfetch::name);
+  return it != fetch.end() ? &(*it) : nullptr;
+}
+
+void nsmodule::process(nsbuild const& bc, nsinstallers& installer, std::string const& targ_name, nstarget& targ)
 {
   update_properties(bc, targ_name, targ);
   if (disabled)
@@ -70,9 +77,9 @@ void nsmodule::process(nsbuild const& bc, std::string const& targ_name, nstarget
     write_sha(bc);
     return;
   }
-    
+
   update_macros(bc, targ_name, targ);
-  update_fetch(bc);
+  update_fetch(bc, installer);
   write_sha(bc);
 }
 
@@ -191,9 +198,9 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
 
   if (has_runtime(type))
   {
-    static std::unordered_set<std::string> filters     = {".cpp", ".hpp"};
+    static std::unordered_set<std::string> filters = {".cpp", ".hpp"};
 
-    glob_sources.file_filters                          = &filters;
+    glob_sources.file_filters = &filters;
     gather_sources(glob_sources, bc);
     gather_headers(glob_sources, bc);
 
@@ -232,14 +239,6 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     intf[nsmodule::priv_intf].back().definitions.emplace_back("BC_IS_DEBUG_BUILD", "0");
   }
 
-  if (fetch)
-  {
-    if (fetch->extern_name.empty())
-      fetch->extern_name = fetch->package;
-    if (fetch->targets.empty())
-      fetch->targets = fetch->components;
-  }
-
   std::filesystem::create_directories(get_full_gen_dir(bc));
   std::filesystem::create_directories(get_full_gen_dir(bc) / "local");
 }
@@ -268,43 +267,46 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, ns
   else
     macros["module_extras"] = "";
 
-  if (fetch)
+  if (!fetch.empty())
   {
-    std::string components;
-    bool        first = true;
-    for (auto c : fetch->components)
+    for (auto& ft : fetch)
     {
-      if (!first)
-        components += ";";
-      first = false;
-      components += c;
+      std::string components;
+      bool        first = true;
+      for (auto c : ft.components)
+      {
+        if (!first)
+          components += ";";
+        first = false;
+        components += c;
+      }
+
+      std::filesystem::path tmp = bc.get_full_cfg_dir();
+      /// - dl/module contains sources
+      /// - bld/module/ts Timestamp directory
+      /// - bld/module/bld  Build directory
+      /// - bld/module/sdk Install directory
+      macros[fmt::format("{}_bulid_dir", ft.name)]   = cmake::path(get_fetch_bld_dir(bc, ft));
+      macros[fmt::format("{}_sdk_dir", ft.name)]     = cmake::path(get_full_sdk_dir(bc));
+      macros[fmt::format("{}_src_dir", ft.name)]     = cmake::path(get_fetch_src_dir(bc, ft));
+      macros[fmt::format("{}_package", ft.name)]     = ft.package;
+      macros[fmt::format("{}_namespace", ft.name)]   = ft.namespace_name;
+      macros[fmt::format("{}_repo", ft.name)]        = ft.repo;
+      macros[fmt::format("{}_commit", ft.name)]      = ft.tag;
+      macros[fmt::format("{}_components", ft.name)]  = components;
+      macros[fmt::format("{}_extern_name", ft.name)] = ft.extern_name;
+
+      // macros["fetch_ts_dir"]       = cmake::path(get_full_ts_dir(bc));
     }
-
-    std::filesystem::path tmp = bc.get_full_cfg_dir();
-    /// - dl/module contains sources
-    /// - bld/module/ts Timestamp directory
-    /// - bld/module/bld  Build directory
-    /// - bld/module/sdk Install directory
-    macros["fetch_bulid_dir"]   = cmake::path(get_full_bld_dir(bc));
-    macros["fetch_sdk_dir"]     = cmake::path(get_full_sdk_dir(bc));
-    macros["fetch_src_dir"]     = cmake::path(get_fetch_src_dir(bc));
-    macros["fetch_package"]     = fetch->package;
-    macros["fetch_namespace"]   = fetch->namespace_name;
-    macros["fetch_repo"]        = fetch->repo;
-    macros["fetch_commit"]      = fetch->tag;
-    macros["fetch_components"]  = components;
-    macros["fetch_extern_name"] = fetch->extern_name;
-
-    // macros["fetch_ts_dir"]       = cmake::path(get_full_ts_dir(bc));
-  }
-  if (!custom_target_name.empty())
-    target_name = custom_target_name;
-  else if (bc.has_naming())
-  {
-    std::ostringstream ss;
-    macros.im_print(ss, bc.naming());
-    target_name             = std::move(ss.str());
-    macros["module_target"] = target_name;
+    if (!custom_target_name.empty())
+      target_name = custom_target_name;
+    else if (bc.has_naming())
+    {
+      std::ostringstream ss;
+      macros.im_print(ss, bc.naming());
+      target_name             = std::move(ss.str());
+      macros["module_target"] = target_name;
+    }
   }
 }
 
@@ -313,71 +315,47 @@ void nsmodule::delete_build(nsbuild const& bc)
   if (deleted)
     return;
   std::error_code ec;
-  if (fetch)
-  {
-    nslog::print(fmt::format("Deleting Fetch : {}", name));
-    std::filesystem::remove(get_full_fetch_file(bc), ec);
-    nsbuild::remove_cache(get_full_dl_dir(bc));
-    nsbuild::remove_cache(get_full_bld_dir(bc));
-    if (std::filesystem::exists(get_full_bld_dir(bc) / "install_manifest.txt"))
-    {
-      std::ifstream install_manifest(get_full_bld_dir(bc) / "install_manifest.txt");
-      std::string   line;
 
-      if (install_manifest)
-      {
-        while (std::getline(install_manifest, line))
-        {
-          nslog::print(fmt::format("Deleting : {}", line));
-          std::filesystem::remove(line, ec);
-        }
-      }
-    }
+  for (auto const& ft : fetch)
+  {
+    auto fetch_bld = get_fetch_bld_dir(bc, ft);
+    nslog::print(fmt::format("Deleting Fetch : {}", ft.name));
+    std::filesystem::remove(get_full_fetch_file(bc, ft), ec);
+    nsbuild::remove_cache(get_full_dl_dir(bc, ft));
+    nsbuild::remove_cache(fetch_bld);
+    bc.install_cache.uninstall((fetch_bld / "install_manifest.txt").string());
   }
   regenerate  = true;
   force_build = true;
   deleted     = true;
 }
 
-void nsmodule::update_fetch(nsbuild const& bc)
+void nsmodule::update_fetch(nsbuild const& bc, nsinstallers& installer)
 {
-  if (!fetch)
+  if (fetch.empty())
     return;
-  auto dl = get_fetch_src_dir(bc);
-  if (!std::filesystem::exists(dl))
-    regenerate = true;
+  for (auto& ft : fetch)
+  {
+    if (ft.repo.empty())
+      continue;
+    auto dl = get_fetch_src_dir(bc, ft);
+    if (!std::filesystem::exists(dl))
+      ft.regenerate = true;
+    else
+      ft.regenerate = regenerate;
+  }
 
-  std::error_code ec;
-  fetch_content(bc);
+  for (auto& ft : fetch)
+  {
+    fetch_content(bc, installer, ft);
+  }
 }
 
-void nsmodule::backup_fetch_lists(nsbuild const& bc) const
-{
-  auto cmakelists   = get_fetch_src_dir(bc) / "CMakeLists.txt";
-  auto cmakepresets = get_fetch_src_dir(bc) / "CMakePresets.json";
-  namespace fs      = std::filesystem;
-  if (fs::exists(cmakelists))
-    fs::copy(cmakelists, get_fetch_src_dir(bc) / "CMakeLists.txt");
-  if (fs::exists(cmakepresets))
-    fs::copy(cmakepresets, get_fetch_src_dir(bc) / "CMakePresets.txt");
-}
-
-void nsmodule::restore_fetch_lists(nsbuild const& bc) const
-{
-  auto cmakelists   = get_full_gen_dir(bc) / "CMakeLists.txt";
-  auto cmakepresets = get_full_gen_dir(bc) / "CMakePresets.json";
-  namespace fs      = std::filesystem;
-  if (fs::exists(cmakelists))
-    fs::copy(cmakelists, get_fetch_src_dir(bc) / "CMakeLists.txt");
-  if (fs::exists(cmakepresets))
-    fs::copy(cmakepresets, get_fetch_src_dir(bc) / "CMakePresets.txt");
-}
-
-void nsmodule::write_fetch_build_content(nsbuild const& bc, content const& cc) const
+void nsmodule::write_fetch_build_content(nsbuild const& bc, nsfetch const& ft, content const& cc) const
 {
   // backup
-  auto cmakelists   = get_fetch_src_dir(bc) / "CMakeLists.txt";
-  auto cmakepresets = get_fetch_src_dir(bc) / "CMakePresets.json";
+  auto cmakelists   = get_fetch_src_dir(bc, ft) / "CMakeLists.txt";
+  auto cmakepresets = get_fetch_src_dir(bc, ft) / "CMakePresets.json";
 
   namespace fs = std::filesystem;
 
@@ -388,11 +366,13 @@ void nsmodule::write_fetch_build_content(nsbuild const& bc, content const& cc) c
 
   {
     std::ofstream ofs{cmakepresets};
-    nspreset::write(ofs, nspreset::write_compiler_paths, cmake::path(get_full_bld_dir(bc)), {}, bc);
+    nspreset::write(ofs, nspreset::write_compiler_paths, cmake::path(get_fetch_bld_dir(bc, ft)), {}, bc);
   }
+
+  backup_fetch_lists(bc, ft);
 }
 
-nsmodule::content nsmodule::make_fetch_build_content(nsbuild const& bc) const
+nsmodule::content nsmodule::make_fetch_build_content(nsbuild const& bc, nsfetch const& ft) const
 {
   std::stringstream ofs;
 
@@ -401,7 +381,7 @@ nsmodule::content nsmodule::make_fetch_build_content(nsbuild const& bc) const
   bc.macros.print(ofs);
   macros.print(ofs);
   // write_variables(ofs, bc);
-  for (auto const& a : fetch->args)
+  for (auto const& a : ft.args)
   {
     a.print(ofs, output_fmt::set_cache, false);
   }
@@ -411,24 +391,13 @@ nsmodule::content nsmodule::make_fetch_build_content(nsbuild const& bc) const
   bc.write_cxx_options(ofs);
 
   // Do we have prepare
-  auto prepare = src / "Prepare.cmake";
-  if (std::filesystem::exists(prepare) || !fetch->prepare.fragments.empty())
+  if (!ft.prepare.fragments.empty())
   {
-    if (std::filesystem::exists(prepare))
-    {
-      std::ifstream t{prepare};
-      std::string   buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-      ofs << buffer;
-    }
-
-    if (!fetch->prepare.fragments.empty())
-    {
-      for (auto const& f : fetch->prepare.fragments)
-        ofs << f << "\n";
-    }
+    for (auto const& f : ft.prepare.fragments)
+      ofs << f << "\n";
   }
 
-  auto cmakelists = get_fetch_src_dir(bc) / "CMakeLists.txt";
+  auto cmakelists = get_fetch_src_dir(bc, ft) / "CMakeLists.txt";
   if (std::filesystem::exists(cmakelists))
   {
     std::ifstream t{cmakelists};
@@ -437,21 +406,10 @@ nsmodule::content nsmodule::make_fetch_build_content(nsbuild const& bc) const
   }
 
   // Do we have build
-  auto srccmk = src / "Finalize.cmake";
-  if (!fetch->finalize.fragments.empty() || std::filesystem::exists(srccmk))
+  if (!ft.finalize.fragments.empty())
   {
-    if (!fetch->finalize.fragments.empty())
-    {
-      for (auto const& f : fetch->finalize.fragments)
-        ofs << f << "\n";
-    }
-
-    if (std::filesystem::exists(srccmk))
-    {
-      std::ifstream t{srccmk};
-      std::string   buffer((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
-      ofs << buffer;
-    }
+    for (auto const& f : ft.finalize.fragments)
+      ofs << f << "\n";
   }
 
   content cc;
@@ -461,44 +419,46 @@ nsmodule::content nsmodule::make_fetch_build_content(nsbuild const& bc) const
   return cc;
 }
 
-void nsmodule::fetch_content(nsbuild const& bc)
+void nsmodule::fetch_content(nsbuild const& bc, nsinstallers& installer, nsfetch& ft)
 {
   std::string sha;
   bool        change = false;
 
   // download
-  regenerate |= download(bc);
+  regenerate |= download(bc, ft);
 
-  if (regenerate)
+  if (ft.regenerate)
   {
-    auto cc = make_fetch_build_content(bc);
-    write_fetch_build_content(bc, cc);
+    auto cc = make_fetch_build_content(bc, ft);
+    write_fetch_build_content(bc, ft, cc);
     sha    = cc.sha;
-    change = fetch_changed(bc, sha);
+    change = fetch_changed(bc, ft, sha);
   }
 
   if (bc.cmakeinfo.cmake_skip_fetch_builds)
   {
-    write_fetch_meta(bc, sha);
+    write_fetch_meta(bc, ft, sha);
     return;
   }
 
-  if (change || fetch->force_build || force_build)
+  if (change || ft.force_build || force_build)
   {
-    nslog::print(fmt::format("Rebuilding : {}..", name));
-    build_fetched_content(bc);
-    write_fetch_meta(bc, sha);
+    nslog::print(fmt::format("Rebuilding : {}..", ft.name));
+    build_fetched_content(bc, installer, ft);
+    write_fetch_meta(bc, ft, sha);
     was_fetch_rebuilt = true;
   }
   else
   {
-    nslog::print(fmt::format("Already Built : {}..", name));
+    auto xpb = get_fetch_bld_dir(bc, ft);
+    nslog::print(fmt::format("Already Built : {}..", ft.name));
+    installer.installed((xpb / "install_manifest.txt").string());
   }
 }
 
-bool nsmodule::fetch_changed(nsbuild const& bc, std::string const& last_sha) const
+bool nsmodule::fetch_changed(nsbuild const& bc, nsfetch const& ft, std::string const& last_sha) const
 {
-  auto          meta = get_full_fetch_file(bc);
+  auto          meta = get_full_fetch_file(bc, ft);
   std::ifstream iff{meta};
   if (iff.is_open())
   {
@@ -510,11 +470,11 @@ bool nsmodule::fetch_changed(nsbuild const& bc, std::string const& last_sha) con
   return true;
 }
 
-void nsmodule::write_fetch_meta(nsbuild const& bc, std::string const& last_sha) const
+void nsmodule::write_fetch_meta(nsbuild const& bc, nsfetch const& ft, std::string const& last_sha) const
 {
   if (last_sha.empty())
     return;
-  auto          meta = get_full_fetch_file(bc);
+  auto          meta = get_full_fetch_file(bc, ft);
   std::ofstream off{meta};
   if (off.is_open())
   {
@@ -621,7 +581,6 @@ void nsmodule::write_sources(std::ostream& ofs, nsbuild const& bc) const
       glob_sources.print(ofs, "__module_sources");
     else
       glob_sources.print(ofs, "__module_sources", "${CMAKE_CURRENT_LIST_DIR}/", bc.get_full_cmake_gen_dir());
-    
   }
 }
 
@@ -748,13 +707,13 @@ void nsmodule::write_includes(std::ostream& ofs, nsbuild const& bc) const
     cmake::line(ofs, "includes");
     {
       ofs << "\nset(__module_headers)";
-      
-      //nsglob header_glob;
+
+      // nsglob header_glob;
       //
-      //static std::unordered_set<std::string> hpp_filters = {".hpp"};
-      //header_glob.file_filters                           = &hpp_filters;
-      //header_glob.recurse                                = false;
-    
+      // static std::unordered_set<std::string> hpp_filters = {".hpp"};
+      // header_glob.file_filters                           = &hpp_filters;
+      // header_glob.recurse                                = false;
+
       write_include(ofs, /*header_glob, */ "${CMAKE_CURRENT_LIST_DIR}", "", cmake::inheritance::pub);
       write_include(ofs, /*header_glob, */ "${module_dir}", "public", cmake::inheritance::pub);
       write_include(ofs, /*header_glob, */ "${module_dir}", "private", cmake::inheritance::priv);
@@ -762,9 +721,9 @@ void nsmodule::write_includes(std::ostream& ofs, nsbuild const& bc) const
       write_include(ofs, /*header_glob, */ "${module_gen_dir}", "", cmake::inheritance::pub);
       write_include(ofs, /*header_glob, */ "${module_gen_dir}", "local", cmake::inheritance::priv);
       for (auto const& s : source_sub_dirs)
-        write_include(ofs, /*header_glob,*/  "${module_dir}", "src/" + s, cmake::inheritance::priv);
+        write_include(ofs, /*header_glob,*/ "${module_dir}", "src/" + s, cmake::inheritance::priv);
       write_refs_includes(ofs, /*header_glob,*/ bc, *this);
-    
+
       // if (bc.glob_sources)
       // {
       //   header_glob.print(ofs, "__module_headers");
@@ -804,7 +763,7 @@ void nsmodule::write_refs_includes(std::ostream& ofs, /*  nsglob& glob,*/ nsbuil
     target.write_include(ofs, /* glob, */ m.source_path, "public",
                          target.type == nsmodule_type::plugin ? cmake::inheritance::priv : cmake::inheritance::pub);
     target.write_include(ofs, /* glob, */ m.source_path, "private", cmake::inheritance::priv);
-    target.write_include(ofs, /* glob, */  m.source_path, "src", cmake::inheritance::priv);
+    target.write_include(ofs, /* glob, */ m.source_path, "src", cmake::inheritance::priv);
     for (auto const& s : m.source_sub_dirs)
       target.write_include(ofs, /* glob, */ m.source_path, "src/" + s, cmake::inheritance::priv);
     target.write_include(ofs, /* glob, */ m.gen_path, "",
@@ -815,63 +774,67 @@ void nsmodule::write_refs_includes(std::ostream& ofs, /*  nsglob& glob,*/ nsbuil
 
 void nsmodule::write_find_package(std::ostream& ofs, nsbuild const& bc) const
 {
-  if (!fetch || fetch->runtime_only)
+
+  if (fetch.empty())
     return;
-  cmake::line(ofs, "find-package");
-  if (fetch->components.empty())
-    ofs << fmt::format(cmake::k_find_package, fetch->package, fetch->version);
-  else
+  for (auto const& ft : fetch)
   {
-
-    ofs << fmt::format(cmake::k_find_package_comp_start, fetch->package, fetch->version);
-    for (auto const& c : fetch->components)
-      ofs << c << " ";
-    ofs << cmake::k_find_package_comp_end;
-  }
-
-  auto namespace_name = fetch->namespace_name.empty() ? fetch->package : fetch->namespace_name;
-  if (!fetch->legacy_linking)
-  {
-    ofs << "\ntarget_link_libraries(${module_target} \n  " << cmake::to_string(cmake::inheritance::intf);
-    if (fetch->targets.empty())
+    cmake::line(ofs, "find-package");
+    if (ft.components.empty())
+      ofs << fmt::format(cmake::k_find_package, ft.package, ft.version);
+    else
     {
-      if (fetch->skip_namespace)
-        ofs << fmt::format("\n   {}", fetch->package);
+
+      ofs << fmt::format(cmake::k_find_package_comp_start, ft.package, ft.version);
+      for (auto const& c : ft.components)
+        ofs << c << " ";
+      ofs << cmake::k_find_package_comp_end;
+    }
+
+    auto namespace_name = ft.namespace_name.empty() ? ft.package : ft.namespace_name;
+    if (!ft.legacy_linking)
+    {
+      ofs << "\ntarget_link_libraries(${module_target} \n  " << cmake::to_string(cmake::inheritance::intf);
+      if (ft.targets.empty())
+      {
+        if (ft.skip_namespace)
+          ofs << fmt::format("\n   {}", ft.package);
+        else
+          ofs << fmt::format("\n   {}::{}", namespace_name, ft.package);
+      }
       else
-        ofs << fmt::format("\n   {}::{}", namespace_name, fetch->package);
+      {
+        if (ft.skip_namespace)
+        {
+          for (auto const& c : ft.targets)
+            ofs << fmt::format("\n   {}", c);
+        }
+        else
+        {
+          for (auto const& c : ft.targets)
+            ofs << fmt::format("\n   {}::{}", namespace_name, c);
+        }
+      }
+      ofs << "\n)";
     }
     else
     {
-      if (fetch->skip_namespace)
-      {
-        for (auto const& c : fetch->targets)
-          ofs << fmt::format("\n   {}", c);
-      }
-      else
-      {
-        for (auto const& c : fetch->targets)
-          ofs << fmt::format("\n   {}::{}", namespace_name, c);
-      }
-    }
-    ofs << "\n)";
-  }
-  else
-  {
-    ofs << fmt::format("\nset(__sdk_install_includes ${{{}_INCLUDE_DIRS}})", fetch->package);
-    ofs << "\nlist(TRANSFORM __sdk_install_includes REPLACE ${fetch_sdk_dir} "
-           "\"\")";
-    ofs << fmt::format("\nset(__sdk_install_libraries ${{{}_LIBRARIES}})", fetch->package);
-    ofs << "\nlist(TRANSFORM __sdk_install_libraries REPLACE ${fetch_sdk_dir} "
-           "\"\")";
+      ofs << fmt::format("\nset(__sdk_install_includes ${{{}_INCLUDE_DIRS}})", ft.package);
+      ofs << "\nlist(TRANSFORM __sdk_install_includes REPLACE ${fetch_sdk_dir} "
+             "\"\")";
+      ofs << fmt::format("\nset(__sdk_install_libraries ${{{}_LIBRARIES}})", ft.package);
+      ofs << "\nlist(TRANSFORM __sdk_install_libraries REPLACE ${fetch_sdk_dir} "
+             "\"\")";
 
-    ofs << "\ntarget_include_directories(${module_target} " << cmake::to_string(cmake::inheritance::intf)
-        << fmt::format("\n\t$<BUILD_INTERFACE:\"${{{}_INCLUDE_DIR}}\">", fetch->package)
-        << "\n\t$<INSTALL_INTERFACE:\"${__sdk_install_includes}\">"
-        << "\n)"
-        << "\ntarget_link_libraries(${module_target} " << cmake::to_string(cmake::inheritance::intf)
-        << fmt::format("\n\t$<BUILD_INTERFACE:\"${{{}_LIBRARIES}}\">", fetch->package)
-        << "\n\t$<INSTALL_INTERFACE:\"${__sdk_install_libraries}\">"
-        << "\n)";
+      ofs << "\ntarget_include_directories(${module_target} " << cmake::to_string(cmake::inheritance::intf)
+          << fmt::format("\n\t$<BUILD_INTERFACE:\"${{{}_INCLUDE_DIR}}\">", ft.package)
+          << "\n\t$<INSTALL_INTERFACE:\"${__sdk_install_includes}\">"
+          << "\n)"
+          << "\ntarget_link_libraries(${module_target} " << cmake::to_string(cmake::inheritance::intf)
+          << fmt::format("\n\t$<BUILD_INTERFACE:\"${{{}_LIBRARIES}}\">", ft.package)
+          << "\n\t$<INSTALL_INTERFACE:\"${__sdk_install_libraries}\">"
+          << "\n)";
+    }
   }
 }
 
@@ -1215,20 +1178,21 @@ void nsmodule::write_runtime_settings(std::ostream& ofs, nsbuild const& bc) cons
   }
 }
 
-void nsmodule::build_fetched_content(nsbuild const& bc)
+void nsmodule::build_fetched_content(nsbuild const& bc, nsinstallers& installer, nsfetch const& ft)
 {
-  auto src  = get_fetch_src_dir(bc);
-  auto xpb  = get_full_bld_dir(bc);
+  auto src  = get_fetch_src_dir(bc, ft);
+  auto xpb  = get_fetch_bld_dir(bc, ft);
   auto dsdk = get_full_sdk_dir(bc);
 
   nsprocess::cmake_config(bc, {}, cmake::path(src), xpb);
+
   nsprocess::cmake_build(bc, "", xpb);
   nsprocess::cmake_install(bc, cmake::path(dsdk), xpb);
-
+  installer.installed((xpb / "install_manifest.txt").string());
   // custom location copy
-  if (!fetch->runtime_loc.empty())
+  if (!ft.runtime_loc.empty())
   {
-    for (auto const& l : fetch->runtime_loc)
+    for (auto const& l : ft.runtime_loc)
     {
       namespace fs = std::filesystem;
       auto path    = get_full_sdk_dir(bc) / l;
@@ -1254,20 +1218,19 @@ void nsmodule::build_fetched_content(nsbuild const& bc)
         {
           if (bc.verbose)
             nslog::print(fmt::format("Copying : {}", name));
-            auto path = bc.get_full_rt_dir() / "bin";
+          auto path = bc.get_full_rt_dir() / "bin";
           std::filesystem::create_directories(path);
-          std::filesystem::copy(dir_entry.path(), path / dir_entry.path().filename(),
-                                copy_options);
+          std::filesystem::copy(dir_entry.path(), path / dir_entry.path().filename(), copy_options);
           continue;
         }
         else if (bc.verbose)
           nslog::print(fmt::format("Skipping copy of : {}", name));
 
-        if (fetch->runtime_files.empty())
+        if (ft.runtime_files.empty())
           continue;
 
         name = dir_entry.path().generic_string();
-        for (auto const& rt : fetch->runtime_files)
+        for (auto const& rt : ft.runtime_files)
         {
           std::smatch match;
           std::regex  rtregex = std::regex(rt, std::regex_constants::icase);
@@ -1288,18 +1251,27 @@ std::filesystem::path nsmodule::get_full_bld_dir(nsbuild const& bc) const
   return bc.get_full_build_dir() / framework_name / name;
 }
 
-std::filesystem::path nsmodule::get_full_sdk_dir(nsbuild const& bc) const { return bc.get_full_sdk_dir(); }
-
-std::filesystem::path nsmodule::get_full_dl_dir(nsbuild const& bc) const { return bc.get_full_dl_dir() / name; }
-std::filesystem::path nsmodule::get_fetch_src_dir(nsbuild const& bc) const
+std::filesystem::path nsmodule::get_fetch_bld_dir(nsbuild const& bc, nsfetch const& nfc) const
 {
-  return fetch ? (fetch->source.empty() ? bc.get_full_dl_dir() / name : bc.get_full_dl_dir() / name / fetch->source)
-               : std::filesystem::path();
+  auto fbld_name = get_full_bld_dir(bc);
+  return nfc.name == name || fetch.size() > 1 ? fbld_name : fbld_name / nfc.name;
 }
 
-std::filesystem::path nsmodule::get_full_fetch_file(nsbuild const& bc) const
+std::filesystem::path nsmodule::get_full_sdk_dir(nsbuild const& bc) const { return bc.get_full_sdk_dir(); }
+
+std::filesystem::path nsmodule::get_full_dl_dir(nsbuild const& bc, nsfetch const& nfc) const
 {
-  return bc.get_full_cache_dir() / fmt::format("{}.fetch", name);
+  return bc.get_full_dl_dir() / nfc.name;
+}
+std::filesystem::path nsmodule::get_fetch_src_dir(nsbuild const& bc, nsfetch const& nfc) const
+{
+  auto path = bc.get_full_dl_dir() / nfc.name;
+  return (path / nfc.source);
+}
+
+std::filesystem::path nsmodule::get_full_fetch_file(nsbuild const& bc, nsfetch const& nfc) const
+{
+  return bc.get_full_cache_dir() / fmt::format("{}.fetch", nfc.name);
 }
 
 std::filesystem::path nsmodule::get_full_gen_dir(nsbuild const& bc) const
@@ -1307,16 +1279,43 @@ std::filesystem::path nsmodule::get_full_gen_dir(nsbuild const& bc) const
   return bc.get_full_cfg_dir() / k_gen_dir / framework_name / name;
 }
 
-bool nsmodule::download(nsbuild const& bc)
+void nsmodule::backup_fetch_lists(nsbuild const& bc, nsfetch const& ft) const
 {
-  auto dld = get_full_dl_dir(bc);
-  if (std::filesystem::exists(get_fetch_src_dir(bc) / "CMakeLists.txt") && !regenerate && !fetch->force_download)
-    return false;
-  if (fetch->repo.ends_with(".git"))
-    nsprocess::git_clone(bc, get_full_dl_dir(bc), fetch->repo, fetch->tag);
+  std::error_code ec;
+  auto            cmakelists = get_fetch_src_dir(bc, ft) / "CMakeLists.txt";
+  namespace fs               = std::filesystem;
+  if (fs::exists(cmakelists))
+    fs::copy(cmakelists, get_full_gen_dir(bc) / fmt::format("{}_CMakeLists.txt", ft.name),
+             fs::copy_options::overwrite_existing, ec);
+}
+
+bool nsmodule::restore_fetch_lists(nsbuild const& bc, nsfetch const& ft) const
+{
+  std::error_code ec;
+  auto            cmakelists = get_full_gen_dir(bc) / fmt::format("{}_CMakeLists.txt", ft.name);
+  namespace fs               = std::filesystem;
+  if (fs::exists(cmakelists))
+    fs::copy(cmakelists, get_fetch_src_dir(bc, ft) / "CMakeLists.txt", fs::copy_options::overwrite_existing, ec);
   else
-    nsprocess::download(bc, get_full_dl_dir(bc), fetch->repo, fetch->source);
-  write_sha(bc);
+    return false;
+  return true;
+}
+
+bool nsmodule::download(nsbuild const& bc, nsfetch& ft)
+{
+  auto dld = get_full_dl_dir(bc, ft);
+  if ((std::filesystem::exists(get_fetch_src_dir(bc, ft) / "CMakeLists.txt")) && !ft.regenerate && !ft.force_download)
+    return false;
+  if (ft.repo.ends_with(".git"))
+    nsprocess::git_clone(bc, get_full_dl_dir(bc, ft), ft.repo, ft.tag);
+  else
+  {
+    if (!nsprocess::download(bc, get_full_dl_dir(bc, ft), ft.repo, ft.source, ft.version, ft.force_download) &&
+        !restore_fetch_lists(bc, ft))
+      nsprocess::download(bc, get_full_dl_dir(bc, ft), ft.repo, ft.source, ft.version, true);
+  }
+
+  write_sha(bc, ft);
   if (!deleted)
     delete_build(bc);
   return true;
@@ -1327,7 +1326,16 @@ void nsmodule::write_sha(nsbuild const& bc)
   if (!sha_written)
   {
     bc.write_sha(name, sha);
-    sha_written  = true;
+    sha_written = true;
+  }
+}
+
+void nsmodule::write_sha(nsbuild const& bc, nsfetch const& fetch)
+{
+  if (!sha_written)
+  {
+    bc.write_sha(fetch.name, sha);
+    sha_written = true;
   }
 }
 

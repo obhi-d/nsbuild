@@ -6,18 +6,20 @@ template <typename T>
 T* cmd_insert_with_filter(std::vector<T>& v, nsbuild const& build, neo::command const& cmd)
 {
   auto const& p = cmd.params().value();
+  v.emplace_back();
 
   if (p.size() > 0)
   {
     auto filters = cmake::get_filter(*build.s_current_preset, get_filters(p[0]));
     if (!filters.has_value())
+    {
+      v.pop_back();
       return nullptr;
+    }
 
-    v.emplace_back();
     v.back().filters = filters.value();
   }
 
-  v.emplace_back();
   return &v.back();
 }
 

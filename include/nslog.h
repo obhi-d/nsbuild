@@ -1,4 +1,5 @@
 #pragma once
+#include <fmt/color.h>
 #include <fmt/format.h>
 #include <iostream>
 

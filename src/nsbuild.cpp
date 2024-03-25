@@ -153,7 +153,9 @@ void nsbuild::before_all()
   update_macros();
   try
   {
+    install_cache.load(get_full_cache_dir() / "install_cache.txt");
     process_targets();
+    install_cache.uninstall_unused_and_save(get_full_cache_dir() / "install_cache.txt");
   }
   catch (std::exception&)
   {
@@ -440,7 +442,7 @@ void nsbuild::process_target(std::string const& name, nstarget& targ)
       });
 
   sorted_targets.push_back(name);
-  mod.process(*this, name, targ);
+  mod.process(*this, install_cache, name, targ);
   if (mod.was_fetch_rebuilt)
     state.exit_and_rebuild = true;
   if (mod.has_globs_changed)

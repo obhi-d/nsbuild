@@ -16,7 +16,8 @@ void cmake(nsbuild const& bc, std::vector<std::string> args, std::filesystem::pa
 void git(nsbuild const& bc, std::vector<std::string> args, std::filesystem::path wd);
 void powershell(nsbuild const& bc, std::vector<std::string> args, std::filesystem::path wd);
 
-void download(nsbuild const& bc, std::filesystem::path const& dl, std::string_view const& repo, std::string_view name);
+bool download(nsbuild const& bc, std::filesystem::path const& dl, std::string_view const& repo, std::string_view name,
+              std::string_view version, bool force);
 void git_clone(nsbuild const& bc, std::filesystem::path const& dl, std::string_view const& repo, std::string_view tag);
 
 std::filesystem::path        get_nsbuild_path();

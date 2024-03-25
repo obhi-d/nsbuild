@@ -2,6 +2,12 @@
 
 void halt();
 
+void append(neo::text_content& dst, neo::text_content const& src)
+{
+  for (auto const& s : src.fragments)
+    dst.fragments.emplace_back(s);
+}
+
 // -------------------------------------------------------------------------------------------------------------
 ns_text_handler(custom_cmake, build, state, type, name, content)
 {
@@ -12,13 +18,45 @@ ns_text_handler(custom_cmake, build, state, type, name, content)
     if (build.frameworks.back().modules.empty())
       return;
     auto& mod = build.frameworks.back().modules.back();
-    if (name == "finalize" && mod.fetch)
+    if (name.starts_with("finalize"))
     {
-      mod.fetch->finalize = content;
+      if (mod.fetch.size() == 1)
+        append(mod.fetch.back().finalize, content);
+      else
+      {
+        auto nof = name.find_first_of('-');
+        if (nof != name.npos)
+        {
+          auto ft = mod.find_fetch(name.substr(nof + 1));
+          if (ft)
+            append(ft->finalize, content);
+        }
+        else
+        {
+          for (auto& ft : mod.fetch)
+            append(ft.finalize, content);
+        }
+      }
     }
-    else if (name == "prepare" && mod.fetch)
+    else if (name.starts_with("prepare"))
     {
-      mod.fetch->prepare = content;
+      if (mod.fetch.size() == 1)
+        append(mod.fetch.back().prepare, content);
+      else
+      {
+        auto nof = name.find_first_of('-');
+        if (nof != name.npos)
+        {
+          auto ft = mod.find_fetch(name.substr(nof + 1));
+          if (ft)
+            append(ft->prepare, content);
+        }
+        else
+        {
+          for (auto& ft : mod.fetch)
+            append(ft.prepare, content);
+        }
+      }
     }
   }
   else if (type == "content")
@@ -156,14 +194,13 @@ ns_cmd_handler(cppcheck_suppression, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_star_handler(timestamps, build, state, cmd)
-{
-  return neo::retcode::e_success;
-}
+ns_star_handler(timestamps, build, state, cmd) { return neo::retcode::e_success; }
 
 ns_cmd_handler(version, build, state, cmd)
 {
-  if (build.s_nsmodule)
+  if (build.s_nsfetch)
+    build.s_nsfetch->version = get_idx_param(cmd, 0);
+  else if (build.s_nsmodule)
     build.s_nsmodule->version = get_idx_param(cmd, 0);
   else
     build.version = get_idx_param(cmd, 0);
@@ -317,7 +354,10 @@ ns_cmd_handler(source_files, build, state, cmd)
 
 ns_cmd_handler(name, build, state, cmd)
 {
-  build.s_nsmodule->custom_target_name = get_idx_param(cmd, 0);
+  if (build.s_nsfetch)
+    build.s_nsfetch->name = get_idx_param(cmd, 0);
+  else
+    build.s_nsmodule->custom_target_name = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
@@ -455,15 +495,27 @@ ns_star_handler(any, build, state, cmd)
 
 ns_cmd_handler(fetch, build, state, cmd)
 {
-  build.s_nsmodule->fetch = std::make_unique<nsfetch>();
-  build.s_nsfetch         = build.s_nsmodule->fetch.get();
-  build.s_nsfetch->repo   = get_idx_param(cmd, 0);
+  build.s_nsfetch = cmd_insert_with_filter(build.s_nsmodule->fetch, build, cmd);
+  if (!build.s_nsfetch)
+    return neo::retcode::e_skip_block;
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(repo, build, state, cmd)
+{
+  build.s_nsfetch->repo = get_idx_param(cmd, 0);
   return neo::retcode::e_success;
 }
 
 ns_cmd_handler(runtime_only, build, state, cmd)
 {
   build.s_nsfetch->runtime_only = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(runtime_package, build, state, cmd)
+{
+  build.s_nsfetch->runtime_package = to_bool(get_idx_param(cmd, 0));
   return neo::retcode::e_success;
 }
 
@@ -673,6 +725,19 @@ ns_cmd_handler(disallow, build, state, cmd)
 
 ns_cmdend_handler(fetch, build, state, name)
 {
+  if (build.s_nsfetch)
+  {
+    if (build.s_nsfetch->name.empty())
+      build.s_nsfetch->name = build.s_nsmodule->name;
+    else
+      build.s_nsfetch->name = fmt::format("{}_{}", build.s_nsmodule->name, build.s_nsfetch->name);
+    if (build.s_nsfetch->version.empty())
+      build.s_nsfetch->version = build.s_nsmodule->version;
+    if (build.s_nsfetch->extern_name.empty())
+      build.s_nsfetch->extern_name = build.s_nsfetch->package;
+    if (build.s_nsfetch->targets.empty())
+      build.s_nsfetch->targets = build.s_nsfetch->components;
+  }
   build.s_nsfetch = nullptr;
   return neo::retcode::e_success;
 }
@@ -904,6 +969,10 @@ ns_registry(nsbuild)
     ns_cmd(namespace);
     ns_cmd(skip_namespace);
     ns_cmd(runtime_only);
+    ns_cmd(repo);
+    ns_cmd(name);
+    ns_cmd(runtime_package);
+    ns_cmd(version);
   }
 
   ns_scope_cust(public, clear_interface)
