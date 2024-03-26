@@ -147,8 +147,7 @@ configure_file(${{__nsbuild_data}}/EnumStringHash.hxx ${{CMAKE_CURRENT_LIST_DIR}
 static inline constexpr char k_target_include_directories[] =
     "target_include_directories(${{module_target}} {}  $<{}:{}>)";
 
-static inline constexpr char k_find_package[] =
-    "\nfind_package({} {} REQUIRED PATHS ${{fetch_sdk_dir}} NO_DEFAULT_PATH)";
+static inline constexpr char k_find_package[] = "\nfind_package({} {} REQUIRED PATHS ${{{}_sdk_dir}} NO_DEFAULT_PATH)";
 
 static inline constexpr char k_find_package_comp_start[] = "\nfind_package({} {} REQUIRED COMPONENTS ";
 static inline constexpr char k_find_package_comp_end[]   = "PATHS ${fetch_sdk_dir} NO_DEFAULT_PATH)";

@@ -353,6 +353,8 @@ void nsmodule::update_fetch(nsbuild const& bc, nsinstallers& installer)
 
 void nsmodule::write_fetch_build_content(nsbuild const& bc, nsfetch const& ft, content const& cc) const
 {
+  backup_fetch_lists(bc, ft);
+
   // backup
   auto cmakelists   = get_fetch_src_dir(bc, ft) / "CMakeLists.txt";
   auto cmakepresets = get_fetch_src_dir(bc, ft) / "CMakePresets.json";
@@ -368,8 +370,6 @@ void nsmodule::write_fetch_build_content(nsbuild const& bc, nsfetch const& ft, c
     std::ofstream ofs{cmakepresets};
     nspreset::write(ofs, nspreset::write_compiler_paths, cmake::path(get_fetch_bld_dir(bc, ft)), {}, bc);
   }
-
-  backup_fetch_lists(bc, ft);
 }
 
 nsmodule::content nsmodule::make_fetch_build_content(nsbuild const& bc, nsfetch const& ft) const
@@ -781,7 +781,7 @@ void nsmodule::write_find_package(std::ostream& ofs, nsbuild const& bc) const
   {
     cmake::line(ofs, "find-package");
     if (ft.components.empty())
-      ofs << fmt::format(cmake::k_find_package, ft.package, ft.version);
+      ofs << fmt::format(cmake::k_find_package, ft.package, "", ft.name);
     else
     {
 
@@ -820,11 +820,9 @@ void nsmodule::write_find_package(std::ostream& ofs, nsbuild const& bc) const
     else
     {
       ofs << fmt::format("\nset(__sdk_install_includes ${{{}_INCLUDE_DIRS}})", ft.package);
-      ofs << "\nlist(TRANSFORM __sdk_install_includes REPLACE ${fetch_sdk_dir} "
-             "\"\")";
+      ofs << fmt::format("\nlist(TRANSFORM __sdk_install_includes REPLACE ${{{}_sdk_dir}} \"\")", ft.name);
       ofs << fmt::format("\nset(__sdk_install_libraries ${{{}_LIBRARIES}})", ft.package);
-      ofs << "\nlist(TRANSFORM __sdk_install_libraries REPLACE ${fetch_sdk_dir} "
-             "\"\")";
+      ofs << fmt::format("\nlist(TRANSFORM __sdk_install_libraries REPLACE ${{{}_sdk_dir}} \"\")", ft.name);
 
       ofs << "\ntarget_include_directories(${module_target} " << cmake::to_string(cmake::inheritance::intf)
           << fmt::format("\n\t$<BUILD_INTERFACE:\"${{{}_INCLUDE_DIR}}\">", ft.package)
@@ -1287,6 +1285,10 @@ void nsmodule::backup_fetch_lists(nsbuild const& bc, nsfetch const& ft) const
   if (fs::exists(cmakelists))
     fs::copy(cmakelists, get_full_gen_dir(bc) / fmt::format("{}_CMakeLists.txt", ft.name),
              fs::copy_options::overwrite_existing, ec);
+  else
+  {
+    std::ofstream(fmt::format("{}_CMakeLists.txt", ft.name)).close();
+  }
 }
 
 bool nsmodule::restore_fetch_lists(nsbuild const& bc, nsfetch const& ft) const
@@ -1315,7 +1317,6 @@ bool nsmodule::download(nsbuild const& bc, nsfetch& ft)
       nsprocess::download(bc, get_full_dl_dir(bc, ft), ft.repo, ft.source, ft.version, true);
   }
 
-  write_sha(bc, ft);
   if (!deleted)
     delete_build(bc);
   return true;
@@ -1326,15 +1327,6 @@ void nsmodule::write_sha(nsbuild const& bc)
   if (!sha_written)
   {
     bc.write_sha(name, sha);
-    sha_written = true;
-  }
-}
-
-void nsmodule::write_sha(nsbuild const& bc, nsfetch const& fetch)
-{
-  if (!sha_written)
-  {
-    bc.write_sha(fetch.name, sha);
     sha_written = true;
   }
 }

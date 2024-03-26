@@ -158,7 +158,6 @@ struct nsmodule
   void gather_headers(nsglob& glob, nsbuild const& bc) const;
   void check_enums(nsbuild const& bc) const;
   void write_sha(nsbuild const& bc);
-  void write_sha(nsbuild const& bc, nsfetch const& fetch);
 
   content make_fetch_build_content(nsbuild const& bc, nsfetch const& ft) const;
   void    write_fetch_build_content(nsbuild const& bc, nsfetch const& ft, content const&) const;
