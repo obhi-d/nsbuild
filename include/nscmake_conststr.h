@@ -220,28 +220,6 @@ static inline constexpr char k_plugin_locations[] = R"_(
   RUNTIME_OUTPUT_DIRECTORY "${{config_rt_dir}}/{0}"
 )_";
 
-static inline constexpr char k_enums_json[] = R"_(
-
-set(enums_json)
-set(enums_json_output)
-set(has_enums_json FALSE)
-
-if (EXISTS "${module_dir}/public/Enums.json")
-  list(APPEND enums_json "${module_dir}/public/Enums.json")
-  list(APPEND enums_json_output "${module_gen_dir}/${file_prefix}${module_name}Enums.hpp")
-  set(has_enums_json TRUE)
-endif()
-if (EXISTS "${module_dir}/private/Enums.json")
-  list(APPEND enums_json "${module_dir}/private/Enums.json")
-  list(APPEND enums_json_output "${module_gen_dir}/local/${file_prefix}${module_name}LocalEnums.hpp")
-  set(has_enums_json TRUE)
-endif()
-if(has_enums_json)
-  list(APPEND enums_json_output "${module_gen_dir}/local/${file_prefix}${module_name}Enums.cpp")
-endif()
-
-)_";
-
 static inline constexpr char k_finale[] = R"_(
 
 configure_file("${__nsbuild_data}/ModuleConfig.hxx" "${module_gen_dir}/${module_name}ModuleConfig.hpp")
@@ -346,4 +324,13 @@ install(FILES "${CMAKE_BINARY_DIR}/${module_name}Config.cmake"
 
 )_";
 
+static inline constexpr char module_embed_biaries[] = R"_(
+
+set(binary_sources)
+
+if (EXISTS "${module_gen_dir}/local/EmbeddedResources.cpp")
+  list(APPEND binary_sources "${module_gen_dir}/local/EmbeddedResources.hpp" "${module_gen_dir}/local/EmbeddedResources.cpp")
+endif()
+
+)_";
 } // namespace cmake

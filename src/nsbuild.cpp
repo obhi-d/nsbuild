@@ -321,7 +321,7 @@ void nsbuild::read_module(std::filesystem::path sp)
   auto mod_name  = sp.filename().string();
   auto fwname    = sp.parent_path().filename().string();
   auto targ_name = target_name(fwname, mod_name);
-  add_module(mod_name);
+  add_module(mod_name, sp);
 
   if (!frameworks.back().excludes.contains(mod_name))
   {

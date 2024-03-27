@@ -43,6 +43,14 @@ struct nscontent
   std::string content;
 };
 
+struct ns_embed_content
+{
+  std::string hpp;
+  std::string cpp;
+
+  void emplace_back(std::string_view name, std::string_view value, std::string content);
+};
+
 /// @brief These targets are defined by every module
 /// target.prebuild : Optional. Executed before target build
 /// target : Actual build target, depends on target.prebuild, and its artifacts
@@ -66,6 +74,8 @@ struct nsmodule
   std::string            version;
   std::uint32_t          framework;
 
+  ns_embed_content         embedded_binary_files;
+  ns_embed_content         embedded_base64_files;
   std::vector<std::string> references;
   std::vector<std::string> required_plugins;
 
@@ -79,10 +89,13 @@ struct nsmodule
 
   std::vector<nsfetch> fetch;
 
-  std::string   tags;
-  std::string   org_name;
-  std::string   name;
-  std::string   custom_target_name;
+  std::string tags;
+  std::string org_name;
+  std::string name;
+  std::string custom_target_name;
+
+  std::filesystem::path location;
+
   nsmodule_type type = nsmodule_type::none;
 
   // deferred properties
@@ -157,6 +170,7 @@ struct nsmodule
   void gather_sources(nsglob& glob, nsbuild const& bc) const;
   void gather_headers(nsglob& glob, nsbuild const& bc) const;
   void check_enums(nsbuild const& bc) const;
+  void check_embeds(nsbuild const& bc) const;
   void write_sha(nsbuild const& bc);
 
   content make_fetch_build_content(nsbuild const& bc, nsfetch const& ft) const;
@@ -170,7 +184,6 @@ struct nsmodule
   void write_variables(std::ostream&, nsbuild const& bc, char sep = ';') const;
   void write_sources(std::ostream&, nsbuild const& bc) const;
   void write_target(std::ostream&, nsbuild const& bc, std::string const& name) const;
-  void write_enums_init(std::ostream&, nsbuild const& bc) const;
 
   void write_prebuild_steps(std::ostream& ofs, nsbuild const& bc) const;
   void write_postbuild_steps(std::ostream& ofs, nsbuild const& bc) const;

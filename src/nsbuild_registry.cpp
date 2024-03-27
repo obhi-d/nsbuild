@@ -1,11 +1,65 @@
 #include "nscmdcommon.h"
 
+#include <fstream>
+
 void halt();
 
 void append(neo::text_content& dst, neo::text_content const& src)
 {
   for (auto const& s : src.fragments)
     dst.fragments.emplace_back(s);
+}
+
+void collect_content(neo::text_content const& src, std::filesystem::path root, ns_embed_content& content)
+{
+  for (auto f : src.fragments)
+  {
+    std::string_view name;
+    std::string_view value;
+    size_t           pos = 0;
+    while (pos < f.size())
+    {
+      auto next = f.find_first_of(" \n@", pos);
+      if (next == 0)
+        pos = next + 1;
+      else if (next != f.npos)
+      {
+        if (f[next] == '@')
+        {
+          name = f.substr(pos, next - pos);
+          pos  = next + 1;
+          continue;
+        }
+        else
+        {
+          value = f.substr(pos, next - pos);
+          if (name.empty())
+          {
+            auto basename = value.find_last_of('/');
+            if (basename == value.npos)
+              name = value;
+            else
+              name = value.substr(basename + 1);
+          }
+
+          if (!name.empty() && !value.empty())
+          {
+            auto file = std::ifstream(root / value, std::ios::binary);
+            if (file.is_open())
+            {
+              content.emplace_back(
+                  name, value, std::string((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()));
+            }
+          }
+          name  = {};
+          value = {};
+          pos   = next + 1;
+        }
+      }
+      else
+        break;
+    }
+  }
 }
 
 // -------------------------------------------------------------------------------------------------------------
@@ -65,6 +119,15 @@ ns_text_handler(custom_cmake, build, state, type, name, content)
     mod.contents.emplace_back();
     mod.contents.back().name = name;
     content.append_to(mod.contents.back().content);
+  }
+  else if (type == "embed")
+  {
+    auto& mod = build.frameworks.back().modules.back();
+    // Embed the files in the list
+    if (name == "@binary")
+      collect_content(content, build.s_nsmodule->location, mod.embedded_binary_files);
+    else if (name == "@base64")
+      collect_content(content, build.s_nsmodule->location, mod.embedded_base64_files);
   }
 }
 

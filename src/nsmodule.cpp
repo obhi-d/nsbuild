@@ -83,6 +83,29 @@ void nsmodule::process(nsbuild const& bc, nsinstallers& installer, std::string c
   write_sha(bc);
 }
 
+void nsmodule::check_embeds(nsbuild const& bc) const
+{
+  auto hpp = get_full_gen_dir(bc) / "local" / fmt::format("{}Resources.hpp", name);
+  auto cpp = get_full_gen_dir(bc) / "local" / fmt::format("{}Resources.cpp", name);
+
+  bool        rewrite_resources = false;
+  std::string cpp_content;
+  std::string csha;
+  picosha2::hash256_hex_string(embedded_binary_files.cpp, csha);
+  if (!std::filesystem::exists(hpp) || !std::filesystem::exists(cpp) || sha_changed(bc, "embed", csha))
+  {
+
+    std::ofstream(hpp, std::ios::binary) << "#pragma once\n#include <string_view>\nnamespace " << bc.namespace_name
+                                         << "::embed \n{\n"
+                                         << embedded_binary_files.hpp << "\n}";
+
+    std::ofstream(cpp, std::ios::binary) << "#include \"" << name << "Resources.hpp\"\nnamespace " << bc.namespace_name
+                                         << "::embed \n{\n"
+                                         << embedded_binary_files.cpp << "\n}";
+    write_sha_changed(bc, "embed", sha);
+  }
+}
+
 void nsmodule::check_enums(nsbuild const& bc) const
 {
   auto lenums = std::filesystem::path(source_path) / "private" / "Enums.json";
@@ -194,7 +217,10 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
   }
 
   if (has_headers(type))
+  {
     check_enums(bc);
+    check_embeds(bc);
+  }
 
   if (has_runtime(type))
   {
@@ -509,7 +535,6 @@ void nsmodule::write_main_build(std::ostream& ofs, nsbuild const& bc) const
   write_find_package(ofs, bc);
   write_dependencies(ofs, bc);
   write_linklibs(ofs, bc);
-  write_enums_init(ofs, bc);
   write_prebuild_steps(ofs, bc);
   write_postbuild_steps(ofs, bc);
   write_runtime_settings(ofs, bc);
@@ -632,14 +657,6 @@ void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string co
   {
     ofs << "\nunset(__module_sources)";
   }
-}
-
-void nsmodule::write_enums_init(std::ostream& ofs, nsbuild const& bc) const
-{
-  if (!has_headers(type))
-    return;
-  cmake::line(ofs, "enums");
-  ofs << cmake::k_enums_json;
 }
 
 void nsmodule::write_prebuild_steps(std::ostream& ofs, const nsbuild& bc) const
@@ -1351,4 +1368,37 @@ void nsmodule::write_sha_changed(nsbuild const& bc, std::string_view name, std::
   std::ofstream off{meta};
   if (off.is_open())
     off << isha;
+}
+
+void ns_embed_content::emplace_back(std::string_view name, std::string_view value, std::string file)
+{
+
+  auto name_ = to_upper_camel_case(name);
+  fmt::format_to(std::back_inserter(hpp),
+                 R"_(
+  /** @brief Get embedded file content for {1} **/
+  std::string_view get{0}();
+)_",
+                 name_, value);
+
+  fmt::format_to(std::back_inserter(cpp),
+                 R"_(
+  namespace internal
+  {{
+    constexpr char ContentFor{0}[] = {{ )_",
+                 name_);
+  if (!file.empty())
+  {
+    auto last = file.back();
+    file.pop_back();
+    for (auto c : file)
+      fmt::format_to(std::back_inserter(cpp), "{}, ", (int)c);
+    fmt::format_to(std::back_inserter(cpp), "{} ", (int)last);
+  }
+
+  fmt::format_to(std::back_inserter(cpp), R"_( }};
+  }}
+  std::string_view get{0}() {{ return std::string_view(internal::ContentFor{0}, sizeof(internal::ContentFor{0})); }}
+)_",
+                 name_);
 }

@@ -1,8 +1,9 @@
 // Generated
 #pragma once
 
-#include "BuildConfig.hpp"
+// clang-format off
 #include "@module_name@InternalConfig.hpp"
+#include "BuildConfig.hpp"
 
 #ifdef BC_MODULE_@PROJECT_NAME@
   #define @macro_prefix@@PROJECT_NAME@API BC_LIB_EXPORT
@@ -24,3 +25,4 @@ namespace BuildConfig
     constexpr std::string_view VersionString = "v@PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@";
   }
 }
+// clang-format on

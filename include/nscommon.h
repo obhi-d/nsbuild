@@ -237,8 +237,8 @@ using nameval_list = std::vector<std::pair<std::string, std::string>>;
 
 struct nsmetainfo
 {
-  std::string              compiler_name;
-  std::string              compiler_version;
+  std::string compiler_name;
+  std::string compiler_version;
 };
 
 struct nsmetastate
@@ -254,10 +254,10 @@ struct nsmetastate
 
 std::string to_upper(std::string s);
 std::string to_lower(std::string s);
-std::string to_lower_camel_case(std::string const& s);
-std::string to_upper_camel_case(std::string const& s);
-std::string to_camel_case(std::string const& s);
-std::string to_snake_case(std::string const& s);
+std::string to_lower_camel_case(std::string_view s);
+std::string to_upper_camel_case(std::string_view s);
+std::string to_camel_case(std::string_view s);
+std::string to_snake_case(std::string_view s);
 bool        to_bool(std::string_view);
 
 struct module_regenerated : std::runtime_error

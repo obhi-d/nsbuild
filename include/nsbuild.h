@@ -172,12 +172,13 @@ struct nsbuild : public neo::command_handler
     s_nsframework->name = name;
   }
 
-  void add_module(std::string_view name)
+  void add_module(std::string_view name, std::filesystem::path loc)
   {
     s_nsframework->modules.emplace_back();
     s_nsmodule                 = &s_nsframework->modules.back();
     s_nsmodule->name           = name;
     s_nsmodule->framework_name = s_nsframework->name;
+    s_nsmodule->location       = std::move(loc);
   }
 
   nsmodule const& get_module(std::string const& targ) const
