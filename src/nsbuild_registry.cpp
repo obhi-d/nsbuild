@@ -570,18 +570,6 @@ ns_cmd_handler(repo, build, state, cmd)
   return neo::retcode::e_success;
 }
 
-ns_cmd_handler(runtime_only, build, state, cmd)
-{
-  build.s_nsfetch->runtime_only = to_bool(get_idx_param(cmd, 0));
-  return neo::retcode::e_success;
-}
-
-ns_cmd_handler(runtime_package, build, state, cmd)
-{
-  build.s_nsfetch->runtime_package = to_bool(get_idx_param(cmd, 0));
-  return neo::retcode::e_success;
-}
-
 ns_cmd_handler(source, build, state, cmd)
 {
   build.s_nsfetch->source = get_idx_param(cmd, 0);
@@ -1031,10 +1019,8 @@ ns_registry(nsbuild)
     ns_cmd(extern_name);
     ns_cmd(namespace);
     ns_cmd(skip_namespace);
-    ns_cmd(runtime_only);
     ns_cmd(repo);
     ns_cmd(name);
-    ns_cmd(runtime_package);
     ns_cmd(version);
   }
 

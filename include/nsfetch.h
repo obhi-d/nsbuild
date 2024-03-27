@@ -23,11 +23,9 @@ struct nsfetch
   std::vector<nsfilecopy>  runtime_install;
   std::vector<std::string> runtime_loc;
   std::vector<std::string> runtime_files;
-  bool                     legacy_linking  = false;
-  bool                     skip_namespace  = false;
-  bool                     runtime_only    = false;
-  bool                     runtime_package = false;
-  bool                     force_build     = false;
-  bool                     force_download  = false;
-  bool                     regenerate      = false;
+  bool                     legacy_linking = false;
+  bool                     skip_namespace = false;
+  bool                     force_build    = false;
+  bool                     force_download = false;
+  bool                     regenerate     = false;
 };

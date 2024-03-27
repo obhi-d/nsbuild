@@ -151,7 +151,10 @@ Module ns can inject cmake code using a `{{cmake:prepare}}` and `{{cmake:finaliz
   - `test_class`  - *class*
     - `test_name`  - *name*
   
-- `fetch` - *git repo* or *download*
+- `fetch` - [filters]
+  - `repo`
+  - `name`
+  - `version`
   - `license`
   - `source` : relative directory of source contents from download directory
   - `force_build` :       Forces a build, build is skipped if CMakeLists.txt hash matches last build hash.
@@ -169,7 +172,6 @@ Module ns can inject cmake code using a `{{cmake:prepare}}` and `{{cmake:finaliz
   - `extern_name`
   - `namespace`
   - `skip_namespace`
-  - `runtime_only`
 - `public`, `private`
   - `dependencies`
   - `libraries`
