@@ -102,7 +102,7 @@ void nsmodule::check_embeds(nsbuild const& bc) const
     std::ofstream(cpp, std::ios::binary) << "#include \"" << name << "Resources.hpp\"\nnamespace " << bc.namespace_name
                                          << "::embed \n{\n"
                                          << embedded_binary_files.cpp << "\n}";
-    write_sha_changed(bc, "embed", sha);
+    write_sha_changed(bc, "embed", csha);
   }
 }
 
