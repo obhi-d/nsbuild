@@ -28,4 +28,5 @@ struct nsfetch
   bool                     force_build    = false;
   bool                     force_download = false;
   bool                     regenerate     = false;
+  bool                     disabled       = false;
 };

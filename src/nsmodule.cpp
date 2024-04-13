@@ -10,9 +10,7 @@
 #include "nstarget.h"
 #include "picosha2.h"
 
-#include <exception>
 #include <fstream>
-#include <ranges>
 #include <sstream>
 
 bool has_data(nsmodule_type t)
@@ -65,7 +63,8 @@ bool is_executable(nsmodule_type t) { return t == nsmodule_type::exe || t == nsm
 
 nsfetch* nsmodule::find_fetch(std::string_view name)
 {
-  auto it = std::ranges::find(fetch, name, &nsfetch::name);
+  auto it = std::ranges::find(fetch, fmt::format("{}_{}", this->name, name), &nsfetch::name);
+
   return it != fetch.end() ? &(*it) : nullptr;
 }
 
@@ -174,7 +173,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     glob_media.recurse              = true;
     glob_media.path_exclude_filters = bc.media_exclude_filter;
     glob_media.accumulate();
-    if (has_globs_changed |= sha_changed(bc, "data_group", glob_media.sha))
+    if ((has_globs_changed |= sha_changed(bc, "data_group", glob_media.sha)))
       write_sha_changed(bc, "data_group", glob_media.sha);
   }
 
@@ -233,7 +232,7 @@ void nsmodule::update_properties(nsbuild const& bc, std::string const& targ_name
     if (!bc.s_current_preset->glob_sources)
     {
       glob_sources.accumulate();
-      if (has_globs_changed |= sha_changed(bc, "src", glob_media.sha))
+      if ((has_globs_changed |= sha_changed(bc, "src", glob_media.sha)))
         write_sha_changed(bc, "src", glob_media.sha);
     }
   }
@@ -362,7 +361,7 @@ void nsmodule::update_fetch(nsbuild const& bc, nsinstallers& installer)
     return;
   for (auto& ft : fetch)
   {
-    if (ft.repo.empty())
+    if (ft.repo.empty() || ft.disabled)
       continue;
     auto dl = get_fetch_src_dir(bc, ft);
     if (!std::filesystem::exists(dl))
@@ -373,7 +372,8 @@ void nsmodule::update_fetch(nsbuild const& bc, nsinstallers& installer)
 
   for (auto& ft : fetch)
   {
-    fetch_content(bc, installer, ft);
+    if (!ft.disabled)
+      fetch_content(bc, installer, ft);
   }
 }
 

@@ -74,42 +74,32 @@ ns_text_handler(custom_cmake, build, state, type, name, content)
     auto& mod = build.frameworks.back().modules.back();
     if (name.starts_with("finalize"))
     {
-      if (mod.fetch.size() == 1)
-        append(mod.fetch.back().finalize, content);
+      auto nof = name.find_first_of('-');
+      if (nof != name.npos)
+      {
+        auto ft = mod.find_fetch(name.substr(nof + 1));
+        if (ft)
+          append(ft->finalize, content);
+      }
       else
       {
-        auto nof = name.find_first_of('-');
-        if (nof != name.npos)
-        {
-          auto ft = mod.find_fetch(name.substr(nof + 1));
-          if (ft)
-            append(ft->finalize, content);
-        }
-        else
-        {
-          for (auto& ft : mod.fetch)
-            append(ft.finalize, content);
-        }
+        for (auto& ft : mod.fetch)
+          append(ft.finalize, content);
       }
     }
     else if (name.starts_with("prepare"))
     {
-      if (mod.fetch.size() == 1)
-        append(mod.fetch.back().prepare, content);
+      auto nof = name.find_first_of('-');
+      if (nof != name.npos)
+      {
+        auto ft = mod.find_fetch(name.substr(nof + 1));
+        if (ft)
+          append(ft->prepare, content);
+      }
       else
       {
-        auto nof = name.find_first_of('-');
-        if (nof != name.npos)
-        {
-          auto ft = mod.find_fetch(name.substr(nof + 1));
-          if (ft)
-            append(ft->prepare, content);
-        }
-        else
-        {
-          for (auto& ft : mod.fetch)
-            append(ft.prepare, content);
-        }
+        for (auto& ft : mod.fetch)
+          append(ft.prepare, content);
       }
     }
   }

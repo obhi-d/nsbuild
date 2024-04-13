@@ -72,9 +72,9 @@ void halt()
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
   MessageBoxA(0, "Halt here", "Captions", 0);
 #else
-  // bool weAreLooping = true;
-  // while (weAreLooping)
-  //   ;
+  bool weAreLooping = true;
+  while (weAreLooping)
+    ;
 #endif
 }
 int main(int argc, char const* argv[])
