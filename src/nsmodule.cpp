@@ -286,11 +286,36 @@ void nsmodule::update_macros(nsbuild const& bc, std::string const& targ_name, ns
   macros["module_tags"] = tags;
 
   if (is_executable(type))
-    macros["module_extras"] =
+  {
+    std::string module_reg_extern;
+    std::string module_reg_calls;
+    if (bc.s_current_preset->static_plugins)
+    {
+      for (auto const& mod : required_plugins)
+      {
+        if (!mod.empty())
+        {
+          std::string fn_name;
+          auto const& d = bc.get_module(mod);
+          d.macros.im_print(fn_name, bc.plugin_entry);
+          fmt::format_to(std::back_inserter(module_reg_extern), R"(\n// import {})", mod);
+          fmt::format_to(std::back_inserter(module_reg_extern), R"(\nextern \"C\" BC_LIB_IMPORT void {}();)", fn_name);
+          fmt::format_to(std::back_inserter(module_reg_calls), R"(\n    {}();)", fn_name);
+        }
+      }
+    }
+
+    macros["module_extras_cpp"] = fmt::format(R"({}\nnamespace BuildConfig \n{{\n  void {}()\n  {{ {} \n  }}\n}}\n)",
+                                              module_reg_extern, bc.plugin_registration, module_reg_calls);
+    macros["module_extras_hpp"] =
         fmt::format(R"(constexpr std::string_view AppName = \"{}\";\n  constexpr std::string_view OrgName = \"{}\";\n)",
                     name, org_name);
+  }
   else
-    macros["module_extras"] = "";
+  {
+    macros["module_extras_hpp"] = "";
+    macros["module_extras_cpp"] = "";
+  }
 
   if (!fetch.empty())
   {
@@ -970,7 +995,7 @@ void nsmodule::write_dependencies_mod(std::ostream& ofs, nsbuild const& bc) cons
   write_dependencies(ofs, bc, pub_intf);
   write_dependencies(ofs, bc, priv_intf);
   write_refs_dependencies(ofs, bc, *this);
-  if (bc.s_current_preset->static_plugins && type == nsmodule_type::exe)
+  if (bc.s_current_preset->static_plugins)
     write_plugin_dependencies(ofs, bc);
 }
 
@@ -1016,6 +1041,7 @@ void nsmodule::write_plugin_dependencies(std::ostream& ofs, nsbuild const& bc) c
   {
     auto const& mod = bc.get_module(r);
     write_dependency(ofs, mod.target_name, cmake::inheritance::priv, "");
+    write_target_link_libs(ofs, mod.target_name, cmake::inheritance::priv, "");
   }
 }
 

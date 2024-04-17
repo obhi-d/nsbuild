@@ -41,6 +41,10 @@ struct nsbuild : public neo::command_handler
   std::string media_name = "media";
 
   std::string media_exclude_filter = "Internal";
+  // Plugin registration
+  std::string plugin_registration = "";
+  // Plugin entry
+  std::string plugin_entry = "";
 
   std::string test_tags = "";
 

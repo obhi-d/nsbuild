@@ -308,6 +308,18 @@ ns_cmd_handler(generator, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(plugin_registration, build, state, cmd)
+{
+  build.plugin_registration = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(plugin_entry, build, state, cmd)
+{
+  build.plugin_entry = get_idx_param(cmd, 0);
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(preset, build, state, cmd)
 {
   build.presets.emplace_back();
@@ -386,6 +398,8 @@ ns_cmd_handler(type, build, state, cmd)
     t = nsmodule_type::exe;
   else if (type == "lib")
     t = nsmodule_type::lib;
+  else if (type == "shared_lib")
+    t = nsmodule_type::shared_lib;
   else if (type == "test")
     t = nsmodule_type::test;
   if (build.state.ras == runas::generate_enum)
@@ -922,6 +936,8 @@ ns_registry(nsbuild)
   ns_cmd(media_name);
   ns_cmd(media_exclude_filter);
   ns_cmd(test_tag);
+  ns_cmd(plugin_registration);
+  ns_cmd(plugin_entry);
 
   ns_scope_cust(preset, clear_presets)
   {

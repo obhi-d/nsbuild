@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(nsbuild VERSION 1.0.3 LANGUAGES C CXX)
+project(nsbuild VERSION 1.0.4 LANGUAGES C CXX)
 
 
 include(FetchContent)
@@ -76,7 +76,11 @@ add_executable(nsbuild
  "src/nsbuildcmds.cpp" 
  "src/nsmedia.cpp" 
  "src/nsenums.cpp"  
- "src/nspreset.cpp"   "src/nsheader_map.cpp" "include/nsheader_map.h" "include/nsinstallers.h" "src/nsinstallers.cpp")
+ "src/nspreset.cpp"   
+ "src/nsheader_map.cpp" 
+ "include/nsheader_map.h" 
+ "include/nsinstallers.h" 
+ "src/nsinstallers.cpp" )
 
  add_custom_command(TARGET nsbuild POST_BUILD 
   COMMAND ${CMAKE_COMMAND} -E copy_if_different  
@@ -84,6 +88,7 @@ add_executable(nsbuild
     ${CMAKE_CURRENT_SOURCE_DIR}/data/EnumStringHash.hxx 
     ${CMAKE_CURRENT_SOURCE_DIR}/data/FlagType.hxx
     ${CMAKE_CURRENT_SOURCE_DIR}/data/ModuleConfig.hxx    
+    ${CMAKE_CURRENT_SOURCE_DIR}/data/ModuleConfig.cxx
     ${CMAKE_CURRENT_SOURCE_DIR}/data/CyclicHeaderMapBegin.html
     ${CMAKE_CURRENT_SOURCE_DIR}/data/CyclicHeaderMapEnd.html
     ${CMAKE_CURRENT_SOURCE_DIR}/data/TopoHeaderMapBegin.html
@@ -114,6 +119,7 @@ install (FILES
   "${CMAKE_CURRENT_LIST_DIR}/data/BuildConfig.hxx"
   "${CMAKE_CURRENT_LIST_DIR}/data/FlagType.hxx"
   "${CMAKE_CURRENT_LIST_DIR}/data/ModuleConfig.hxx" 
+  "${CMAKE_CURRENT_LIST_DIR}/data/ModuleConfig.cxx"
   "${CMAKE_CURRENT_LIST_DIR}/data/EnumStringHash.hxx"
   "${CMAKE_CURRENT_LIST_DIR}/data/CyclicHeaderMapBegin.html"
   "${CMAKE_CURRENT_LIST_DIR}/data/CyclicHeaderMapEnd.html"

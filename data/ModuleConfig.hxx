@@ -13,7 +13,7 @@
 
 namespace BuildConfig
 {
-  @module_extras@
+  @module_extras_hpp@
 
   namespace @PROJECT_NAME@
   {

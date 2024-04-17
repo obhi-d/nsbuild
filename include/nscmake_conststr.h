@@ -223,6 +223,7 @@ static inline constexpr char k_plugin_locations[] = R"_(
 static inline constexpr char k_finale[] = R"_(
 
 configure_file("${__nsbuild_data}/ModuleConfig.hxx" "${module_gen_dir}/${module_name}ModuleConfig.hpp")
+configure_file("${__nsbuild_data}/ModuleConfig.cxx" "${module_gen_dir}/local/${module_name}ModuleConfig.cpp")
 if (EXISTS "${module_dir}/private/_Config.hxx")
 	configure_file("${module_dir}/private/_Config.hxx" "${module_gen_dir}/${module_name}InternalConfig.hpp")
 else()

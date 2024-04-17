@@ -166,8 +166,11 @@ inline std::unordered_set<std::string> get_first_set(neo::command const& cmd)
   return ret;
 }
 
-template <typename Lambda>
-void foreach_variable(std::ostream& ostr, std::string_view content, Lambda&& l)
+inline void write(std::string& o, std::string_view what) { o += what; }
+inline void write(std::ostream& o, std::string_view what) { o << what; }
+
+template <typename O, typename Lambda>
+void foreach_variable(O& ostr, std::string_view content, Lambda&& l)
 {
   std::size_t r   = 0;
   std::size_t off = 0;
@@ -184,7 +187,7 @@ void foreach_variable(std::ostream& ostr, std::string_view content, Lambda&& l)
       }
       else
       {
-        ostr << content.substr(r, pos - r);
+        write(ostr, content.substr(r, pos - r));
         pos++;
         if (content[pos] == '(')
           pos++;
@@ -213,7 +216,7 @@ void foreach_variable(std::ostream& ostr, std::string_view content, Lambda&& l)
     }
     else
     {
-      ostr << content.substr(r);
+      write(ostr, content.substr(r));
       r = content.length();
     }
   }

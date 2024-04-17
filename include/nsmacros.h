@@ -21,10 +21,11 @@ struct nsmacros
   /// @param ostr Stream
   /// @param content Input content
   /// @param Format options
-  void im_print(std::ostream& ostr, std::string_view content, output_fmt = output_fmt::cmake_def) const;
+  template <typename O>
+  void im_print(O& ostr, std::string_view content, output_fmt = output_fmt::cmake_def) const;
 
   void print(std::ostream&, output_fmt = output_fmt::cmake_def) const;
-  
+
   inline value& operator[](std::string const& name)
   {
     auto it = macros.find(name);
@@ -39,3 +40,24 @@ struct nsmacros
 
   nsmacros const* fallback = nullptr;
 };
+
+template <typename O>
+void nsmacros::im_print(O& ostr, std::string_view content, output_fmt) const
+{
+  foreach_variable(ostr, content,
+                   [this](O& ostr, std::string_view sv)
+                   {
+                     std::string      wrapper{sv};
+                     std::string_view subs;
+                     auto const*      m = this;
+                     while (m)
+                     {
+                       auto it = m->macros.find(wrapper);
+                       if (it != m->macros.end())
+                         subs = order[it->second].second;
+                       m = m->fallback;
+                     }
+
+                     write(ostr, subs);
+                   });
+}

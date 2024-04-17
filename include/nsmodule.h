@@ -17,6 +17,7 @@ enum class nsmodule_type
   data,
   plugin,
   lib,
+  shared_lib,
   exe,
   external,
   ref,
@@ -137,6 +138,8 @@ struct nsmodule
           l(sv);
       }
     }
+    for (auto const& i : required_plugins)
+      l(i);
   }
   template <typename Lambda>
   void foreach_references(Lambda&& l) const
