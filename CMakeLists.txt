@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(nsbuild VERSION 1.0.4 LANGUAGES C CXX)
+project(nsbuild VERSION 0.0.12 LANGUAGES C CXX)
 
 
 include(FetchContent)
