@@ -9,6 +9,7 @@ struct nsfetch
   std::string_view         filters;
   neo::text_content        finalize;
   neo::text_content        prepare;
+  neo::text_content        include;
   std::string_view         repo;
   std::string_view         license;
   std::string_view         tag;

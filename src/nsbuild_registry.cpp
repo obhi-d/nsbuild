@@ -62,6 +62,27 @@ void collect_content(neo::text_content const& src, std::filesystem::path root, n
   }
 }
 
+bool add(nsmodule& mod, auto from, neo::text_content const& content, std::string_view name, std::string_view query)
+{
+  if (name.starts_with(query))
+  {
+    auto nof = name.find_first_of('-');
+    if (nof != name.npos)
+    {
+      auto ft = mod.find_fetch(name.substr(nof + 1));
+      if (ft)
+        append(ft->*from, content);
+    }
+    else
+    {
+      for (auto& ft : mod.fetch)
+        append(ft.*from, content);
+    }
+    return true;
+  }
+  return false;
+}
+
 // -------------------------------------------------------------------------------------------------------------
 ns_text_handler(custom_cmake, build, state, type, name, content)
 {
@@ -72,35 +93,14 @@ ns_text_handler(custom_cmake, build, state, type, name, content)
     if (build.frameworks.back().modules.empty())
       return;
     auto& mod = build.frameworks.back().modules.back();
-    if (name.starts_with("finalize"))
+    if (add(mod, &nsfetch::finalize, content, name, "finalize"))
     {
-      auto nof = name.find_first_of('-');
-      if (nof != name.npos)
-      {
-        auto ft = mod.find_fetch(name.substr(nof + 1));
-        if (ft)
-          append(ft->finalize, content);
-      }
-      else
-      {
-        for (auto& ft : mod.fetch)
-          append(ft.finalize, content);
-      }
     }
-    else if (name.starts_with("prepare"))
+    else if (add(mod, &nsfetch::prepare, content, name, "prepare"))
     {
-      auto nof = name.find_first_of('-');
-      if (nof != name.npos)
-      {
-        auto ft = mod.find_fetch(name.substr(nof + 1));
-        if (ft)
-          append(ft->prepare, content);
-      }
-      else
-      {
-        for (auto& ft : mod.fetch)
-          append(ft.prepare, content);
-      }
+    }
+    else if (add(mod, &nsfetch::include, content, name, "include"))
+    {
     }
   }
   else if (type == "content")

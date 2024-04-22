@@ -875,6 +875,13 @@ void nsmodule::write_find_package(std::ostream& ofs, nsbuild const& bc) const
           << "\n\t$<INSTALL_INTERFACE:\"${__sdk_install_libraries}\">"
           << "\n)";
     }
+
+    if (!ft.include.fragments.empty())
+    {
+      cmake::line(ofs, "include-package-cmake");
+      for (auto const& f : ft.include.fragments)
+        ofs << f << "\n";
+    }
   }
 }
 
