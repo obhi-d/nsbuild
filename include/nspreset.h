@@ -1,4 +1,5 @@
 #pragma once
+#include "nsbuildcmds.h"
 #include "nscommon.h"
 
 #include <cstdint>
@@ -17,6 +18,9 @@ struct nspreset
   std::string  tags;
   std::string  platform;
   nameval_list definitions;
+
+  nsbuildsteplist prebuild;
+  nsbuildsteplist postbuild;
 
   std::vector<std::string> allowed_filters;
   std::vector<std::string> disallowed_filters;

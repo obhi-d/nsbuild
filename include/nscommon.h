@@ -30,6 +30,19 @@ enum class coding_style
   SnakeCase
 };
 
+enum class nsmodule_type
+{
+  none,
+  data,
+  plugin,
+  lib,
+  shared_lib,
+  exe,
+  external,
+  ref,
+  test
+};
+
 enum class runas
 {
   main,

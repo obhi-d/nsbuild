@@ -11,18 +11,6 @@
 
 struct nstarget;
 struct nsbuild;
-enum class nsmodule_type
-{
-  none,
-  data,
-  plugin,
-  lib,
-  shared_lib,
-  exe,
-  external,
-  ref,
-  test
-};
 
 // std::string_view to_string(nsmodule_type);
 bool has_data(nsmodule_type);
@@ -190,6 +178,9 @@ struct nsmodule
 
   void write_prebuild_steps(std::ostream& ofs, nsbuild const& bc) const;
   void write_postbuild_steps(std::ostream& ofs, nsbuild const& bc) const;
+  int  begin_prebuild_steps(std::ostream& ofs, nsbuildsteplist const& list, nsbuild const& bc) const;
+  int  end_prebuild_steps(std::ostream& ofs, nsbuildsteplist const& list, nsbuild const& bc) const;
+  int  write_postbuild_steps(std::ostream& ofs, nsbuildsteplist const& list, nsbuild const& bc) const;
 
   void write_cxx_options(std::ostream&, nsbuild const& bc) const;
 

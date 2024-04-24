@@ -686,30 +686,49 @@ void nsmodule::write_target(std::ostream& ofs, nsbuild const& bc, std::string co
 
 void nsmodule::write_prebuild_steps(std::ostream& ofs, const nsbuild& bc) const
 {
-  if (!prebuild.empty())
+  int total = begin_prebuild_steps(ofs, bc.s_current_preset->prebuild, bc);
+  total += begin_prebuild_steps(ofs, prebuild, bc);
+  if (total)
   {
-    cmake::line(ofs, "prebuild-steps");
-    for (auto const& step : prebuild)
-      step.print(ofs, bc, *this);
-
     ofs << cmake::k_begin_prebuild_steps;
-    for (auto const& step : prebuild)
-    {
-      for (auto const& d : step.artifacts)
-        ofs << fmt::format("\nlist(APPEND module_prebuild_artifacts {})", d);
-    }
+    end_prebuild_steps(ofs, bc.s_current_preset->prebuild, bc);
+    end_prebuild_steps(ofs, prebuild, bc);
     ofs << cmake::k_finalize_prebuild_steps;
   }
 }
 
-void nsmodule::write_postbuild_steps(std::ostream& ofs, nsbuild const& bc) const
+void nsmodule::write_postbuild_steps(std::ostream& ofs, const nsbuild& bc) const
 {
-  if (!postbuild.empty())
+  write_postbuild_steps(ofs, bc.s_current_preset->prebuild, bc);
+  write_postbuild_steps(ofs, prebuild, bc);
+}
+
+int nsmodule::begin_prebuild_steps(std::ostream& ofs, nsbuildsteplist const& list, const nsbuild& bc) const
+{
+  if (!list.empty())
+  {
+    cmake::line(ofs, "prebuild-steps");
+    for (auto const& step : list)
+    {
+      if (step.module_filter == nsmodule_type::none || step.module_filter == type)
+        continue;
+
+      step.print(ofs, bc, *this);
+    }
+  }
+  return (int)list.size();
+}
+
+int nsmodule::write_postbuild_steps(std::ostream& ofs, nsbuildsteplist const& list, nsbuild const& bc) const
+{
+  if (!list.empty())
   {
     cmake::line(ofs, "postbuild-steps");
     ofs << fmt::format("\nadd_custom_command(TARGET ${{module_target}} POST_BUILD ");
-    for (auto const& step : postbuild)
+    for (auto const& step : list)
     {
+      if (step.module_filter == nsmodule_type::none || step.module_filter == type)
+        continue;
       for (auto const& s : step.steps)
       {
         ofs << "\n  COMMAND " << s.command << " " << s.params;
@@ -719,6 +738,22 @@ void nsmodule::write_postbuild_steps(std::ostream& ofs, nsbuild const& bc) const
     }
     ofs << "\n\t)";
   }
+  return (int)list.size();
+}
+
+int nsmodule::end_prebuild_steps(std::ostream& ofs, nsbuildsteplist const& list, const nsbuild& bc) const
+{
+  if (!list.empty())
+  {
+    for (auto const& step : list)
+    {
+      if (step.module_filter == nsmodule_type::none || step.module_filter == type)
+        continue;
+      for (auto const& d : step.artifacts)
+        ofs << fmt::format("\nlist(APPEND module_prebuild_artifacts {})", d);
+    }
+  }
+  return (int)list.size();
 }
 
 void nsmodule::write_cxx_options(std::ostream& ofs, nsbuild const& bc) const

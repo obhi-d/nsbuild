@@ -4,6 +4,27 @@
 
 void halt();
 
+nsmodule_type get_type(std::string_view type)
+{
+  if (type == "plugin")
+    return nsmodule_type::plugin;
+  else if (type == "ref")
+    return nsmodule_type::ref;
+  else if (type == "data")
+    return nsmodule_type::data;
+  else if (type == "extern")
+    return nsmodule_type::external;
+  else if (type == "exe")
+    return nsmodule_type::exe;
+  else if (type == "lib")
+    return nsmodule_type::lib;
+  else if (type == "shared_lib")
+    return nsmodule_type::shared_lib;
+  else if (type == "test")
+    return nsmodule_type::test;
+  return nsmodule_type::none;
+}
+
 void append(neo::text_content& dst, neo::text_content const& src)
 {
   for (auto const& s : src.fragments)
@@ -384,24 +405,7 @@ ns_cmd_handler(excludes, build, state, cmd)
 
 ns_cmd_handler(type, build, state, cmd)
 {
-  auto& t    = build.s_nsmodule->type;
-  auto  type = get_idx_param(cmd, 0);
-  if (type == "plugin")
-    t = nsmodule_type::plugin;
-  else if (type == "ref")
-    t = nsmodule_type::ref;
-  else if (type == "data")
-    t = nsmodule_type::data;
-  else if (type == "extern")
-    t = nsmodule_type::external;
-  else if (type == "exe")
-    t = nsmodule_type::exe;
-  else if (type == "lib")
-    t = nsmodule_type::lib;
-  else if (type == "shared_lib")
-    t = nsmodule_type::shared_lib;
-  else if (type == "test")
-    t = nsmodule_type::test;
+  build.s_nsmodule->type = get_type(get_idx_param(cmd, 0));
   if (build.state.ras == runas::generate_enum)
     return neo::retcode::e_success_stop;
   return neo::retcode::e_success;
@@ -494,15 +498,21 @@ ns_star_handler(var, build, state, cmd)
 
 ns_cmd_handler(prebuild, build, state, cmd)
 {
-  auto& m             = build.s_nsmodule->prebuild;
+  auto& m             = build.s_nsmodule ? build.s_nsmodule->prebuild : build.s_nspreset->prebuild;
   build.s_nsbuildstep = cmd_insert(m, cmd);
   return neo::retcode::e_success;
 }
 
 ns_cmd_handler(postbuild, build, state, cmd)
 {
-  auto& m             = build.s_nsmodule->postbuild;
+  auto& m             = build.s_nsmodule ? build.s_nsmodule->postbuild : build.s_nspreset->postbuild;
   build.s_nsbuildstep = cmd_insert(m, cmd);
+  return neo::retcode::e_success;
+}
+
+ns_cmd_handler(module_filter, build, state, cmd)
+{
+  build.s_nsbuildstep->module_filter = get_type(get_idx_param(cmd, 0, ""));
   return neo::retcode::e_success;
 }
 
@@ -990,6 +1000,7 @@ ns_registry(nsbuild)
 
     ns_scope_cust(steps, clear_buildcmds)
     {
+      ns_cmd(module_filter);
       ns_cmd(print);
       ns_cmd(trace);
       ns_cmd(cmake);

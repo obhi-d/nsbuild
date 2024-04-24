@@ -24,6 +24,7 @@ struct nsbuildstep
   std::string    check;
   std::string    wd;
   std::string    name;
+  nsmodule_type  module_filter = nsmodule_type::none;
 
   void print(std::ostream&, nsbuild const&, nsmodule const&) const;
 };
