@@ -43,6 +43,8 @@ enum class nsmodule_type
   test
 };
 
+using module_filter_flags = uint32_t;
+
 enum class runas
 {
   main,
@@ -80,7 +82,7 @@ struct nsfilters
 nsfilter  classify_filter(std::string_view);
 nsfilters get_filters(neo::command::param_t const& p);
 
-inline std::string_view get_idx_param(neo::command const& cmd, std::size_t i, std::string_view def = "")
+inline std::string_view get_idx_param(neo::command const& cmd, std::size_t i, std::string_view def = {})
 {
   auto const& params = cmd.params();
   auto        size   = params.value().size();
@@ -89,7 +91,7 @@ inline std::string_view get_idx_param(neo::command const& cmd, std::size_t i, st
   return cmd.as_string(params.value()[i], def);
 }
 
-inline std::string get_first_concat(neo::command const& cmd, std::string def = "")
+inline std::string get_first_concat(neo::command const& cmd, std::string def = {})
 {
   auto const& params = cmd.params();
   auto        size   = params.value().size();

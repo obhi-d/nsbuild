@@ -117,3 +117,16 @@ void cmd_any(nsbuildcmds& list, neo::command const& cmd)
   list.command = cmd.name();
   list.params  = cmake::value(cmd.params(), ' ');
 }
+
+void cmd_run(nsbuildcmds& list, neo::command const& cmd)
+{
+  auto it  = cmd.params().value().begin();
+  auto end = cmd.params().value().end();
+  if (it != end)
+  {
+    cmake::value(list.command, it, it + 1, ' ');
+    it++;
+    if (it != end)
+      cmake::value(list.params, it, end, ' ');
+  }
+}

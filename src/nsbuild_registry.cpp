@@ -512,7 +512,16 @@ ns_cmd_handler(postbuild, build, state, cmd)
 
 ns_cmd_handler(module_filter, build, state, cmd)
 {
-  build.s_nsbuildstep->module_filter = get_type(get_idx_param(cmd, 0, ""));
+  uint32_t i = 0;
+  while (true)
+  {
+    auto const filter = get_idx_param(cmd, i++);
+    if (filter.empty())
+      break;
+    auto type = get_type(filter);
+    if (type != nsmodule_type::none)
+      build.s_nsbuildstep->module_filter |= (1u << (uint32_t)type);
+  }
   return neo::retcode::e_success;
 }
 
@@ -567,6 +576,12 @@ ns_cmd_handler(python, build, state, cmd)
 ns_star_handler(any, build, state, cmd)
 {
   cmd_any(*build.s_nsbuildcmds, cmd);
+  return neo::retcode::e_success;
+}
+
+ns_star_handler(run, build, state, cmd)
+{
+  cmd_run(*build.s_nsbuildcmds, cmd);
   return neo::retcode::e_success;
 }
 
@@ -914,7 +929,7 @@ ns_cmdend_handler(clear_test, build, state, cmd)
 
 ns_registry(nsbuild)
 {
-  neo::command_id prebuild;
+  neo::command_id buildsteps;
   neo::command_id intf;
   neo::command_id var;
 
@@ -971,6 +986,28 @@ ns_registry(nsbuild)
     ns_cmd(build_type);
     ns_cmd(static_libs);
     ns_cmd(static_plugins);
+
+    ns_scope_cust(prebuild, clear_buildstep)
+    {
+      ns_save_scope(buildsteps);
+      ns_cmd(artifacts);
+      ns_cmd(dependencies);
+      ns_cmd(module_filter);
+
+      ns_scope_cust(steps, clear_buildcmds)
+      {
+        ns_cmd(print);
+        ns_cmd(trace);
+        ns_cmd(cmake);
+        ns_cmd(copy);
+        ns_cmd(copy_dir);
+        ns_cmd(python);
+        ns_star(any);
+        ns_star(run);
+      }
+    }
+
+    ns_subalias_cust(postbuild, clear_buildstep, buildsteps);
   }
 
   ns_cmd(excludes);
@@ -992,26 +1029,8 @@ ns_registry(nsbuild)
   ns_cmd(references);
   ns_cmd(required_plugins);
 
-  ns_scope_cust(prebuild, clear_buildstep)
-  {
-    ns_save_scope(prebuild);
-    ns_cmd(artifacts);
-    ns_cmd(dependencies);
-
-    ns_scope_cust(steps, clear_buildcmds)
-    {
-      ns_cmd(module_filter);
-      ns_cmd(print);
-      ns_cmd(trace);
-      ns_cmd(cmake);
-      ns_cmd(copy);
-      ns_cmd(copy_dir);
-      ns_cmd(python);
-      ns_star(any);
-    }
-  }
-
-  ns_subalias_cust(postbuild, clear_buildstep, prebuild);
+  ns_subalias_cust(prebuild, clear_buildstep, buildsteps);
+  ns_subalias_cust(postbuild, clear_buildstep, buildsteps);
 
   ns_scope_cust(test_namespace, clear_testns)
   {

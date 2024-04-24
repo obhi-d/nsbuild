@@ -20,11 +20,11 @@ struct nsbuildstep
   std::string              injected_config_body;
   std::string              injected_config_end;
 
-  nsbuildcmdlist steps;
-  std::string    check;
-  std::string    wd;
-  std::string    name;
-  nsmodule_type  module_filter = nsmodule_type::none;
+  nsbuildcmdlist      steps;
+  std::string         check;
+  std::string         wd;
+  std::string         name;
+  module_filter_flags module_filter = 0;
 
   void print(std::ostream&, nsbuild const&, nsmodule const&) const;
 };
