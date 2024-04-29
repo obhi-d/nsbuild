@@ -870,14 +870,17 @@ void nsmodule::write_find_package(std::ostream& ofs, nsbuild const& bc) const
   {
     cmake::line(ofs, "find-package");
     if (ft.components.empty())
+    {
+      ofs << fmt::format("\nset({}_DIR \"${{{}_sdk_dir}}\")", ft.package, ft.name);
       ofs << fmt::format(cmake::k_find_package, ft.package, "", ft.name);
+    }
     else
     {
-
+      ofs << fmt::format("\nset({}_DIR \"${{{}_sdk_dir}}\")", ft.package, ft.name);
       ofs << fmt::format(cmake::k_find_package_comp_start, ft.package, ft.version);
       for (auto const& c : ft.components)
         ofs << c << " ";
-      ofs << cmake::k_find_package_comp_end;
+      ofs << fmt::format(cmake::k_find_package_comp_end, ft.name);
     }
 
     auto namespace_name = ft.namespace_name.empty() ? ft.package : ft.namespace_name;

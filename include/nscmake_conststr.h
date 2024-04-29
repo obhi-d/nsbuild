@@ -150,7 +150,7 @@ static inline constexpr char k_target_include_directories[] =
 static inline constexpr char k_find_package[] = "\nfind_package({} {} REQUIRED PATHS ${{{}_sdk_dir}} NO_DEFAULT_PATH)";
 
 static inline constexpr char k_find_package_comp_start[] = "\nfind_package({} {} REQUIRED COMPONENTS ";
-static inline constexpr char k_find_package_comp_end[]   = "PATHS ${fetch_sdk_dir} NO_DEFAULT_PATH)";
+static inline constexpr char k_find_package_comp_end[]   = "PATHS ${{{}_sdk_dir}} NO_DEFAULT_PATH)";
 
 static inline constexpr char k_write_dependency[] = R"_(
 
