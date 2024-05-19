@@ -165,6 +165,11 @@ void nsenum_context::parse(nsmodule const& m, nsbuild const& bc, std::string con
     return;
   includes.emplace("FlagType.hpp");
   includes.emplace("EnumStringHash.hpp");
+  if (bc.has_fmtlib)
+  {
+    includes.emplace("fmt/format.h");
+    has_fmtlib = true;
+  }
   std::vector<nsenum> enums;
   for (auto const& en : jenums.value())
     enums.emplace_back(*this, en);
@@ -542,6 +547,10 @@ void nsenum::write_header(std::ostream& ofs) const
   write_header_alias(ofs);
   ctx.end_namespace(ofs, namespace_name);
   //
+  if (ctx.is_fmtlib_enabled() && string_table)
+  {
+    write_header_fmtlib_formatter(ofs);
+  }
 }
 
 void nsenum::write_header_alias(std::ostream& ofs) const
@@ -559,7 +568,7 @@ void nsenum::write_header_string_table(std::ostream& ofs) const
 {
   auto starts_with = stylize(ctx.style(), "StartsWith");
   auto ends_with   = stylize(ctx.style(), "EndsWith");
-  auto from_string = stylize(ctx.style(), "fromString");
+  auto from_string = stylize(ctx.style(), "FromString");
   auto to          = stylize(ctx.style(), "To");
   auto to_bit      = stylize(ctx.style(), "ToBit");
   auto to_enum     = stylize(ctx.style(), "ToEnum");
@@ -589,6 +598,7 @@ void nsenum::write_header_string_table(std::ostream& ofs) const
       ofs << fmt::format("\n  static Bit  {1}(Enum iValue) {{ return static_cast<Bit>({0} << iValue); }}"
                          "\n  static Bit  {1}(std::string_view iValue) {{ return {1}({3}(iValue)); }}" 
                          "\n  static Enum {2}(Bit iValue) {{ return static_cast<Enum>(std::popcount(static_cast<utype>(iValue))); }}", one, to_bit, to_enum, from_string );
+
   // clang-format on
 }
 
@@ -611,7 +621,25 @@ void nsenum::write_header_string_key_table(std::ostream& ofs) const
   if (auto_flags && has_enum && has_flags)
     ofs << fmt::format("\n  static Bit {1}(enums::Key iValue) {{ return static_cast<Bit>({0} << {3}(iValue)); }}"
                        "\n  static Enum {2}(Bit iValue)      {{ return static_cast<Enum>(std::popcount(static_cast<utype>(iValue))); }}\n", one, to_flag, to_enum, from_string_key);
+
   // clang-format on
+}
+
+void nsenum::write_header_fmtlib_formatter(std::ostream& ofs) const
+{
+  auto value_type = default_value_type();
+  auto to_string  = string_key ? stylize(ctx.style(), "ToStringKey") : stylize(ctx.style(), "ToString");
+  ofs << fmt::format("\ntemplate <>"
+                     "\nstruct fmt::formatter<{0}::{1}::{2}> : fmt::formatter<std::string_view>    "
+                     "\n{{                                                                         "
+                     "\n  // parse is inherited from formatter<string_view>.                       "
+                     "\n  template <typename FormatContext>                                        "
+                     "\n  auto format({0}::{1}::{2} const& c, FormatContext& ctx)                  "
+                     "\n  {{                                                                       "
+                     "\n    return fmt::formatter<std::string_view>::format({0}::{1}::{3}(c), ctx);"
+                     "\n  }}                                                                       "
+                     "\n}};                                                                        ",
+                     namespace_name, name, value_type, to_string);
 }
 
 void nsenum::write_header_value_functions(std::ostream& ofs) const
@@ -625,13 +653,24 @@ void nsenum::write_header_value_functions(std::ostream& ofs) const
   auto value_type = default_value_type();
   ofs << fmt::format("\n  static Value {}({} iFrom);", to_value, value_type);
   if (string_key)
+  {
     ofs << fmt::format("\n  static enums::Key {1}({0} iFrom) {{ return "
                        "std::get<0>({2}(iFrom)); }}",
                        value_type, to_value, to_string_key);
+
+    ofs << fmt::format(
+        "\n  inline friend std::ostream& operator<<(std::ostream& os, {} value) {{ return os << {}(value); }} ",
+        value_type, to_string_key);
+  }
   else
+  {
     ofs << fmt::format("\n  static std::string_view {1}({0} iFrom) {{ return "
                        "std::get<0>({2}(iFrom)); }}",
                        value_type, to_string, to_value);
+    ofs << fmt::format(
+        "\n  inline friend std::ostream& operator<<(std::ostream& os, {} value) {{ return os << {}(value); }} ",
+        value_type, to_string);
+  }
   auto it = jenum.find("declarations");
   if (it != jenum.end())
   {

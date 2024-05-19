@@ -52,8 +52,9 @@ struct nsbuild : public neo::command_handler
   std::string macro_prefix;
   std::string file_prefix;
 
-  bool verbose  = false;
-  bool cppcheck = false;
+  bool verbose    = false;
+  bool cppcheck   = false;
+  bool has_fmtlib = false;
 
   // Project name
   std::string project_name;

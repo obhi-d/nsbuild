@@ -178,6 +178,12 @@ ns_cmd_handler(verbose, build, state, cmd)
   return neo::retcode::e_success;
 }
 
+ns_cmd_handler(has_fmtlib, build, state, cmd)
+{
+  build.has_fmtlib = to_bool(get_idx_param(cmd, 0));
+  return neo::retcode::e_success;
+}
+
 ns_cmd_handler(macro, build, state, cmd)
 {
   auto name                       = get_idx_param(cmd, 0);
@@ -947,6 +953,7 @@ ns_registry(nsbuild)
   ns_cmd(file_prefix);
   ns_cmd(version);
   ns_cmd(verbose);
+  ns_cmd(has_fmtlib);
   ns_cmd(sdk_dir);
   ns_cmd(cmake_gen_dir);
   ns_cmd(frameworks_dir);

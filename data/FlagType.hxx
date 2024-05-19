@@ -7,14 +7,107 @@
 #include <compare>
 #include <cstdint>
 #include <initializer_list>
+#include <ostream>
 #include <type_traits>
 
 // clang-format off
 namespace @default_namespace_name@ // namespace
 {
-// clang-format on
+        
 
 template <typename T> concept EnumType = std::is_enum_v<T>;
+
+/**
+ * Provides a mechanism for streaming Flags in autoflags enum
+ */
+template <typename T>
+class AutoFlags
+{
+public:
+
+  using value_type = typename T::Enum;
+  using flags_type = typename T::Bit;
+  using utype      = typename T::utype;
+
+  constexpr AutoFlags() noexcept = default;
+  constexpr explicit AutoFlags(flags_type v) noexcept : value(v) {}
+
+  class iterator
+  {
+  public:
+    constexpr iterator() noexcept = default;
+    explicit iterator(flags_type value) noexcept
+        : value(value)
+    {
+      next();
+    }
+
+    constexpr value_type operator*() const
+    {
+      return index;
+    }
+
+    inline iterator& operator++()
+    {
+      next();
+      return *this;
+    }
+
+    inline iterator operator++(int)
+    {
+      iterator other = *this;
+      next();
+      return other;
+    }
+
+    constexpr bool operator==(iterator const& other) const noexcept = default;
+    constexpr bool operator!=(iterator const& other) const noexcept = default;
+
+  private:
+    void next()
+    {
+      utype& ivalue = (utype&)value;
+      if (ivalue)
+      {
+        auto z = std::countr_zero((utype)value);
+        z++;
+        ((utype&)index) += z;
+        ivalue >>= z;
+      }
+      else
+      {
+        index = T::eNone;
+      }
+    }
+
+    value_type index = T::eNone;
+    flags_type value = {};
+  };
+  
+  constexpr bool operator==(AutoFlags const& other) const noexcept = default;
+  constexpr bool operator!=(AutoFlags const& other) const noexcept = default;
+
+  iterator begin() const noexcept
+  {
+    return iterator(value);
+  }
+  iterator end() const noexcept
+  {
+    return iterator();
+  }
+  void emplace(value_type e)
+  {
+    value |= T::toBit(e);
+  }
+  constexpr inline bool contains(value_type e) const noexcept
+  {
+    return !!(value & T::toBit(e));
+  }
+
+private:
+  flags_type value = {};
+};
+
 
 //! Use this class only and only when you want to convert an Enum into flags
 //! If the enum already has flag bits representation, use
@@ -108,7 +201,7 @@ public:
   inline constexpr EnumFlags operator|(EnumFlags iValue) const noexcept { return (EnumFlags)(value | iValue.value); }
   inline constexpr EnumFlags operator&(EnumFlags iValue) const noexcept { return (EnumFlags)(value & iValue.value); }
   inline constexpr EnumFlags operator~() const noexcept { return (EnumFlags)(~value); }
-  inline constexpr operator bool() const noexcept { return value != 0; }
+  inline constexpr           operator bool() const noexcept { return value != 0; }
   template <typename Enum2>
   inline constexpr bool operator()(Enum2 iValue) const noexcept
   {
@@ -166,7 +259,7 @@ private:
     using T = std::underlying_type_t<EnumClass>;                                                                       \
     return static_cast<EnumClass>(static_cast<T>(lhs) | static_cast<T>(rhs));                                          \
   }                                                                                                                    \
-  inline EnumClass& operator|=(EnumClass& lhs, EnumClass rhs)                                                \
+  inline EnumClass& operator|=(EnumClass& lhs, EnumClass rhs)                                                          \
   {                                                                                                                    \
     lhs = lhs | rhs;                                                                                                   \
     return lhs;                                                                                                        \
@@ -181,7 +274,7 @@ private:
     using T = std::underlying_type_t<EnumClass>;                                                                       \
     return static_cast<EnumClass>(static_cast<T>(lhs) & static_cast<T>(rhs));                                          \
   }                                                                                                                    \
-  inline auto operator&=(EnumClass& lhs, EnumClass rhs)                                                      \
+  inline auto operator&=(EnumClass& lhs, EnumClass rhs)                                                                \
   {                                                                                                                    \
     lhs = lhs & rhs;                                                                                                   \
     return lhs;                                                                                                        \
@@ -206,3 +299,5 @@ constexpr static inline Int defineFlag(Int v)
   using BC_TOKEN_PASTE(Scope, Flags) = Scope::Type
 
 } // namespace @default_namespace_name@
+
+// clang-format on

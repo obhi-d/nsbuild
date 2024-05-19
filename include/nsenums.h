@@ -115,7 +115,10 @@ public:
   std::string const& export_api() const { return f_export; }
   coding_style       style() const { return f_style; }
 
+  inline bool is_fmtlib_enabled() const { return has_fmtlib; }
+
 private:
+  bool         has_fmtlib = false;
   coding_style f_style;
   std::string  f_export;
   std::string  f_prefix;
@@ -171,6 +174,7 @@ struct nsenum
   void write_header_string_table(std::ostream& ofs) const;
   void write_header_string_key_table(std::ostream& ofs) const;
   void write_header_value_functions(std::ostream& ofs) const;
+  void write_header_fmtlib_formatter(std::ostream& ofs) const;
   void write_header_value_type(std::ostream& ofs) const;
   void write_header_consts(std::ostream& ofs) const;
   void write_header_enum(std::ostream& ofs, bool write_value) const;
