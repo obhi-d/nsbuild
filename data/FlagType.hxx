@@ -99,6 +99,10 @@ public:
   {
     value |= T::toBit(e);
   }
+  constexpr flags_type get() const noexcept 
+  { 
+    return value;
+  }
   constexpr inline bool contains(value_type e) const noexcept
   {
     return !!(value & T::toBit(e));
