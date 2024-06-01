@@ -108,6 +108,11 @@ public:
     return !!(value & T::toBit(e));
   }
 
+  constexpr bool empty() const noexcept
+  {
+    return value == (flags_type)0;
+  }
+
 private:
   flags_type value = {};
 };

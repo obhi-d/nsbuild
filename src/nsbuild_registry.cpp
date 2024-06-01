@@ -31,6 +31,35 @@ void append(neo::text_content& dst, neo::text_content const& src)
     dst.fragments.emplace_back(s);
 }
 
+/**
+ * @brief trim leading white space
+ */
+inline auto trim_leading(std::string_view str)
+{
+  size_t endpos = str.find_first_not_of(" \t\n\r");
+  if (endpos != 0)
+    str = str.substr(endpos);
+  return str;
+}
+
+/**
+ * @brief trim trailing white space
+ */
+inline auto trim_trailing(std::string_view str)
+{
+  size_t endpos = str.find_last_not_of(" \t\n\r");
+  if (endpos != std::string::npos)
+    str = str.substr(0, endpos + 1);
+  return str;
+}
+
+inline std::string_view trim(std::string_view str)
+{
+  str = trim_leading(str);
+  str = trim_trailing(str);
+  return str;
+}
+
 void collect_content(neo::text_content const& src, std::filesystem::path root, ns_embed_content& content)
 {
   for (auto f : src.fragments)
@@ -40,12 +69,12 @@ void collect_content(neo::text_content const& src, std::filesystem::path root, n
     size_t           pos = 0;
     while (pos < f.size())
     {
-      auto next = f.find_first_of(" \n@", pos);
+      auto next = f.find_first_of("\n=", pos);
       if (next == 0)
         pos = next + 1;
       else if (next != f.npos)
       {
-        if (f[next] == '@')
+        if (f[next] == '=')
         {
           name = f.substr(pos, next - pos);
           pos  = next + 1;
@@ -65,7 +94,8 @@ void collect_content(neo::text_content const& src, std::filesystem::path root, n
 
           if (!name.empty() && !value.empty())
           {
-            auto file = std::ifstream(root / value, std::ios::binary);
+            name      = trim(name);
+            auto file = std::ifstream(root / trim(value), std::ios::binary);
             if (file.is_open())
             {
               content.emplace_back(
@@ -135,9 +165,9 @@ ns_text_handler(custom_cmake, build, state, type, name, content)
   {
     auto& mod = build.frameworks.back().modules.back();
     // Embed the files in the list
-    if (name == "@binary")
+    if (name == "binary" || name == "text")
       collect_content(content, build.s_nsmodule->location, mod.embedded_binary_files);
-    else if (name == "@base64")
+    else if (name == "base64")
       collect_content(content, build.s_nsmodule->location, mod.embedded_base64_files);
   }
 }
